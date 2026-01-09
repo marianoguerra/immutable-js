@@ -146,7 +146,7 @@ test('#set', () => {
     phone: 'bar',
   });
 
-  expect(customer).type.toBeAssignableWith(customer.set('phone', 8));
+  expect(customer.set('phone', 8)).type.toBeAssignableTo(customer);
 });
 
 test('#setIn', () => {

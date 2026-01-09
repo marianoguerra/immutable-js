@@ -104,7 +104,7 @@ test('similar properties, but one is optional', () => {
     value: string;
   }
 
-  expect<RecordOf<{ id?: Id }>>().type.toBeAssignableWith<
-    RecordOf<{ id: Id }>
+  expect<RecordOf<{ id: Id }>>().type.toBeAssignableTo<
+    RecordOf<{ id?: Id }>
   >();
 });
