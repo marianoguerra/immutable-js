@@ -8,7 +8,7 @@ test('#constructor', () => {
 
   expect(Set([1, 'a'])).type.toBe<Set<number | string>>();
 
-  expect<Set<number>>().type.not.toBeAssignableWith(Set([1, 'a']));
+  expect(Set([1, 'a'])).type.not.toBeAssignableTo<Set<number>>();
 });
 
 test('#size', () => {

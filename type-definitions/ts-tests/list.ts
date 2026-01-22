@@ -14,10 +14,10 @@ import { expect, pick, test } from 'tstyche';
 test('#constructor', () => {
   expect(List()).type.toBe<List<unknown>>();
 
-  expect<List<number>>().type.toBeAssignableWith(List<number>());
+  expect(List<number>()).type.toBeAssignableTo<List<number>>();
 
-  expect<List<number | string>>().type.toBeAssignableWith(List([1, 'a']));
-  expect<List<number>>().type.not.toBeAssignableWith(List([1, 'a']));
+  expect(List([1, 'a'])).type.toBeAssignableTo<List<number | string>>();
+  expect(List([1, 'a'])).type.not.toBeAssignableTo<List<number>>();
 });
 
 test('#size', () => {
