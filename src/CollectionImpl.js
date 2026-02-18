@@ -680,8 +680,6 @@ mixin(KeyedSeqImpl, KeyedCollectionPrototype);
 mixin(IndexedSeqImpl, IndexedCollectionPrototype);
 mixin(SetSeqImpl, SetCollectionPrototype);
 
-// #pragma Helper functions
-
 function asValues(collection) {
   return isKeyed(collection) ? collection.valueSeq() : collection;
 }

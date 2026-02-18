@@ -141,8 +141,6 @@ Seq.Indexed = IndexedSeq;
 
 SeqImpl.prototype[IS_SEQ_SYMBOL] = true;
 
-// #pragma Root Sequences
-
 export class ArraySeq extends IndexedSeqImpl {
   constructor(array) {
     super();

@@ -952,8 +952,6 @@ export function zipWithFactory(keyIter, zipper, iters, zipAll) {
   return zipSequence;
 }
 
-// #pragma Helper Functions
-
 export function reify(iter, seq) {
   return iter === seq
     ? iter

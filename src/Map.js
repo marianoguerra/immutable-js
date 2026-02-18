@@ -177,8 +177,6 @@ MapPrototype.wasAltered = wasAltered;
 MapPrototype.asImmutable = asImmutable;
 MapPrototype.asMutable = asMutable;
 
-// #pragma Trie Nodes
-
 function updateLinearEntries(
   node,
   ownerID,
@@ -524,8 +522,6 @@ class ValueNode {
     return mergeIntoNode(this, ownerID, shift, hash(key), [key, value]);
   }
 }
-
-// #pragma Iterators
 
 ArrayMapNode.prototype.get = HashCollisionNode.prototype.get = linearGet;
 
