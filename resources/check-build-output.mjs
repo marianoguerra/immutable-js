@@ -10,6 +10,7 @@ const removeDistPrefix = (file) => path.basename(file);
 const expectedFiles = [
   removeDistPrefix(packageJsonContent.exports['.'].import),
   removeDistPrefix(packageJsonContent.exports['.'].types),
+  'immutable.min.js',
 ];
 
 console.log('expected files: ', expectedFiles);

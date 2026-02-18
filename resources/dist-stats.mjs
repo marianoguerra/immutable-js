@@ -65,10 +65,13 @@ function promiseNumberValue(promise) {
 }
 
 Promise.allSettled([
-  fs.readFile('dist/immutable.mjs'),
-  fs.readFile('dist/immutable.mjs').then(deflateContent),
+  fs.readFile('dist/immutable.js'),
+  fs.readFile('dist/immutable.js').then(deflateContent),
+  fs.readFile('dist/immutable.min.js'),
+  fs.readFile('dist/immutable.min.js').then(deflateContent),
   bundlephobaInfo('gzip'),
-]).then(([rawNew, zipNew, zipOld]) => {
+]).then(([rawNew, zipNew, rawMin, zipMin, zipOld]) => {
+  console.log('\n  immutable.js');
   console.log(`  Raw: ${space(14, bytes(promiseNumberValue(rawNew)).cyan)}`);
 
   if (zipOld.status === 'fulfilled') {
@@ -79,4 +82,13 @@ Promise.allSettled([
       )}${space(15, diff(promiseNumberValue(zipNew), promiseNumberValue(zipOld)))}`
     );
   }
+
+  console.log('\n  immutable.min.js');
+  console.log(`  Raw: ${space(14, bytes(promiseNumberValue(rawMin)).cyan)}`);
+  console.log(
+    `  Zip: ${space(14, bytes(promiseNumberValue(zipMin)).cyan)}${percentage(
+      promiseNumberValue(zipMin),
+      promiseNumberValue(rawMin)
+    )}`
+  );
 });

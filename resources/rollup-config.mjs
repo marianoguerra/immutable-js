@@ -1,6 +1,7 @@
 import path from 'path';
 import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
+import terser from '@rollup/plugin-terser';
 import typescript from '@rollup/plugin-typescript';
 import copyright from './copyright.mjs';
 
@@ -20,9 +21,16 @@ export default [
     output: [
       {
         banner: copyright,
-        file: path.join(DIST_DIR, 'immutable.mjs'),
+        file: path.join(DIST_DIR, 'immutable.js'),
         format: 'es',
         sourcemap: false,
+      },
+      {
+        banner: copyright,
+        file: path.join(DIST_DIR, 'immutable.min.js'),
+        format: 'es',
+        sourcemap: false,
+        plugins: [terser()],
       },
     ],
   },
