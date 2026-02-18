@@ -108,7 +108,7 @@ export function hasIterator(
   maybeIterable: unknown
 ): maybeIterable is Iterable<unknown> {
   if (Array.isArray(maybeIterable)) {
-    // IE11 trick as it does not support `Symbol.iterator`
+    // Fast path: avoid symbol lookup for arrays
     return true;
   }
 
@@ -127,7 +127,7 @@ export function isIterator(
 
 export function getIterator(iterable: unknown): Iterator<unknown> | undefined {
   const iteratorFn = getIteratorFn(iterable);
-  return iteratorFn && iteratorFn.call(iterable);
+  return iteratorFn?.call(iterable);
 }
 
 function getIteratorFn(

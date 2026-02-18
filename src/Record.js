@@ -252,18 +252,13 @@ function recordSeq(record) {
 }
 
 function setProp(prototype, name) {
-  try {
-    Object.defineProperty(prototype, name, {
-      get: function () {
-        return this.get(name);
-      },
-      set: function (value) {
-        invariant(this.__ownerID, 'Cannot set on an immutable record.');
-        this.set(name, value);
-      },
-    });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- TODO enable eslint here
-  } catch (error) {
-    // Object.defineProperty failed. Probably IE8.
-  }
+  Object.defineProperty(prototype, name, {
+    get() {
+      return this.get(name);
+    },
+    set(value) {
+      invariant(this.__ownerID, 'Cannot set on an immutable record.');
+      this.set(name, value);
+    },
+  });
 }

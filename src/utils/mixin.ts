@@ -12,9 +12,6 @@ export default function mixin<C extends Constructor>(
     // @ts-expect-error how to handle symbol ?
     ctor.prototype[key] = methods[key];
   };
-  Object.keys(methods).forEach(keyCopier);
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
-  Object.getOwnPropertySymbols &&
-    Object.getOwnPropertySymbols(methods).forEach(keyCopier);
+  Reflect.ownKeys(methods).forEach(keyCopier);
   return ctor;
 }
