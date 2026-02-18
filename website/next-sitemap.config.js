@@ -1,9 +1,7 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef
-const { getVersions } = require('./src/static/getVersions');
+import { getVersions } from './src/static/getVersions.js';
 
 /** @type {import('next-sitemap').IConfig} */
-// eslint-disable-next-line no-undef
-module.exports = {
+export default {
   siteUrl: 'https://immutable-js.com',
   generateRobotsTxt: true,
   outDir: './out',

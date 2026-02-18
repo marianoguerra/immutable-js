@@ -1,5 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef
-const { execSync } = require('child_process');
+import { execSync } from 'child_process';
 
 let versions;
 let versionsFromGitTag;
@@ -39,7 +38,4 @@ function getVersionFromGitTag() {
   return versions;
 }
 
-// eslint-disable-next-line no-undef
-exports.getVersions = getVersions;
-// eslint-disable-next-line no-undef
-exports.getVersionFromGitTag = getVersionFromGitTag;
+export { getVersions, getVersionFromGitTag };
