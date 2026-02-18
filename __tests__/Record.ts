@@ -366,5 +366,41 @@ describe('Record', () => {
         })
       );
     });
+
+    it('clear resets to defaults', () => {
+      fc.assert(
+        fc.property(fc.integer(), fc.string(), fc.boolean(), (a, b, c) => {
+          const r = TestRecord({ a, b, c });
+          const cleared = r.clear();
+          expect(cleared.get('a')).toBe(0);
+          expect(cleared.get('b')).toBe('');
+          expect(cleared.get('c')).toBe(false);
+        })
+      );
+    });
+
+    it('toObject roundtrip', () => {
+      fc.assert(
+        fc.property(fc.integer(), fc.string(), fc.boolean(), (a, b, c) => {
+          const r = TestRecord({ a, b, c });
+          const obj = r.toObject();
+          expect(obj).toEqual({ a, b, c });
+          const r2 = TestRecord(obj);
+          expect(r2.equals(r)).toBe(true);
+        })
+      );
+    });
+
+    it('toJS roundtrip', () => {
+      fc.assert(
+        fc.property(fc.integer(), fc.string(), fc.boolean(), (a, b, c) => {
+          const r = TestRecord({ a, b, c });
+          const js = r.toJS();
+          expect(js).toEqual({ a, b, c });
+          const r2 = TestRecord(js);
+          expect(r2.equals(r)).toBe(true);
+        })
+      );
+    });
   });
 });

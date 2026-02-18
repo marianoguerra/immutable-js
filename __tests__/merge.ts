@@ -414,5 +414,34 @@ describe('merge', () => {
         })
       );
     });
+
+    it('mergeWith commutativity with commutative merger', () => {
+      fc.assert(
+        fc.property(genMap, genMap, (a, b) => {
+          const add = (x: number, y: number) => x + y;
+          expect(a.mergeWith(add, b).equals(b.mergeWith(add, a))).toBe(true);
+        })
+      );
+    });
+
+    it('mergeDeep preserves non-overridden deep values', () => {
+      fc.assert(
+        fc.property(
+          fc.string({ maxLength: 5 }),
+          fc.string({ maxLength: 5 }),
+          fc.integer(),
+          fc.integer(),
+          (k1, k2, v1, v2) => {
+            const m1 = Map({ [k1]: Map({ deep: v1 }) });
+            const m2 = Map({ [k2]: Map({ other: v2 }) });
+            const merged = m1.mergeDeep(m2);
+            if (k1 !== k2) {
+              // eslint-disable-next-line jest/no-conditional-expect, @typescript-eslint/no-explicit-any
+              expect((merged.get(k1) as any).get('deep')).toBe(v1);
+            }
+          }
+        )
+      );
+    });
   });
 });

@@ -143,5 +143,38 @@ describe('zip', () => {
       expect(i.size).toBe(6);
       expect(i.toArray()).toEqual([0, 'A', 1, 'B', 2, 'C']);
     });
+
+    it('interleave has correct size', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { minLength: 1, maxLength: 50 }),
+          fc.array(fc.integer(), { minLength: 1, maxLength: 50 }),
+          (arr1, arr2) => {
+            const minLen = Math.min(arr1.length, arr2.length);
+            const interleaved = Seq(arr1).interleave(Seq(arr2));
+            expect(interleaved.size).toBe(minLen * 2);
+          }
+        )
+      );
+    });
+  });
+
+  describe('property-based tests', () => {
+    it('zip entries match positionally', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 50 }),
+          fc.array(fc.integer(), { maxLength: 50 }),
+          (arr1, arr2) => {
+            const zipped = Seq(arr1).zip(Seq(arr2)).toArray();
+            const minLen = Math.min(arr1.length, arr2.length);
+            expect(zipped.length).toBe(minLen);
+            for (let i = 0; i < minLen; i++) {
+              expect(zipped[i]).toEqual([arr1[i], arr2[i]]);
+            }
+          }
+        )
+      );
+    });
   });
 });

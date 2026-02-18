@@ -597,4 +597,188 @@ describe('Map', () => {
       ])
     );
   });
+
+  describe('property-based tests', () => {
+    it('deleteAll removes exactly those keys', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 50 }),
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 20 }),
+          (allKeys, keysToDelete) => {
+            const entries: Array<[string, number]> = allKeys.map((k, i) => [
+              k,
+              i,
+            ]);
+            const m = Map(entries);
+            const deleted = m.deleteAll(keysToDelete);
+            const deletedSet = new global.Set(keysToDelete);
+            keysToDelete.forEach((k) => {
+              expect(deleted.has(k)).toBe(false);
+            });
+            allKeys.forEach((k) => {
+              if (!deletedSet.has(k)) {
+                // eslint-disable-next-line jest/no-conditional-expect
+                expect(deleted.get(k)).toBe(m.get(k));
+              }
+            });
+          }
+        )
+      );
+    });
+
+    it('withMutations set equivalence', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.tuple(fc.string({ maxLength: 5 }), fc.integer()), {
+            maxLength: 50,
+          }),
+          (entries) => {
+            const built = Map<string, number>().withMutations((m) =>
+              entries.forEach(([k, v]) => m.set(k, v))
+            );
+            expect(built.equals(Map(entries))).toBe(true);
+          }
+        )
+      );
+    });
+
+    it('flip is involution for unique values', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), {
+            minLength: 1,
+            maxLength: 20,
+          }),
+          (keys) => {
+            const entries: Array<[string, string]> = keys.map((k, i) => [
+              k,
+              String(i),
+            ]);
+            const m = Map(entries);
+            expect(m.flip().flip().equals(m)).toBe(true);
+          }
+        )
+      );
+    });
+
+    it('mapKeys transforms all keys', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 50 }),
+          (keys) => {
+            const entries: Array<[string, number]> = keys.map((k, i) => [k, i]);
+            const m = Map(entries);
+            const fn = (k: string) => k + '_mapped';
+            const mapped = m.mapKeys(fn);
+            keys.forEach((k) => {
+              expect(mapped.has(fn(k))).toBe(true);
+            });
+          }
+        )
+      );
+    });
+
+    it('mapEntries preserves size', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 50 }),
+          (keys) => {
+            const entries: Array<[string, number]> = keys.map((k, i) => [k, i]);
+            const m = Map(entries);
+            const mapped = m.mapEntries(([k, v]) => [k, v + 1]);
+            expect(mapped.size).toBe(m.size);
+          }
+        )
+      );
+    });
+
+    it('filterNot is complement of filter', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 50 }),
+          (keys) => {
+            const entries: Array<[string, number]> = keys.map((k, i) => [k, i]);
+            const m = Map(entries);
+            const pred = (v: number) => v % 2 === 0;
+            expect(m.filter(pred).merge(m.filterNot(pred)).equals(m)).toBe(
+              true
+            );
+          }
+        )
+      );
+    });
+
+    it('mergeWith for overlapping keys', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 30 }),
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 30 }),
+          (keysA, keysB) => {
+            const a = Map(keysA.map((k, i): [string, number] => [k, i]));
+            const b = Map(keysB.map((k, i): [string, number] => [k, i + 100]));
+            const merged = a.mergeWith((oldVal, newVal) => oldVal + newVal, b);
+            keysA.forEach((k) => {
+              if (!b.has(k)) {
+                // eslint-disable-next-line jest/no-conditional-expect
+                expect(merged.get(k)).toBe(a.get(k));
+              }
+            });
+            keysB.forEach((k) => {
+              if (!a.has(k)) {
+                // eslint-disable-next-line jest/no-conditional-expect
+                expect(merged.get(k)).toBe(b.get(k));
+              }
+            });
+            keysA.forEach((k) => {
+              if (b.has(k)) {
+                // eslint-disable-next-line jest/no-conditional-expect
+                expect(merged.get(k)).toBe(a.get(k)! + b.get(k)!);
+              }
+            });
+          }
+        )
+      );
+    });
+
+    it('every/some De Morgan', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 50 }),
+          (keys) => {
+            const entries: Array<[string, number]> = keys.map((k, i) => [k, i]);
+            const m = Map(entries);
+            const pred = (v: number) => v % 2 === 0;
+            expect(m.every(pred)).toBe(!m.some((v) => !pred(v)));
+          }
+        )
+      );
+    });
+
+    it('includes matches valueSeq', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 50 }),
+          fc.integer(),
+          (keys, v) => {
+            const entries: Array<[string, number]> = keys.map((k, i) => [k, i]);
+            const m = Map(entries);
+            expect(m.includes(v)).toBe(m.valueSeq().includes(v));
+          }
+        )
+      );
+    });
+
+    it('clear produces empty', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 50 }),
+          (keys) => {
+            const entries: Array<[string, number]> = keys.map((k, i) => [k, i]);
+            const m = Map(entries);
+            expect(m.clear().size).toBe(0);
+          }
+        )
+      );
+    });
+  });
 });

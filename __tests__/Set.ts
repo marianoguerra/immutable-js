@@ -475,5 +475,67 @@ describe('Set', () => {
         )
       );
     });
+
+    it('add then has', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.integer(),
+          (arr, v) => {
+            expect(Set(arr).add(v).has(v)).toBe(true);
+          }
+        )
+      );
+    });
+
+    it('delete then not has', () => {
+      fc.assert(
+        fc.property(fc.integer(), (v) => {
+          expect(Set([v]).delete(v).has(v)).toBe(false);
+        })
+      );
+    });
+
+    it('withMutations consistency', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 50 }),
+          fc.array(fc.integer(), { maxLength: 20 }),
+          (toAdd, toRemove) => {
+            const stepByStep = toRemove.reduce(
+              (s, v) => s.delete(v),
+              toAdd.reduce((s, v) => s.add(v), Set<number>())
+            );
+            const mutated = Set<number>().withMutations((s) => {
+              toAdd.forEach((v) => s.add(v));
+              toRemove.forEach((v) => s.delete(v));
+            });
+            expect(mutated.equals(stepByStep)).toBe(true);
+          }
+        )
+      );
+    });
+
+    it('intersection is commutative', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.array(fc.integer(), { maxLength: 100 }),
+          (arrA, arrB) => {
+            const a = Set(arrA);
+            const b = Set(arrB);
+            expect(a.intersect(b).equals(b.intersect(a))).toBe(true);
+          }
+        )
+      );
+    });
+
+    it('Set.fromKeys matches Object.keys', () => {
+      fc.assert(
+        fc.property(fc.object({ maxKeys: 20 }), (obj) => {
+          expect(Set.fromKeys(obj).equals(Set(Object.keys(obj)))).toBe(true);
+        })
+      );
+    });
   });
 });

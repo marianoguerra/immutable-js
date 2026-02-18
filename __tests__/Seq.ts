@@ -179,5 +179,49 @@ describe('Seq', () => {
         })
       );
     });
+
+    it('map then toArray equals arr.map', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          expect(
+            Seq(arr)
+              .map((x) => x * 2)
+              .toArray()
+          ).toEqual(arr.map((x) => x * 2));
+        })
+      );
+    });
+
+    it('reverse matches Array.reverse', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          expect(Seq(arr).reverse().toArray()).toEqual([...arr].reverse());
+        })
+      );
+    });
+
+    it('skip/take matches Array.slice', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.nat(100),
+          fc.nat(100),
+          (arr, n, m) => {
+            expect(Seq(arr).skip(n).take(m).toArray()).toEqual(
+              arr.slice(n, n + m)
+            );
+          }
+        )
+      );
+    });
+
+    it('toKeyedSeq preserves entries', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          const keyed = Seq(arr).toKeyedSeq();
+          expect(keyed.entrySeq().toArray()).toEqual(arr.map((v, i) => [i, v]));
+        })
+      );
+    });
   });
 });

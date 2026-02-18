@@ -297,4 +297,16 @@ describe('slice', () => {
       expect(s4.toArray().length).toEqual(2);
     });
   });
+
+  it('skipWhile/takeWhile partition', () => {
+    fc.assert(
+      fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+        const list = List(arr);
+        const pred = (x: number) => x >= 0;
+        expect(
+          list.takeWhile(pred).concat(list.skipWhile(pred)).toArray()
+        ).toEqual(arr);
+      })
+    );
+  });
 });

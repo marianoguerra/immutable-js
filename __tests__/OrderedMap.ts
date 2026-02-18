@@ -213,5 +213,83 @@ describe('OrderedMap', () => {
         )
       );
     });
+
+    it('delete-then-set moves key to end', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), {
+            minLength: 2,
+            maxLength: 50,
+          }),
+          (keys) => {
+            const entries: Array<[string, number]> = keys.map((k, i) => [k, i]);
+            const om = OrderedMap(entries);
+            const key = keys[0]!;
+            const updated = om.delete(key).set(key, 999);
+            expect(updated.keySeq().last()).toBe(key);
+          }
+        )
+      );
+    });
+
+    it('merge preserves left order, appends right', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 30 }),
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 30 }),
+          (keysA, keysB) => {
+            const entriesA: Array<[string, number]> = keysA.map((k, i) => [
+              k,
+              i,
+            ]);
+            const entriesB: Array<[string, number]> = keysB.map((k, i) => [
+              k,
+              i + 100,
+            ]);
+            const a = OrderedMap(entriesA);
+            const b = OrderedMap(entriesB);
+            const merged = a.merge(b);
+            const expectedKeys = [...keysA, ...keysB.filter((k) => !a.has(k))];
+            expect(merged.keySeq().toArray()).toEqual(expectedKeys);
+          }
+        )
+      );
+    });
+
+    it('reverse is involution', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 50 }),
+          (keys) => {
+            const entries: Array<[string, number]> = keys.map((k, i) => [k, i]);
+            const om = OrderedMap(entries);
+            expect(om.reverse().reverse().equals(om)).toBe(true);
+          }
+        )
+      );
+    });
+
+    it('sort produces sorted values', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), {
+            minLength: 1,
+            maxLength: 50,
+          }),
+          (keys) => {
+            const entries: Array<[string, number]> = keys.map((k, i) => [
+              k,
+              keys.length - i,
+            ]);
+            const om = OrderedMap(entries);
+            const sorted = om.sort((a: number, b: number) => a - b);
+            const values = sorted.valueSeq().toArray();
+            for (let i = 0; i < values.length - 1; i++) {
+              expect(values[i]! <= values[i + 1]!).toBe(true);
+            }
+          }
+        )
+      );
+    });
   });
 });

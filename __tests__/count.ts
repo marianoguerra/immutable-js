@@ -96,5 +96,15 @@ describe('count', () => {
         })
       );
     });
+
+    it('countBy completeness: sum of all counts equals total', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          const counts = Seq(arr).countBy((x) => x % 3);
+          const total = counts.reduce<number>((a, b) => a + b, 0);
+          expect(total).toBe(arr.length);
+        })
+      );
+    });
   });
 });

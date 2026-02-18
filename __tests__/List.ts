@@ -1076,4 +1076,185 @@ describe('List', () => {
       );
     });
   });
+
+  describe('property-based tests', () => {
+    it('reverse is involution', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 200 }), (arr) => {
+          const list = List(arr);
+          expect(list.reverse().reverse().equals(list)).toBe(true);
+        })
+      );
+    });
+
+    it('reverse matches Array.reverse', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 200 }), (arr) => {
+          expect(List(arr).reverse().toArray()).toEqual([...arr].reverse());
+        })
+      );
+    });
+
+    it('rest matches arr.slice(1)', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          expect(List(arr).rest().toArray()).toEqual(arr.slice(1));
+        })
+      );
+    });
+
+    it('butLast matches arr.slice(0, -1)', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          const expected = arr.length > 0 ? arr.slice(0, -1) : [];
+          expect(List(arr).butLast().toArray()).toEqual(expected);
+        })
+      );
+    });
+
+    it('skip/take matches arr.slice', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.nat(100),
+          fc.nat(100),
+          (arr, n, m) => {
+            const list = List(arr);
+            expect(list.skip(n).take(m).toArray()).toEqual(arr.slice(n, n + m));
+          }
+        )
+      );
+    });
+
+    it('skipLast/takeLast equivalence', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.nat(100),
+          (arr, n) => {
+            const list = List(arr);
+            expect(list.skipLast(n).toArray()).toEqual(
+              arr.slice(0, Math.max(0, arr.length - n))
+            );
+            expect(list.takeLast(n).toArray()).toEqual(
+              arr.slice(Math.max(0, arr.length - n))
+            );
+          }
+        )
+      );
+    });
+
+    it('insert works like splice', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.nat(100),
+          fc.integer(),
+          (arr, i, v) => {
+            const idx = Math.min(i, arr.length);
+            const expected = [...arr];
+            expected.splice(idx, 0, v);
+            expect(List(arr).insert(idx, v).toArray()).toEqual(expected);
+          }
+        )
+      );
+    });
+
+    it('setSize truncates or pads', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.nat(200),
+          (arr, n) => {
+            const list = List(arr).setSize(n);
+            expect(list.size).toBe(n);
+            for (let i = 0; i < Math.min(arr.length, n); i++) {
+              expect(list.get(i)).toBe(arr[i]);
+            }
+          }
+        )
+      );
+    });
+
+    it('withMutations push equivalence', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          const built = List<number>().withMutations((m) =>
+            arr.forEach((x) => m.push(x))
+          );
+          expect(built.equals(List(arr))).toBe(true);
+        })
+      );
+    });
+
+    it('asMutable/asImmutable roundtrip', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.integer(),
+          (arr, v) => {
+            const list = List(arr);
+            expect(list.asMutable().push(v).asImmutable().last()).toBe(v);
+          }
+        )
+      );
+    });
+
+    it('includes matches Array.includes', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.integer(),
+          (arr, v) => {
+            expect(List(arr).includes(v)).toBe(arr.includes(v));
+          }
+        )
+      );
+    });
+
+    it('first/last consistency', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { minLength: 1, maxLength: 100 }),
+          (arr) => {
+            const list = List(arr);
+            expect(list.first()).toBe(arr[0]);
+            expect(list.last()).toBe(arr[arr.length - 1]);
+          }
+        )
+      );
+    });
+
+    it('isEmpty iff size is 0', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          const list = List(arr);
+          expect(list.isEmpty()).toBe(list.size === 0);
+        })
+      );
+    });
+
+    it('every/some match Array', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          const pred = (x: number) => x >= 0;
+          expect(List(arr).every(pred)).toBe(arr.every(pred));
+          expect(List(arr).some(pred)).toBe(arr.some(pred));
+        })
+      );
+    });
+
+    it('reduce matches Array.reduce', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer({ min: -1000, max: 1000 }), { maxLength: 100 }),
+          (arr) => {
+            expect(List(arr).reduce((a, b) => a + b, 0)).toBe(
+              arr.reduce((a, b) => a + b, 0)
+            );
+          }
+        )
+      );
+    });
+  });
 });

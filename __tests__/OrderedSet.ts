@@ -217,5 +217,46 @@ describe('OrderedSet', () => {
         })
       );
     });
+
+    it('add preserves existing order', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.integer(), { maxLength: 100 }),
+          fc.integer(),
+          (arr, v) => {
+            const os = OrderedSet(arr);
+            const result = os.add(v);
+            const resultArr = result.toArray();
+            const originalInResult = resultArr.filter((x) => os.has(x));
+            expect(originalInResult).toEqual(arr);
+          }
+        )
+      );
+    });
+
+    it('intersect preserves receiver order', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.integer(), { maxLength: 50 }),
+          fc.uniqueArray(fc.integer(), { maxLength: 50 }),
+          (arrA, arrB) => {
+            const a = OrderedSet(arrA);
+            const b = OrderedSet(arrB);
+            const result = a.intersect(b).toArray();
+            const expected = arrA.filter((x) => b.has(x));
+            expect(result).toEqual(expected);
+          }
+        )
+      );
+    });
+
+    it('reverse is involution', () => {
+      fc.assert(
+        fc.property(fc.uniqueArray(fc.integer(), { maxLength: 100 }), (arr) => {
+          const os = OrderedSet(arr);
+          expect(os.reverse().reverse().equals(os)).toBe(true);
+        })
+      );
+    });
   });
 });

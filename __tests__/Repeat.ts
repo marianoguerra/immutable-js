@@ -64,5 +64,33 @@ describe('Repeat', () => {
         )
       );
     });
+
+    it('includes the repeated value', () => {
+      fc.assert(
+        fc.property(
+          fc.integer(),
+          fc.integer({ min: 1, max: 100 }),
+          (val, n) => {
+            expect(Repeat(val, n).includes(val)).toBe(true);
+          }
+        )
+      );
+    });
+
+    it('slice works like array slice', () => {
+      fc.assert(
+        fc.property(
+          fc.integer(),
+          fc.integer({ min: 0, max: 50 }),
+          fc.nat(50),
+          (val, n, take) => {
+            const arr = new Array(n).fill(val);
+            expect(Repeat(val, n).slice(0, take).toArray()).toEqual(
+              arr.slice(0, take)
+            );
+          }
+        )
+      );
+    });
   });
 });

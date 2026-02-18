@@ -236,4 +236,36 @@ describe('Range', () => {
     expect(Range(0, 10, 2).toString()).toBe('Range [ 0...10 by 2 ]');
     expect(Range(10, 0, -2).toString()).toBe('Range [ 10...0 by -2 ]');
   });
+
+  describe('property-based tests', () => {
+    it('reverse is involution', () => {
+      fc.assert(
+        fc.property(shrinkInt, shrinkInt, (from, to) => {
+          const r = Range(from, to);
+          expect(r.reverse().reverse().toArray()).toEqual(r.toArray());
+        })
+      );
+    });
+
+    it('includes matches manual check', () => {
+      fc.assert(
+        fc.property(shrinkInt, shrinkInt, fc.integer(), (from, to, v) => {
+          const r = Range(from, to);
+          const arr = r.toArray();
+          expect(r.includes(v)).toBe(arr.includes(v));
+        })
+      );
+    });
+
+    it('reduce equivalence with sum formula', () => {
+      fc.assert(
+        fc.property(fc.integer({ min: 1, max: 200 }), (n) => {
+          const r = Range(0, n);
+          const sum = r.reduce<number>((a, b) => a + b, 0);
+          const expected = (n * (n - 1)) / 2;
+          expect(sum).toBe(expected);
+        })
+      );
+    });
+  });
 });

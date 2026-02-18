@@ -1,6 +1,7 @@
 import { List, Map, Set, fromJS, isCollection } from 'immutable';
 import { runInNewContext } from 'vm';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 
 describe('fromJS', () => {
   it('convert Array to Immutable.List', () => {
@@ -77,5 +78,36 @@ describe('fromJS', () => {
       },
       {}
     );
+  });
+
+  describe('property-based tests', () => {
+    it('fromJS deep array roundtrip', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.array(fc.integer(), { maxLength: 5 }), { maxLength: 10 }),
+          (arr) => {
+            const immutable = fromJS(arr);
+            expect(List.isList(immutable)).toBe(true);
+            expect(immutable.toJS()).toEqual(arr);
+          }
+        )
+      );
+    });
+
+    it('fromJS deep object roundtrip', () => {
+      fc.assert(
+        fc.property(
+          fc.dictionary(
+            fc.string({ maxLength: 5 }),
+            fc.dictionary(fc.string({ maxLength: 5 }), fc.integer())
+          ),
+          (obj) => {
+            const immutable = fromJS(obj);
+            expect(Map.isMap(immutable)).toBe(true);
+            expect(immutable.toJS()).toEqual(obj);
+          }
+        )
+      );
+    });
   });
 });

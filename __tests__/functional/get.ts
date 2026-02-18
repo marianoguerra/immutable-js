@@ -1,5 +1,6 @@
 import { get, Map, List, Range } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 import invariant from '../../src/utils/invariant';
 
 describe('get', () => {
@@ -36,5 +37,33 @@ describe('get', () => {
         'x'
       )
     ).toBe('XX');
+  });
+
+  describe('property-based tests', () => {
+    it('functional get matches method get for List', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 50 }),
+          fc.nat(60),
+          (arr, idx) => {
+            const list = List(arr);
+            expect(get(list, idx)).toBe(list.get(idx));
+          }
+        )
+      );
+    });
+
+    it('functional get on plain objects returns correct value', () => {
+      fc.assert(
+        fc.property(
+          fc.dictionary(fc.string({ maxLength: 5 }), fc.integer()),
+          (obj) => {
+            for (const key of Object.keys(obj)) {
+              expect(get(obj, key)).toBe(obj[key]);
+            }
+          }
+        )
+      );
+    });
   });
 });

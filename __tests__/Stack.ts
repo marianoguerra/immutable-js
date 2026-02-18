@@ -226,4 +226,75 @@ describe('Stack', () => {
     // Pushing an empty Stack onto a Stack return === Stack
     expect(abc.pushAll(Stack())).toBe(abc);
   });
+
+  describe('property-based tests', () => {
+    it('push then pop roundtrip', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 50 }),
+          fc.integer(),
+          (arr, v) => {
+            const stack = Stack(arr);
+            expect(stack.push(v).pop().equals(stack)).toBe(true);
+          }
+        )
+      );
+    });
+
+    it('peek equals first', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { minLength: 1, maxLength: 50 }),
+          (arr) => {
+            const stack = Stack(arr);
+            expect(stack.peek()).toBe(stack.first());
+          }
+        )
+      );
+    });
+
+    it('pushAll equivalence', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 50 }),
+          fc.array(fc.integer(), { maxLength: 50 }),
+          (arr1, arr2) => {
+            expect(Stack(arr1).pushAll(arr2).toArray()).toEqual([
+              ...arr2,
+              ...arr1,
+            ]);
+          }
+        )
+      );
+    });
+
+    it('size after push/pop', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 50 }),
+          fc.integer(),
+          (arr, v) => {
+            const stack = Stack(arr);
+            expect(stack.push(v).size).toBe(arr.length + 1);
+            if (arr.length > 0) {
+              // eslint-disable-next-line jest/no-conditional-expect
+              expect(stack.pop().size).toBe(arr.length - 1);
+            }
+          }
+        )
+      );
+    });
+
+    it('includes matches toArray', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 50 }),
+          fc.integer(),
+          (arr, v) => {
+            expect(Stack(arr).includes(v)).toBe(arr.includes(v));
+          }
+        )
+      );
+    });
+  });
 });

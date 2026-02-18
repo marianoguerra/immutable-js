@@ -121,5 +121,36 @@ describe('sort', () => {
         })
       );
     });
+
+    it('sortBy stability', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer({ min: -100, max: 100 }), { maxLength: 200 }),
+          (arr) => {
+            const keyFn = (x: number) => ((x % 5) + 5) % 5;
+            const sorted = List(arr).sortBy(keyFn).toArray();
+            for (let k = 0; k < 5; k++) {
+              const groupFromSorted = sorted.filter((x) => keyFn(x) === k);
+              const groupFromOriginal = arr.filter((x) => keyFn(x) === k);
+              expect(groupFromSorted).toEqual(groupFromOriginal);
+            }
+          }
+        )
+      );
+    });
+
+    it('sortBy equivalence with Array.sort', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer({ min: -100, max: 100 }), { maxLength: 200 }),
+          (arr) => {
+            const keyFn = (x: number) => Math.abs(x);
+            expect(List(arr).sortBy(keyFn).toArray()).toEqual(
+              [...arr].sort((a, b) => keyFn(a) - keyFn(b))
+            );
+          }
+        )
+      );
+    });
   });
 });

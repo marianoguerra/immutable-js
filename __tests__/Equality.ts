@@ -152,6 +152,32 @@ describe('Equality', () => {
     );
   });
 
+  it('reflexive equality', () => {
+    fc.assert(
+      fc.property(genVal, (a) => {
+        expect(is(a, a)).toBe(true);
+      }),
+      { numRuns: 1000 }
+    );
+  });
+
+  it('equality implies same size and elements', () => {
+    fc.assert(
+      fc.property(genVal, genVal, (a, b) => {
+        if (is(a, b)) {
+          // eslint-disable-next-line jest/no-conditional-expect
+          expect(a.size).toBe(b.size);
+          // eslint-disable-next-line jest/no-conditional-expect
+          expect(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            a.every((v: any) => b.includes(v))
+          ).toBe(true);
+        }
+      }),
+      { numRuns: 1000 }
+    );
+  });
+
   describe('hash', () => {
     it('differentiates decimals', () => {
       expect(Seq([1.5]).hashCode()).not.toBe(Seq([1.6]).hashCode());

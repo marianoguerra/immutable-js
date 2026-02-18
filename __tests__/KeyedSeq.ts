@@ -139,4 +139,16 @@ describe('KeyedSeq', () => {
       [10, 89],
     ]);
   });
+
+  it('toKeyedSeq filter maintains original index keys', () => {
+    fc.assert(
+      fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+        const pred = (x: number) => x % 2 === 0;
+        const keyed = Seq(arr).toKeyedSeq().filter(pred);
+        keyed.forEach((val, key) => {
+          expect(arr[key]).toBe(val);
+        });
+      })
+    );
+  });
 });

@@ -240,4 +240,40 @@ describe('Conversion', () => {
     const result = fromJS(arr).entrySeq().toJS();
     expect(result).toEqual([[0, { key: 'a' }]]);
   });
+
+  describe('property-based tests', () => {
+    it('List.toMap.toList preserves values', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 50 }), (arr) => {
+          const list = List(arr);
+          const values = list.toMap().toList();
+          expect(values.toArray()).toEqual(arr);
+        })
+      );
+    });
+
+    it('Set.toList.toSet preserves membership', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 50 }), (arr) => {
+          const set = fromJS(arr).toSet();
+          const roundtripped = set.toList().toSet();
+          expect(roundtripped.equals(set)).toBe(true);
+        })
+      );
+    });
+
+    it('Map to entries roundtrip', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 30 }),
+          (keys) => {
+            const entries: Array<[string, number]> = keys.map((k, i) => [k, i]);
+            const m = Map(entries);
+            const roundtripped = Map(m.entrySeq());
+            expect(roundtripped.equals(m)).toBe(true);
+          }
+        )
+      );
+    });
+  });
 });

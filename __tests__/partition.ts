@@ -160,5 +160,21 @@ describe('partition', () => {
         )
       );
     });
+
+    it('partition[0] is filterNot, partition[1] is filter', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          const list = List(arr);
+          const pred = (x: number) => x % 2 === 1;
+          const [falsy, truthy] = list.partition(pred);
+          expect((falsy as List<number>).toArray()).toEqual(
+            list.filterNot(pred).toArray()
+          );
+          expect((truthy as List<number>).toArray()).toEqual(
+            list.filter(pred).toArray()
+          );
+        })
+      );
+    });
   });
 });

@@ -114,6 +114,30 @@ describe('min', () => {
   });
 });
 
+describe('property-based tests', () => {
+  it('max equals Math.max for non-empty integer arrays', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer(), { minLength: 1, maxLength: 100 }),
+        (arr) => {
+          expect(Seq(arr).max()).toBe(Math.max(...arr));
+        }
+      )
+    );
+  });
+
+  it('min equals Math.min for non-empty integer arrays', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer(), { minLength: 1, maxLength: 100 }),
+        (arr) => {
+          expect(Seq(arr).min()).toBe(Math.min(...arr));
+        }
+      )
+    );
+  });
+});
+
 function shuffle<A extends Array<unknown>>(array: A): A {
   let m = array.length;
   let t;
