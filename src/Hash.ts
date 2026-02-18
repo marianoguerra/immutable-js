@@ -1,8 +1,13 @@
-import { smi } from './Math';
+// v8 has an optimization for storing 31-bit signed numbers.
+// Values which have either 00 or 11 as the high order bits qualify.
+// This function drops the highest order bit in a signed number, maintaining
+// the sign bit.
+export function smi(i32: number): number {
+  return ((i32 >>> 1) & 0x40000000) | (i32 & 0xbfffffff);
+}
 
 export function hash(o: unknown): number {
-  // eslint-disable-next-line eqeqeq
-  if (o == null) {
+  if (o === null || o === undefined) {
     return hashNullish(o);
   }
 
@@ -15,8 +20,7 @@ export function hash(o: unknown): number {
 
   const v = valueOf(o);
 
-  // eslint-disable-next-line eqeqeq
-  if (v == null) {
+  if (v === null || v === undefined) {
     return hashNullish(v);
   }
 
@@ -51,7 +55,7 @@ function hashNullish(nullish: null | undefined): number {
 
 // Compress arbitrarily large numbers into smi hashes.
 function hashNumber(n: number): number {
-  if (n !== n || n === Infinity) {
+  if (Number.isNaN(n) || n === Infinity) {
     return 0;
   }
   let hash = n | 0;

@@ -25,10 +25,6 @@ OrderedSet.fromKeys = function (value) {
   return OrderedSet(KeyedCollection(value).keySeq());
 };
 export class OrderedSetImpl extends SetImpl {
-  constructor(map, ownerID) {
-    super(map, ownerID);
-  }
-
   create(value) {
     return OrderedSet(value);
   }

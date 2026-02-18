@@ -117,12 +117,12 @@ mixin(CollectionImpl, {
 
   toOrderedSet() {
     // Use Late Binding here to solve the circular dependency.
-    return OrderedSet(isKeyed(this) ? this.valueSeq() : this);
+    return OrderedSet(asValues(this));
   },
 
   toSet() {
     // Use Late Binding here to solve the circular dependency.
-    return Set(isKeyed(this) ? this.valueSeq() : this);
+    return Set(asValues(this));
   },
 
   toSetSeq() {
@@ -139,12 +139,12 @@ mixin(CollectionImpl, {
 
   toStack() {
     // Use Late Binding here to solve the circular dependency.
-    return Stack(isKeyed(this) ? this.valueSeq() : this);
+    return Stack(asValues(this));
   },
 
   toList() {
     // Use Late Binding here to solve the circular dependency.
-    return List(isKeyed(this) ? this.valueSeq() : this);
+    return List(asValues(this));
   },
 
   // ### Common JavaScript methods and properties
@@ -177,7 +177,7 @@ mixin(CollectionImpl, {
   },
 
   filter(predicate, context) {
-    return reify(this, filterFactory(this, predicate, context, true));
+    return reify(this, filterFactory(this, predicate, context, isKeyed(this)));
   },
 
   partition(predicate, context) {
@@ -238,11 +238,11 @@ mixin(CollectionImpl, {
   },
 
   reverse() {
-    return reify(this, reverseFactory(this, true));
+    return reify(this, reverseFactory(this, isKeyed(this)));
   },
 
   slice(begin, end) {
-    return reify(this, sliceFactory(this, begin, end, true));
+    return reify(this, sliceFactory(this, begin, end, isKeyed(this)));
   },
 
   some(predicate, context) {
@@ -344,7 +344,7 @@ mixin(CollectionImpl, {
   },
 
   flatten(depth) {
-    return reify(this, flattenFactory(this, depth, true));
+    return reify(this, flattenFactory(this, depth, isKeyed(this)));
   },
 
   fromEntrySeq() {
@@ -429,7 +429,10 @@ mixin(CollectionImpl, {
   },
 
   skipWhile(predicate, context) {
-    return reify(this, skipWhileFactory(this, predicate, context, true));
+    return reify(
+      this,
+      skipWhileFactory(this, predicate, context, isKeyed(this))
+    );
   },
 
   skipUntil(predicate, context) {
@@ -528,10 +531,6 @@ mixin(IndexedCollectionImpl, {
 
   // ### ES6 Collection methods (ES6 Array and Map)
 
-  filter(predicate, context) {
-    return reify(this, filterFactory(this, predicate, context, false));
-  },
-
   findIndex(predicate, context) {
     const entry = this.findEntry(predicate, context);
     return entry ? entry[0] : -1;
@@ -545,14 +544,6 @@ mixin(IndexedCollectionImpl, {
   lastIndexOf(searchValue) {
     const key = this.lastKeyOf(searchValue);
     return key === undefined ? -1 : key;
-  },
-
-  reverse() {
-    return reify(this, reverseFactory(this, false));
-  },
-
-  slice(begin, end) {
-    return reify(this, sliceFactory(this, begin, end, false));
   },
 
   splice(index, removeNum = NOT_SET, ...values) {
@@ -586,10 +577,6 @@ mixin(IndexedCollectionImpl, {
 
   first(notSetValue) {
     return this.get(0, notSetValue);
-  },
-
-  flatten(depth) {
-    return reify(this, flattenFactory(this, depth, false));
   },
 
   get(index, notSetValue) {
@@ -637,14 +624,8 @@ mixin(IndexedCollectionImpl, {
     return this.get(-1, notSetValue);
   },
 
-  skipWhile(predicate, context) {
-    return reify(this, skipWhileFactory(this, predicate, context, false));
-  },
-
   zip(...collections) {
-    const thisAndCollections = [this].concat(collections);
-
-    return reify(this, zipWithFactory(this, defaultZipper, thisAndCollections));
+    return this.zipWith(defaultZipper, ...collections);
   },
 
   zipAll(...collections) {
@@ -697,6 +678,10 @@ mixin(IndexedSeqImpl, IndexedCollectionPrototype);
 mixin(SetSeqImpl, SetCollectionPrototype);
 
 // #pragma Helper functions
+
+function asValues(collection) {
+  return isKeyed(collection) ? collection.valueSeq() : collection;
+}
 
 function defaultZipper(...values) {
   return values;

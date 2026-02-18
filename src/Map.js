@@ -28,7 +28,6 @@ import { wasAltered } from './methods/wasAltered';
 import { withMutations } from './methods/withMutations';
 import { IS_MAP_SYMBOL, isMap } from './predicates/isMap';
 import { isOrdered } from './predicates/isOrdered';
-import arrCopy from './utils/arrCopy';
 import assertNotInfinite from './utils/assertNotInfinite';
 
 export const Map = (value) =>
@@ -64,7 +63,7 @@ export class MapImpl extends KeyedCollectionImpl {
 
   get(k, notSetValue) {
     return this._root
-      ? this._root.get(0, undefined, k, notSetValue)
+      ? this._root.get(0, hash(k), k, notSetValue)
       : notSetValue;
   }
 
@@ -132,12 +131,12 @@ export class MapImpl extends KeyedCollectionImpl {
 
   __iterate(fn, reverse) {
     let iterations = 0;
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
-    this._root &&
+    if (this._root) {
       this._root.iterate((entry) => {
         iterations++;
         return fn(entry[1], entry[0], this);
       }, reverse);
+    }
     return iterations;
   }
 
@@ -180,72 +179,114 @@ MapPrototype.asMutable = asMutable;
 
 // #pragma Trie Nodes
 
+function updateLinearEntries(
+  node,
+  ownerID,
+  key,
+  value,
+  didChangeSize,
+  didAlter
+) {
+  const removed = value === NOT_SET;
+  const entries = node.entries;
+  let idx = 0;
+  const len = entries.length;
+  for (; idx < len; idx++) {
+    if (is(key, entries[idx][0])) {
+      break;
+    }
+  }
+  const exists = idx < len;
+
+  if (exists ? entries[idx][1] === value : removed) {
+    return undefined;
+  }
+
+  SetRef(didAlter);
+  if (removed || !exists) {
+    SetRef(didChangeSize);
+  }
+
+  return { idx, len, exists, removed };
+}
+
+function spliceEntries(node, ownerID, key, value, idx, len, exists, removed) {
+  const entries = node.entries;
+  const isEditable = ownerID && ownerID === node.ownerID;
+  const newEntries = isEditable ? entries : entries.slice();
+
+  if (exists) {
+    if (removed) {
+      if (idx === len - 1) {
+        newEntries.pop();
+      } else {
+        newEntries[idx] = newEntries.pop();
+      }
+    } else {
+      newEntries[idx] = [key, value];
+    }
+  } else {
+    newEntries.push([key, value]);
+  }
+
+  if (isEditable) {
+    node.entries = newEntries;
+  }
+
+  return { newEntries, isEditable };
+}
+
+function linearGet(shift, keyHash, key, notSetValue) {
+  const entries = this.entries;
+  for (let ii = 0, len = entries.length; ii < len; ii++) {
+    if (is(key, entries[ii][0])) {
+      return entries[ii][1];
+    }
+  }
+  return notSetValue;
+}
+
 class ArrayMapNode {
   constructor(ownerID, entries) {
     this.ownerID = ownerID;
     this.entries = entries;
   }
 
-  get(shift, keyHash, key, notSetValue) {
-    const entries = this.entries;
-    for (let ii = 0, len = entries.length; ii < len; ii++) {
-      if (is(key, entries[ii][0])) {
-        return entries[ii][1];
-      }
-    }
-    return notSetValue;
-  }
-
   update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
-    const removed = value === NOT_SET;
-
-    const entries = this.entries;
-    let idx = 0;
-    const len = entries.length;
-    for (; idx < len; idx++) {
-      if (is(key, entries[idx][0])) {
-        break;
-      }
-    }
-    const exists = idx < len;
-
-    if (exists ? entries[idx][1] === value : removed) {
+    const result = updateLinearEntries(
+      this,
+      ownerID,
+      key,
+      value,
+      didChangeSize,
+      didAlter
+    );
+    if (!result) {
       return this;
     }
+    const { idx, len, exists, removed } = result;
 
-    SetRef(didAlter);
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
-    (removed || !exists) && SetRef(didChangeSize);
-
-    if (removed && entries.length === 1) {
+    if (removed && len === 1) {
       return; // undefined
     }
 
-    if (!exists && !removed && entries.length >= MAX_ARRAY_MAP_SIZE) {
-      return createNodes(ownerID, entries, key, value);
+    if (!exists && !removed && len >= MAX_ARRAY_MAP_SIZE) {
+      return createNodes(ownerID, this.entries, key, value);
     }
 
-    const isEditable = ownerID && ownerID === this.ownerID;
-    const newEntries = isEditable ? entries : arrCopy(entries);
-
-    if (exists) {
-      if (removed) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
-        idx === len - 1
-          ? newEntries.pop()
-          : (newEntries[idx] = newEntries.pop());
-      } else {
-        newEntries[idx] = [key, value];
-      }
-    } else {
-      newEntries.push([key, value]);
-    }
-
+    const { newEntries, isEditable } = spliceEntries(
+      this,
+      ownerID,
+      key,
+      value,
+      idx,
+      len,
+      exists,
+      removed
+    );
     if (isEditable) {
-      this.entries = newEntries;
       return this;
     }
-
     return new ArrayMapNode(ownerID, newEntries);
   }
 }
@@ -258,9 +299,6 @@ class BitmapIndexedNode {
   }
 
   get(shift, keyHash, key, notSetValue) {
-    if (keyHash === undefined) {
-      keyHash = hash(key);
-    }
     const bit = 1 << ((shift === 0 ? keyHash : keyHash >>> shift) & MASK);
     const bitmap = this.bitmap;
     return (bitmap & bit) === 0
@@ -274,9 +312,6 @@ class BitmapIndexedNode {
   }
 
   update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
-    if (keyHash === undefined) {
-      keyHash = hash(key);
-    }
     const keyHashFrag = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
     const bit = 1 << keyHashFrag;
     const bitmap = this.bitmap;
@@ -347,9 +382,6 @@ class HashArrayMapNode {
   }
 
   get(shift, keyHash, key, notSetValue) {
-    if (keyHash === undefined) {
-      keyHash = hash(key);
-    }
     const idx = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
     const node = this.nodes[idx];
     return node
@@ -358,9 +390,6 @@ class HashArrayMapNode {
   }
 
   update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
-    if (keyHash === undefined) {
-      keyHash = hash(key);
-    }
     const idx = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
     const removed = value === NOT_SET;
     const nodes = this.nodes;
@@ -414,25 +443,9 @@ class HashCollisionNode {
     this.entries = entries;
   }
 
-  get(shift, keyHash, key, notSetValue) {
-    const entries = this.entries;
-    for (let ii = 0, len = entries.length; ii < len; ii++) {
-      if (is(key, entries[ii][0])) {
-        return entries[ii][1];
-      }
-    }
-    return notSetValue;
-  }
-
   update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
-    if (keyHash === undefined) {
-      keyHash = hash(key);
-    }
-
-    const removed = value === NOT_SET;
-
     if (keyHash !== this.keyHash) {
-      if (removed) {
+      if (value === NOT_SET) {
         return this;
       }
       SetRef(didAlter);
@@ -440,49 +453,36 @@ class HashCollisionNode {
       return mergeIntoNode(this, ownerID, shift, keyHash, [key, value]);
     }
 
-    const entries = this.entries;
-    let idx = 0;
-    const len = entries.length;
-    for (; idx < len; idx++) {
-      if (is(key, entries[idx][0])) {
-        break;
-      }
-    }
-    const exists = idx < len;
-
-    if (exists ? entries[idx][1] === value : removed) {
+    const result = updateLinearEntries(
+      this,
+      ownerID,
+      key,
+      value,
+      didChangeSize,
+      didAlter
+    );
+    if (!result) {
       return this;
     }
-
-    SetRef(didAlter);
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
-    (removed || !exists) && SetRef(didChangeSize);
+    const { idx, len, exists, removed } = result;
 
     if (removed && len === 2) {
-      return new ValueNode(ownerID, this.keyHash, entries[idx ^ 1]);
+      return new ValueNode(ownerID, this.keyHash, this.entries[idx ^ 1]);
     }
 
-    const isEditable = ownerID && ownerID === this.ownerID;
-    const newEntries = isEditable ? entries : arrCopy(entries);
-
-    if (exists) {
-      if (removed) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
-        idx === len - 1
-          ? newEntries.pop()
-          : (newEntries[idx] = newEntries.pop());
-      } else {
-        newEntries[idx] = [key, value];
-      }
-    } else {
-      newEntries.push([key, value]);
-    }
-
+    const { newEntries, isEditable } = spliceEntries(
+      this,
+      ownerID,
+      key,
+      value,
+      idx,
+      len,
+      exists,
+      removed
+    );
     if (isEditable) {
-      this.entries = newEntries;
       return this;
     }
-
     return new HashCollisionNode(ownerID, this.keyHash, newEntries);
   }
 }
@@ -526,6 +526,8 @@ class ValueNode {
 }
 
 // #pragma Iterators
+
+ArrayMapNode.prototype.get = HashCollisionNode.prototype.get = linearGet;
 
 ArrayMapNode.prototype.iterate = HashCollisionNode.prototype.iterate =
   function (fn, reverse) {
@@ -636,7 +638,7 @@ function updateMap(map, k, v) {
       map._root,
       map.__ownerID,
       0,
-      undefined,
+      hash(k),
       k,
       v,
       didChangeSize,
@@ -717,7 +719,7 @@ function createNodes(ownerID, entries, key, value) {
   let node = new ValueNode(ownerID, hash(key), [key, value]);
   for (let ii = 0; ii < entries.length; ii++) {
     const entry = entries[ii];
-    node = node.update(ownerID, 0, undefined, entry[0], entry[1]);
+    node = node.update(ownerID, 0, hash(entry[0]), entry[0], entry[1]);
   }
   return node;
 }
@@ -756,7 +758,7 @@ function popCount(x) {
 }
 
 function setAt(array, idx, val, canEdit) {
-  const newArray = canEdit ? array : arrCopy(array);
+  const newArray = canEdit ? array : array.slice();
   newArray[idx] = val;
   return newArray;
 }

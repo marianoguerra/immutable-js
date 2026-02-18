@@ -86,8 +86,8 @@ export class RepeatImpl extends IndexedSeqImpl {
   }
 
   equals(other) {
-    return other instanceof Repeat
-      ? is(this._value, other._value)
+    return other instanceof RepeatImpl
+      ? this.size === other.size && is(this._value, other._value)
       : deepEqual(this, other);
   }
 }

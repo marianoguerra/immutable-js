@@ -67,14 +67,7 @@ export class StackImpl extends IndexedCollectionImpl {
         next: head,
       };
     }
-    if (this.__ownerID) {
-      this.size = newSize;
-      this._head = head;
-      this.__hash = undefined;
-      this.__altered = true;
-      return this;
-    }
-    return makeStack(newSize, head);
+    return returnStack(this, newSize, head);
   }
 
   pushAll(iter) {
@@ -95,14 +88,7 @@ export class StackImpl extends IndexedCollectionImpl {
         next: head,
       };
     }, /* reverse */ true);
-    if (this.__ownerID) {
-      this.size = newSize;
-      this._head = head;
-      this.__hash = undefined;
-      this.__altered = true;
-      return this;
-    }
-    return makeStack(newSize, head);
+    return returnStack(this, newSize, head);
   }
 
   pop() {
@@ -138,14 +124,7 @@ export class StackImpl extends IndexedCollectionImpl {
     while (resolvedBegin--) {
       head = head.next;
     }
-    if (this.__ownerID) {
-      this.size = newSize;
-      this._head = head;
-      this.__hash = undefined;
-      this.__altered = true;
-      return this;
-    }
-    return makeStack(newSize, head);
+    return returnStack(this, newSize, head);
   }
 
   // @pragma Mutability
@@ -213,6 +192,17 @@ StackPrototype.withMutations = withMutations;
 StackPrototype.wasAltered = wasAltered;
 StackPrototype.asImmutable = asImmutable;
 StackPrototype.asMutable = asMutable;
+
+function returnStack(stack, newSize, head) {
+  if (stack.__ownerID) {
+    stack.size = newSize;
+    stack._head = head;
+    stack.__hash = undefined;
+    stack.__altered = true;
+    return stack;
+  }
+  return makeStack(newSize, head);
+}
 
 function makeStack(size, head, ownerID, hash) {
   return new StackImpl(size, head, ownerID, hash);

@@ -124,39 +124,17 @@ export class SetImpl extends SetCollectionImpl {
   }
 
   intersect(...iters) {
-    if (iters.length === 0) {
-      return this;
-    }
-    iters = iters.map((iter) => SetCollection(iter));
-    const toRemove = [];
-    this.forEach((value) => {
-      if (!iters.every((iter) => iter.includes(value))) {
-        toRemove.push(value);
-      }
-    });
-    return this.withMutations((set) => {
-      toRemove.forEach((value) => {
-        set.remove(value);
-      });
-    });
+    return filterByIters(
+      this,
+      iters,
+      (value, sets) => !sets.every((iter) => iter.includes(value))
+    );
   }
 
   subtract(...iters) {
-    if (iters.length === 0) {
-      return this;
-    }
-    iters = iters.map((iter) => SetCollection(iter));
-    const toRemove = [];
-    this.forEach((value) => {
-      if (iters.some((iter) => iter.includes(value))) {
-        toRemove.push(value);
-      }
-    });
-    return this.withMutations((set) => {
-      toRemove.forEach((value) => {
-        set.remove(value);
-      });
-    });
+    return filterByIters(this, iters, (value, sets) =>
+      sets.some((iter) => iter.includes(value))
+    );
   }
 
   sort(comparator) {
@@ -210,6 +188,24 @@ SetPrototype.asMutable = asMutable;
 
 SetPrototype.__empty = emptySet;
 SetPrototype.__make = makeSet;
+
+function filterByIters(set, iters, shouldRemove) {
+  if (iters.length === 0) {
+    return set;
+  }
+  iters = iters.map((iter) => SetCollection(iter));
+  const toRemove = [];
+  set.forEach((value) => {
+    if (shouldRemove(value, iters)) {
+      toRemove.push(value);
+    }
+  });
+  return set.withMutations((s) => {
+    toRemove.forEach((value) => {
+      s.remove(value);
+    });
+  });
+}
 
 function updateSet(set, newMap) {
   if (set.__ownerID) {

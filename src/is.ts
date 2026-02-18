@@ -55,7 +55,7 @@ import { isValueObject } from './predicates/isValueObject';
  * and `hashCode()`.
  */
 export function is(valueA: unknown, valueB: unknown): boolean {
-  if (valueA === valueB || (valueA !== valueA && valueB !== valueB)) {
+  if (valueA === valueB || (Number.isNaN(valueA) && Number.isNaN(valueB))) {
     return true;
   }
   if (!valueA || !valueB) {
@@ -67,7 +67,7 @@ export function is(valueA: unknown, valueB: unknown): boolean {
   ) {
     valueA = valueA.valueOf();
     valueB = valueB.valueOf();
-    if (valueA === valueB || (valueA !== valueA && valueB !== valueB)) {
+    if (valueA === valueB || (Number.isNaN(valueA) && Number.isNaN(valueB))) {
       return true;
     }
     if (!valueA || !valueB) {

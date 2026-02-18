@@ -1,7 +1,12 @@
 import { emptyMap } from '../Map';
-import { mergeWithSources } from '../functional/merge';
+import { mergeWithSources, mergeDeepWithSources } from '../functional/merge';
 import { updateIn } from '../functional/updateIn';
 
-export function mergeIn(keyPath, ...iters) {
-  return updateIn(this, keyPath, emptyMap(), (m) => mergeWithSources(m, iters));
+function mergeInWith(mergeFn) {
+  return function (keyPath, ...iters) {
+    return updateIn(this, keyPath, emptyMap(), (m) => mergeFn(m, iters));
+  };
 }
+
+export const mergeIn = mergeInWith(mergeWithSources);
+export const mergeDeepIn = mergeInWith(mergeDeepWithSources);

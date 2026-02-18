@@ -1,6 +1,5 @@
 import type { CollectionImpl } from '../Collection';
-import { hash } from '../Hash';
-import { imul, smi } from '../Math';
+import { hash, smi } from '../Hash';
 import { isKeyed } from '../predicates/isKeyed';
 import { isOrdered } from '../predicates/isOrdered';
 
@@ -34,12 +33,12 @@ export function hashCollection<K, V>(collection: CollectionImpl<K, V>): number {
 }
 
 function murmurHashOfSize(size: number, h: number): number {
-  h = imul(h, 0xcc9e2d51);
-  h = imul((h << 15) | (h >>> -15), 0x1b873593);
-  h = imul((h << 13) | (h >>> -13), 5);
+  h = Math.imul(h, 0xcc9e2d51);
+  h = Math.imul((h << 15) | (h >>> -15), 0x1b873593);
+  h = Math.imul((h << 13) | (h >>> -13), 5);
   h = ((h + 0xe6546b64) | 0) ^ size;
-  h = imul(h ^ (h >>> 16), 0x85ebca6b);
-  h = imul(h ^ (h >>> 13), 0xc2b2ae35);
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
   h = smi(h ^ (h >>> 16));
   return h;
 }
