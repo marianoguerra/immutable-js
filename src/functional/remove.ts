@@ -1,7 +1,6 @@
 import type { Record } from '../../type-definitions/immutable';
 import type { CollectionImpl } from '../Collection';
 import { isImmutable } from '../predicates/isImmutable';
-import hasOwnProperty from '../utils/hasOwnProperty';
 import isDataStructure from '../utils/isDataStructure';
 import shallowCopy from '../utils/shallowCopy';
 
@@ -43,21 +42,21 @@ export function remove<K>(
 ) {
   if (!isDataStructure(collection)) {
     throw new TypeError(
-      'Cannot update non-data-structure value: ' + collection
+      `Cannot update non-data-structure value: ${collection}`
     );
   }
   if (isImmutable(collection)) {
     // @ts-expect-error weird "remove" here,
     if (!collection.remove) {
       throw new TypeError(
-        'Cannot update immutable value without .remove() method: ' + collection
+        `Cannot update immutable value without .remove() method: ${collection}`
       );
     }
     // @ts-expect-error weird "remove" here,
     return collection.remove(key);
   }
   // @ts-expect-error assert that key is a string, a number or a symbol here
-  if (!hasOwnProperty.call(collection, key)) {
+  if (!Object.hasOwn(collection, key)) {
     return collection;
   }
   const collectionCopy = shallowCopy(collection);

@@ -41,7 +41,7 @@ export function hash(o: unknown): number {
       if (typeof v.toString === 'function') {
         return hashString(v.toString());
       }
-      throw new Error('Value type ' + typeof v + ' cannot be hashed.');
+      throw new Error(`Value type ${typeof v} cannot be hashed.`);
   }
 }
 

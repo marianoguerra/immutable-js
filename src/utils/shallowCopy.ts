@@ -1,5 +1,4 @@
 import arrCopy from './arrCopy';
-import hasOwnProperty from './hasOwnProperty';
 
 export default function shallowCopy<I>(from: Array<I>): Array<I>;
 export default function shallowCopy<O extends object>(from: O): O;
@@ -11,7 +10,7 @@ export default function shallowCopy<I, O extends object>(
   }
   const to: Partial<O> = {};
   for (const key in from) {
-    if (hasOwnProperty.call(from, key)) {
+    if (Object.hasOwn(from, key)) {
       to[key] = from[key];
     }
   }

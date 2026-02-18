@@ -17,7 +17,6 @@ import { isKeyed } from './predicates/isKeyed';
 import { IS_ORDERED_SYMBOL } from './predicates/isOrdered';
 import { isRecord } from './predicates/isRecord';
 import { IS_SEQ_SYMBOL, isSeq } from './predicates/isSeq';
-import hasOwnProperty from './utils/hasOwnProperty';
 import isArrayLike from './utils/isArrayLike';
 
 export const Seq = (value) =>
@@ -186,7 +185,7 @@ class ObjectSeq extends KeyedSeqImpl {
   constructor(object) {
     super();
     const keys = Object.keys(object).concat(
-      Object.getOwnPropertySymbols ? Object.getOwnPropertySymbols(object) : []
+      Object.getOwnPropertySymbols(object)
     );
     this._object = object;
     this._keys = keys;
@@ -201,7 +200,7 @@ class ObjectSeq extends KeyedSeqImpl {
   }
 
   has(key) {
-    return hasOwnProperty.call(this._object, key);
+    return Object.hasOwn(this._object, key);
   }
 
   __iterate(fn, reverse) {

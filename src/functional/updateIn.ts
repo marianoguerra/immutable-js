@@ -149,10 +149,7 @@ function updateInDeeply<
   }
   if (!wasNotSet && !isDataStructure(existing)) {
     throw new TypeError(
-      'Cannot update within non-data-structure value in path [' +
-        Array.from(keyPath).slice(0, i).map(quoteString) +
-        ']: ' +
-        existing
+      `Cannot update within non-data-structure value in path [${Array.from(keyPath).slice(0, i).map(quoteString)}]: ${existing}`
     );
   }
   const key = keyPath[i];

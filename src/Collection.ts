@@ -35,7 +35,7 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   hashCode() {
-    return this.__hash || (this.__hash = hashCollection(this));
+    return this.__hash ?? (this.__hash = hashCollection(this));
   }
 
   every(

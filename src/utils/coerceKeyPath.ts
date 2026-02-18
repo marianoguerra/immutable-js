@@ -10,6 +10,6 @@ export default function coerceKeyPath<K>(keyPath: KeyPath<K>): ArrayLike<K> {
     return keyPath.toArray();
   }
   throw new TypeError(
-    'Invalid keyPath: expected Ordered Collection or Array: ' + keyPath
+    `Invalid keyPath: expected Ordered Collection or Array: ${keyPath}`
   );
 }

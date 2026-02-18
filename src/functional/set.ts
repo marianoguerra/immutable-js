@@ -1,7 +1,6 @@
 import type { Record } from '../../type-definitions/immutable';
 import type { CollectionImpl } from '../Collection';
 import { isImmutable } from '../predicates/isImmutable';
-import hasOwnProperty from '../utils/hasOwnProperty';
 import isDataStructure from '../utils/isDataStructure';
 import shallowCopy from '../utils/shallowCopy';
 
@@ -41,21 +40,21 @@ export function set<
 >(collection: C, key: K | string, value: V): C {
   if (!isDataStructure(collection)) {
     throw new TypeError(
-      'Cannot update non-data-structure value: ' + collection
+      `Cannot update non-data-structure value: ${collection}`
     );
   }
   if (isImmutable(collection)) {
     // @ts-expect-error weird "set" here,
     if (!collection.set) {
       throw new TypeError(
-        'Cannot update immutable value without .set() method: ' + collection
+        `Cannot update immutable value without .set() method: ${collection}`
       );
     }
     // @ts-expect-error weird "set" here,
     return collection.set(key, value);
   }
   // @ts-expect-error mix of key and string here. Probably need a more fine type here
-  if (hasOwnProperty.call(collection, key) && value === collection[key]) {
+  if (Object.hasOwn(collection, key) && value === collection[key]) {
     return collection;
   }
   const collectionCopy = shallowCopy(collection);

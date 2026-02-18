@@ -3,7 +3,6 @@ import { Seq } from '../Seq';
 import { isImmutable } from '../predicates/isImmutable';
 import { isIndexed } from '../predicates/isIndexed';
 import { isKeyed } from '../predicates/isKeyed';
-import hasOwnProperty from '../utils/hasOwnProperty';
 import isDataStructure from '../utils/isDataStructure';
 import shallowCopy from '../utils/shallowCopy';
 
@@ -30,7 +29,7 @@ export function mergeDeepWithSources(collection, sources, merger) {
 export function mergeWithSources(collection, sources, merger) {
   if (!isDataStructure(collection)) {
     throw new TypeError(
-      'Cannot merge into non-data-structure value: ' + collection
+      `Cannot merge into non-data-structure value: ${collection}`
     );
   }
   if (isImmutable(collection)) {
@@ -52,7 +51,7 @@ export function mergeWithSources(collection, sources, merger) {
         merged.push(value);
       }
     : (value, key) => {
-        const hasVal = hasOwnProperty.call(merged, key);
+        const hasVal = Object.hasOwn(merged, key);
         const nextVal =
           hasVal && merger ? merger(merged[key], value, key) : value;
         if (!hasVal || nextVal !== merged[key]) {

@@ -20,6 +20,6 @@ export default function isArrayLike(
       : // An object is only Array-like if it has a property where the last value
         // in the array-like may be found (which could be undefined).
         // @ts-expect-error check that `'length' in value &&`
-        value.hasOwnProperty(value.length - 1))
+        Object.hasOwn(value, value.length - 1))
   );
 }

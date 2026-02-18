@@ -1,6 +1,5 @@
 import type { CollectionImpl } from './Collection';
 
-// Used for setting prototype methods that IE8 chokes on.
 export const DELETE = 'delete';
 
 // Constants describing the size of trie nodes.
@@ -28,7 +27,7 @@ export function SetRef(ref: Ref): void {
 // A function which returns a value representing an "owner" for transient writes
 // to tries. The return value will only ever equal itself, and will not equal
 // the return of any subsequent call of this function.
-export function OwnerID() {}
+export class OwnerID {}
 
 export function ensureSize(iter: CollectionImpl<unknown, unknown>): number {
   if (iter.size === undefined) {
@@ -51,7 +50,7 @@ export function wrapIndex(
   // http://www.ecma-international.org/ecma-262/6.0/#sec-array-exotic-objects
   if (typeof index !== 'number') {
     const uint32Index = index >>> 0; // N >>> 0 is shorthand for ToUint32
-    if ('' + uint32Index !== index || uint32Index === 4294967295) {
+    if (String(uint32Index) !== index || uint32Index === 4294967295) {
       return NaN;
     }
     index = uint32Index;
