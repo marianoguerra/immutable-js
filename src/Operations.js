@@ -620,9 +620,16 @@ class ConcatSeq extends SeqImpl {
         }
       }
     }, 0);
-    this[IS_KEYED_SYMBOL] = this._wrappedIterables[0][IS_KEYED_SYMBOL];
-    this[IS_INDEXED_SYMBOL] = this._wrappedIterables[0][IS_INDEXED_SYMBOL];
-    this[IS_ORDERED_SYMBOL] = this._wrappedIterables[0][IS_ORDERED_SYMBOL];
+    const first = this._wrappedIterables[0];
+    if (first[IS_KEYED_SYMBOL]) {
+      this[IS_KEYED_SYMBOL] = true;
+    }
+    if (first[IS_INDEXED_SYMBOL]) {
+      this[IS_INDEXED_SYMBOL] = true;
+    }
+    if (first[IS_ORDERED_SYMBOL]) {
+      this[IS_ORDERED_SYMBOL] = true;
+    }
   }
 
   __iterateUncached(fn, reverse) {
