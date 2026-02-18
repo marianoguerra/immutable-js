@@ -20,6 +20,12 @@ OrderedMap.of = function (...values) {
   return OrderedMap(values);
 };
 export class OrderedMapImpl extends MapImpl {
+  constructor(map, list, ownerID, hash) {
+    super(map ? map.size : 0, undefined, ownerID, hash);
+    this._map = map;
+    this._list = list;
+  }
+
   create(value) {
     return OrderedMap(value);
   }
@@ -96,14 +102,7 @@ OrderedMapImpl.prototype[IS_ORDERED_SYMBOL] = true;
 OrderedMapImpl.prototype[DELETE] = OrderedMapImpl.prototype.remove;
 
 function makeOrderedMap(map, list, ownerID, hash) {
-  const omap = Object.create(OrderedMapImpl.prototype);
-  omap.size = map ? map.size : 0;
-  omap._map = map;
-  omap._list = list;
-  omap.__ownerID = ownerID;
-  omap.__hash = hash;
-  omap.__altered = false;
-  return omap;
+  return new OrderedMapImpl(map, list, ownerID, hash);
 }
 
 export function emptyOrderedMap() {

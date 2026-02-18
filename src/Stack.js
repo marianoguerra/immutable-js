@@ -21,6 +21,15 @@ Stack.of = function (...values) {
 };
 
 export class StackImpl extends IndexedCollectionImpl {
+  constructor(size, head, ownerID, hash) {
+    super();
+    this.size = size;
+    this._head = head;
+    this.__ownerID = ownerID;
+    this.__hash = hash;
+    this.__altered = false;
+  }
+
   create(value) {
     return Stack(value);
   }
@@ -206,13 +215,7 @@ StackPrototype.asImmutable = asImmutable;
 StackPrototype.asMutable = asMutable;
 
 function makeStack(size, head, ownerID, hash) {
-  const map = Object.create(StackPrototype);
-  map.size = size;
-  map._head = head;
-  map.__ownerID = ownerID;
-  map.__hash = hash;
-  map.__altered = false;
-  return map;
+  return new StackImpl(size, head, ownerID, hash);
 }
 
 function emptyStack() {

@@ -43,6 +43,15 @@ export const Map = (value) =>
         });
 
 export class MapImpl extends KeyedCollectionImpl {
+  constructor(size, root, ownerID, hash) {
+    super();
+    this.size = size;
+    this._root = root;
+    this.__ownerID = ownerID;
+    this.__hash = hash;
+    this.__altered = false;
+  }
+
   create(value) {
     return Map(value);
   }
@@ -604,13 +613,7 @@ function mapIteratorFrame(node, prev) {
 }
 
 function makeMap(size, root, ownerID, hash) {
-  const map = Object.create(MapPrototype);
-  map.size = size;
-  map._root = root;
-  map.__ownerID = ownerID;
-  map.__hash = hash;
-  map.__altered = false;
-  return map;
+  return new MapImpl(size, root, ownerID, hash);
 }
 
 export function emptyMap() {

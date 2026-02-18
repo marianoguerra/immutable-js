@@ -25,6 +25,10 @@ OrderedSet.fromKeys = function (value) {
   return OrderedSet(KeyedCollection(value).keySeq());
 };
 export class OrderedSetImpl extends SetImpl {
+  constructor(map, ownerID) {
+    super(map, ownerID);
+  }
+
   create(value) {
     return OrderedSet(value);
   }
@@ -46,11 +50,7 @@ OrderedSetPrototype.__empty = emptyOrderedSet;
 OrderedSetPrototype.__make = makeOrderedSet;
 
 function makeOrderedSet(map, ownerID) {
-  const set = Object.create(OrderedSetPrototype);
-  set.size = map ? map.size : 0;
-  set._map = map;
-  set.__ownerID = ownerID;
-  return set;
+  return new OrderedSetImpl(map, ownerID);
 }
 
 function emptyOrderedSet() {

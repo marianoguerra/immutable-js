@@ -47,6 +47,13 @@ Set.union = (sets) => {
 };
 
 export class SetImpl extends SetCollectionImpl {
+  constructor(map, ownerID) {
+    super();
+    this.size = map ? map.size : 0;
+    this._map = map;
+    this.__ownerID = ownerID;
+  }
+
   create(value) {
     return Set(value);
   }
@@ -218,11 +225,7 @@ function updateSet(set, newMap) {
 }
 
 function makeSet(map, ownerID) {
-  const set = Object.create(SetPrototype);
-  set.size = map ? map.size : 0;
-  set._map = map;
-  set.__ownerID = ownerID;
-  return set;
+  return new SetImpl(map, ownerID);
 }
 
 function emptySet() {

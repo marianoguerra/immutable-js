@@ -54,6 +54,19 @@ List.of = function (...values) {
 };
 
 export class ListImpl extends IndexedCollectionImpl {
+  constructor(origin, capacity, level, root, tail, ownerID, hash) {
+    super();
+    this.size = capacity - origin;
+    this._origin = origin;
+    this._capacity = capacity;
+    this._level = level;
+    this._root = root;
+    this._tail = tail;
+    this.__ownerID = ownerID;
+    this.__hash = hash;
+    this.__altered = false;
+  }
+
   // @pragma Construction
 
   create(value) {
@@ -409,17 +422,7 @@ function iterateList(list, reverse) {
 }
 
 function makeList(origin, capacity, level, root, tail, ownerID, hash) {
-  const list = Object.create(ListPrototype);
-  list.size = capacity - origin;
-  list._origin = origin;
-  list._capacity = capacity;
-  list._level = level;
-  list._root = root;
-  list._tail = tail;
-  list.__ownerID = ownerID;
-  list.__hash = hash;
-  list.__altered = false;
-  return list;
+  return new ListImpl(origin, capacity, level, root, tail, ownerID, hash);
 }
 
 export function emptyList() {
