@@ -15,7 +15,6 @@ export default tseslintConfig(
     ignores: [
       'npm/',
       'dist/',
-      'type-definitions/flow-tests',
       'website/out/',
       'website/.next/',
       'website/next-env.d.ts',
