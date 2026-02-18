@@ -24,7 +24,7 @@ Immutable.js is maintained within the [Contributor Covenant's Code of Conduct](h
 All active development of Immutable JS happens on GitHub. We actively welcome
 your [pull requests](https://help.github.com/articles/creating-a-pull-request).
 
-1.  Fork the repo and create your branch from `master`.
+1.  Fork the repo and create your branch from `main`.
 2.  Install all dependencies. (`npm install`)
 3.  If you've added code, add tests.
 4.  If you've changed APIs, update the documentation.
@@ -34,7 +34,7 @@ your [pull requests](https://help.github.com/articles/creating-a-pull-request).
 ## Documentation
 
 Documentation for Immutable.js (hosted at https://immutable-js.com/)
-is developed in `pages/`. Run `npm start` to get a local copy in your browser
+is developed in `website/`. Run `npm run website:dev` to get a local copy in your browser
 while making edits.
 
 ## Coding Style
@@ -42,7 +42,7 @@ while making edits.
 - 2 spaces for indentation (no tabs)
 - 80 character line length strongly preferred.
 - Prefer `'` over `"`
-- ES6 Harmony when possible.
+- Modern JavaScript (ES2015+).
 - Use semicolons;
 - Trailing commas,
 - Avd abbr wrds.
@@ -57,20 +57,20 @@ npm run test
 
 ## Performance Regression Testing
 
-Performance tests run against master and your feature branch.
+Performance tests run against main and your feature branch.
 Make sure to commit your changes in your local feature branch before proceeding.
 
-These commands assume you have a remote named `upstream` amd that you do not already have a local `master` branch:
+These commands assume you have a remote named `upstream` and that you do not already have a local `main` branch:
 
 ```bash
 git fetch upstream
-git checkout -b master upstream/master
+git checkout -b main upstream/main
 ```
 
-These commands build `dist` and commit `dist/immutable.js` to `master` so that the regression tests can run.
+These commands build `dist` and commit it to `main` so that the regression tests can run.
 ```bash
 npm run test
-git add dist/immutable.js -f
+git add dist/ -f
 git commit -m 'perf test prerequisite.'
 ```
 
@@ -84,8 +84,8 @@ npm run perf
 Sample output:
 
 ```bash
-> immutable@4.0.0-rc.9 perf ~/github.com/immutable-js/immutable-js
-> node ./resources/bench.js
+> immutable@7.0.0 perf ~/github.com/immutable-js/immutable-js
+> node ./resources/benchmark.mjs
 
 List > builds from array of 2
   Old:   678,974   683,071   687,218 ops/sec

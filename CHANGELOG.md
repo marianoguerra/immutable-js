@@ -8,28 +8,35 @@ Dates are formatted as YYYY-MM-DD.
 
 ## Unreleased
 
-## 5.1.4
+## 7.0.0
 
-* Migrate some files to TS by @jdeniau in https://github.com/immutable-js/immutable-js/pull/2125
-  * Iterator.ts
-  * PairSorting.ts
-  * toJS.ts
-  * Math.ts
-  * Hash.ts
-* Extract CollectionHelperMethods and convert to TS by @jdeniau in https://github.com/immutable-js/immutable-js/pull/2131
-* Use npm [trusted publishing only](https://docs.npmjs.com/trusted-publishers) to avoid token stealing.
+### [BREAKING] Drop Flow type definitions
 
-### Documentation
+Removed `immutable.js.flow` and all Flow tests. TypeScript remains the only supported type system.
 
-* Fix/a11y issues by @lyannel in https://github.com/immutable-js/immutable-js/pull/2136
-* Doc add Map.get signature update by @borracciaBlu in https://github.com/immutable-js/immutable-js/pull/2138
-* fix(doc):minor-issues#2132 by @JayMeDotDot in https://github.com/immutable-js/immutable-js/pull/2133
-* Fix algolia search by @jdeniau in https://github.com/immutable-js/immutable-js/pull/2135
-* Typo in OrderedMap by @jdeniau in https://github.com/immutable-js/immutable-js/pull/2144
+### [BREAKING] ESM-only distribution
+
+The package is now ESM-only (`"type": "module"`). CJS and UMD builds have been removed. The `dist/` directory contains only `immutable.js` (ESM) and `immutable.min.js` (ESM).
+
+### [BREAKING] Remove IE8/IE11 compatibility code
+
+Targets modern browsers only. Legacy compatibility shims and workarounds have been removed.
+
+### Modernize codebase
+
+Use `Object.hasOwn`, `in` operator for predicates, class constructors, and remove dead code paths.
+
+### Convert all scripts to ESM
+
+All build/resource scripts now use `.mjs` extensions. Removed `react-global.js`.
+
+### Add property-based tests
+
+Added ~87 property-based tests using fast-check across 29 test files.
 
 ### Internal
 
-* chore: Sort all imports and activate eslint import rule by @jdeniau in https://github.com/immutable-js/immutable-js/pull/2119
+- DevDependency upgrades: TypeScript 5.9, eslint 9.x, rollup 4.x, fast-check 4.x
 
 ## 6.0.0
 
@@ -49,8 +56,6 @@ For the record migrating to a modern codebase had a nice impact of the size of t
 | immutable.es.js (gzip) | 37ko   | 32ko  |
 | immutable.js           | 197ko  | 158ko |
 | immutable.min.js       | 67ko   | 57ko  |
-
-(TODO : those stats needs to be updated as it does include only the buble -> babel migration, not the cleaning)
 
 #### Pull request details
 
@@ -101,6 +106,29 @@ This feature has been introduced in TS 5.0, which is more than two years old now
 ### [BREAKING] Remove transducersjs compatibility
 
 Remove transducersjs compatibility, as `cognitect-labs/transducers-js` has been archived in 2023. [#2146](https://github.com/immutable-js/immutable-js/pull/2146) by [@jdeniau](https://github.com/jdeniau)
+
+## 5.1.4
+
+* Migrate some files to TS by @jdeniau in https://github.com/immutable-js/immutable-js/pull/2125
+  * Iterator.ts
+  * PairSorting.ts
+  * toJS.ts
+  * Math.ts
+  * Hash.ts
+* Extract CollectionHelperMethods and convert to TS by @jdeniau in https://github.com/immutable-js/immutable-js/pull/2131
+* Use npm [trusted publishing only](https://docs.npmjs.com/trusted-publishers) to avoid token stealing.
+
+### Documentation
+
+* Fix/a11y issues by @lyannel in https://github.com/immutable-js/immutable-js/pull/2136
+* Doc add Map.get signature update by @borracciaBlu in https://github.com/immutable-js/immutable-js/pull/2138
+* fix(doc):minor-issues#2132 by @JayMeDotDot in https://github.com/immutable-js/immutable-js/pull/2133
+* Fix algolia search by @jdeniau in https://github.com/immutable-js/immutable-js/pull/2135
+* Typo in OrderedMap by @jdeniau in https://github.com/immutable-js/immutable-js/pull/2144
+
+### Internal
+
+* chore: Sort all imports and activate eslint import rule by @jdeniau in https://github.com/immutable-js/immutable-js/pull/2119
 
 ## 5.1.3
 
@@ -811,6 +839,9 @@ However, there is **one breaking change**: The behavior of `merge` and `mergeDee
 
 Released in 2017, still the most commonly used release.
 
-[unreleased]: https://github.com/immutable-js/immutable-js/compare/v4.0.0-rc.15...HEAD
+[unreleased]: https://github.com/immutable-js/immutable-js/compare/v7.0.0...HEAD
+[7.0.0]: https://github.com/immutable-js/immutable-js/compare/v6.0.0...v7.0.0
+[6.0.0]: https://github.com/immutable-js/immutable-js/compare/v5.1.4...v6.0.0
+[5.1.4]: https://github.com/immutable-js/immutable-js/compare/v5.1.3...v5.1.4
 [4.0.0]: https://github.com/immutable-js/immutable-js/compare/v3.8.2...v4.0.0-rc.15
 [3.8.2]: https://github.com/immutable-js/immutable-js/compare/3.7.6...v3.8.2

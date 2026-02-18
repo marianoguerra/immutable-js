@@ -71,7 +71,7 @@ pnpm add immutable
 bun add immutable
 ```
 
-Then require it into any module.
+Then import it into any module.
 
 ```js
 import { Map } from 'immutable';
@@ -84,9 +84,8 @@ map1.get('b') + ' vs. ' + map2.get('b'); // 2 vs. 50
 
 Immutable.js has no dependencies, which makes it predictable to include in a Browser.
 
-It's highly recommended to use a module bundler like [webpack](https://webpack.js.org/),
-[rollup](https://rollupjs.org/), or
-[browserify](https://browserify.org/). The `immutable` npm module works
+It's highly recommended to use a module bundler like [webpack](https://webpack.js.org/)
+or [rollup](https://rollupjs.org/). The `immutable` npm module works
 without any additional consideration. All examples throughout the documentation
 will assume use of this kind of tool.
 
@@ -94,66 +93,38 @@ Alternatively, Immutable.js may be directly included as a script tag. Download
 or link to a CDN such as [CDNJS](https://cdnjs.com/libraries/immutable)
 or [jsDelivr](https://www.jsdelivr.com/package/npm/immutable).
 
-Use a script tag to directly add `Immutable` to the global scope:
+Use a script tag with `type="module"` to import directly from a CDN:
 
 ```html
-<script src="immutable.min.js"></script>
-<script>
-  var map1 = Immutable.Map({ a: 1, b: 2, c: 3 });
-  var map2 = map1.set('b', 50);
-  map1.get('b'); // 2
-  map2.get('b'); // 50
+<script type="module">
+  import { Map } from 'https://cdn.jsdelivr.net/npm/immutable/dist/immutable.min.js';
+  const map1 = Map({ a: 1, b: 2, c: 3 });
+  const map2 = map1.set('b', 50);
+  console.log(map1.get('b')); // 2
+  console.log(map2.get('b')); // 50
 </script>
 ```
 
-Or use an AMD-style loader (such as [RequireJS](https://requirejs.org/)):
-
-```js
-require(['./immutable.min.js'], function (Immutable) {
-  var map1 = Immutable.Map({ a: 1, b: 2, c: 3 });
-  var map2 = map1.set('b', 50);
-  map1.get('b'); // 2
-  map2.get('b'); // 50
-});
-```
-
-### Flow & TypeScript
+### TypeScript
 
 Use these Immutable collections and sequences as you would use native
-collections in your [Flowtype](https://flowtype.org/) or [TypeScript](https://typescriptlang.org) programs while still taking
+collections in your [TypeScript](https://typescriptlang.org) programs while still taking
 advantage of type generics, error detection, and auto-complete in your IDE.
 
-Installing `immutable` via npm brings with it type definitions for Flow (v0.55.0 or higher)
-and TypeScript (v5.0 or higher), so you shouldn't need to do anything at all!
+Installing `immutable` via npm brings with it type definitions for
+TypeScript (v5.0 or higher), so you shouldn't need to do anything at all!
 
-#### Using TypeScript with Immutable.js v4+
+#### Using TypeScript with Immutable.js
 
-Immutable.js type definitions embrace ES2015. While Immutable.js itself supports
-legacy browsers and environments, its type definitions require TypeScript's 2015
-lib. Include either `"target": "es2015"` or `"lib": "es2015"` in your
-`tsconfig.json`, or provide `--target es2015` or `--lib es2015` to the
-`tsc` command.
+Immutable.js type definitions embrace ES2015. Include either
+`"target": "es2015"` or `"lib": "es2015"` in your `tsconfig.json`, or
+provide `--target es2015` or `--lib es2015` to the `tsc` command.
 
 ```js
 import { Map } from 'immutable';
 const map1 = Map({ a: 1, b: 2, c: 3 });
 const map2 = map1.set('b', 50);
 map1.get('b') + ' vs. ' + map2.get('b'); // 2 vs. 50
-```
-
-#### Using TypeScript with Immutable.js v3 and earlier:
-
-Previous versions of Immutable.js include a reference file which you can include
-via relative path to the type definitions at the top of your file.
-
-```js
-///<reference path='./node_modules/immutable/dist/immutable.d.ts'/>
-import { Map } from 'immutable';
-var map1: Map<string, number>;
-map1 = Map({ a: 1, b: 2, c: 3 });
-var map2 = map1.set('b', 50);
-map1.get('b'); // 2
-map2.get('b'); // 50
 ```
 
 ## The case for Immutability
@@ -335,23 +306,10 @@ JSON.stringify(deep); // '{"a":1,"b":2,"c":[3,4,5]}'
 
 ### Embraces ES2015
 
-Immutable.js supports all JavaScript environments, including legacy
-browsers (even IE11). However it also takes advantage of features added to
-JavaScript in [ES2015][], the latest standard version of JavaScript, including
-[Iterators][], [Arrow Functions][], [Classes][], and [Modules][]. It's inspired
-by the native [Map][] and [Set][] collections added to ES2015.
-
-All examples in the Documentation are presented in ES2015. To run in all
-browsers, they need to be translated to ES5.
-
-```js
-// ES2015
-const mapped = foo.map((x) => x * x);
-// ES5
-var mapped = foo.map(function (x) {
-  return x * x;
-});
-```
+Immutable.js targets modern browsers and environments, using ES2015+ features
+natively including [Iterators][], [Arrow Functions][], [Classes][], and
+[Modules][]. It's inspired by the native [Map][] and [Set][] collections
+added to ES2015.
 
 All Immutable.js collections are [Iterable][iterators], which allows them to be
 used anywhere an Iterable is expected, such as when spreading into an Array.
