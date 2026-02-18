@@ -1,5 +1,6 @@
-import { Map, OrderedSet } from 'immutable';
+import { Map, OrderedSet, Set } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 
 describe('OrderedSet', () => {
   it('constructor provides different instances', () => {
@@ -156,5 +157,65 @@ describe('OrderedSet', () => {
     const set2 = OrderedSet(['goodbye', 'hello']).remove('goodbye');
 
     expect(set1.hashCode()).toBe(set2.hashCode());
+  });
+
+  describe('property-based tests', () => {
+    it('preserves insertion order', () => {
+      fc.assert(
+        fc.property(fc.uniqueArray(fc.integer(), { maxLength: 100 }), (arr) => {
+          expect(OrderedSet(arr).toArray()).toEqual(arr);
+        })
+      );
+    });
+
+    it('union contains all elements from both sets', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.integer(), { maxLength: 50 }),
+          fc.uniqueArray(fc.integer(), { maxLength: 50 }),
+          (arrA, arrB) => {
+            const a = OrderedSet(arrA);
+            const b = OrderedSet(arrB);
+            const result = a.union(b);
+            // All elements from A are present
+            arrA.forEach((x) => expect(result.has(x)).toBe(true));
+            // All elements from B are present
+            arrB.forEach((x) => expect(result.has(x)).toBe(true));
+            // A's elements preserve their relative order
+            const aFiltered = result.toArray().filter((x) => a.has(x));
+            expect(aFiltered).toEqual(arrA);
+          }
+        )
+      );
+    });
+
+    it('subtract preserves relative order', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.integer(), { maxLength: 100 }),
+          fc.uniqueArray(fc.integer(), { maxLength: 50 }),
+          (arrA, arrB) => {
+            const a = OrderedSet(arrA);
+            const b = OrderedSet(arrB);
+            const result = a.subtract(b).toArray();
+            const expected = arrA.filter((x) => !b.has(x));
+            expect(result).toEqual(expected);
+          }
+        )
+      );
+    });
+
+    it('consistency with Set membership', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          const os = OrderedSet(arr);
+          const s = Set(arr);
+          arr.forEach((x) => {
+            expect(os.has(x)).toBe(s.has(x));
+          });
+          expect(os.size).toBe(s.size);
+        })
+      );
+    });
   });
 });

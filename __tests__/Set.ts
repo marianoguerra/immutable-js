@@ -1,5 +1,6 @@
 import { List, Map, OrderedSet, Seq, Set, fromJS, is } from 'immutable';
 import { describe, expect, it, jest } from '@jest/globals';
+import fc from 'fast-check';
 
 describe('Set', () => {
   it('constructor provides different instances', () => {
@@ -379,6 +380,100 @@ describe('Set', () => {
         expect(testSet2.size).toEqual(2);
         expect(testSet3.size).toEqual(2);
       });
+    });
+  });
+
+  describe('property-based tests', () => {
+    it('union is idempotent', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          const s = Set(arr);
+          expect(s.union(s)).toEqual(s);
+        })
+      );
+    });
+
+    it('union is commutative', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.array(fc.integer(), { maxLength: 100 }),
+          (arrA, arrB) => {
+            const a = Set(arrA);
+            const b = Set(arrB);
+            expect(a.union(b)).toEqual(b.union(a));
+          }
+        )
+      );
+    });
+
+    it('intersection is idempotent', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          const s = Set(arr);
+          expect(s.intersect(s)).toEqual(s);
+        })
+      );
+    });
+
+    it('intersection/union absorption', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.array(fc.integer(), { maxLength: 100 }),
+          (arrA, arrB) => {
+            const a = Set(arrA);
+            const b = Set(arrB);
+            expect(a.intersect(a.union(b))).toEqual(a);
+          }
+        )
+      );
+    });
+
+    it('subtract definition', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.array(fc.integer(), { maxLength: 100 }),
+          (arrA, arrB) => {
+            const a = Set(arrA);
+            const b = Set(arrB);
+            const diff = a.subtract(b);
+            diff.forEach((x) => {
+              expect(a.has(x)).toBe(true);
+              expect(b.has(x)).toBe(false);
+            });
+          }
+        )
+      );
+    });
+
+    it('union/subtract: A.union(B).subtract(B).isSubset(A)', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.array(fc.integer(), { maxLength: 100 }),
+          (arrA, arrB) => {
+            const a = Set(arrA);
+            const b = Set(arrB);
+            expect(a.union(b).subtract(b).isSubset(a)).toBe(true);
+          }
+        )
+      );
+    });
+
+    it('isSuperset/isSubset duality', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 100 }),
+          fc.array(fc.integer(), { maxLength: 100 }),
+          (arrA, arrB) => {
+            const a = Set(arrA);
+            const b = Set(arrB);
+            expect(a.isSuperset(b)).toBe(b.isSubset(a));
+          }
+        )
+      );
     });
   });
 });

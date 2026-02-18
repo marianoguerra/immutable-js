@@ -10,6 +10,7 @@ import {
   updateIn,
 } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 import invariant from '../src/utils/invariant';
 
 describe('updateIn', () => {
@@ -455,6 +456,56 @@ describe('updateIn', () => {
       const m = Map({ a: { x: [1, 2, 3] } });
       expect(m.mergeDeepIn(['a'], { x: [4, 5, 6] })).toEqual(
         Map({ a: { x: [1, 2, 3, 4, 5, 6] } })
+      );
+    });
+  });
+
+  describe('property-based tests', () => {
+    it('setIn/getIn roundtrip', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.string({ maxLength: 3 }), {
+            minLength: 1,
+            maxLength: 4,
+          }),
+          fc.integer(),
+          (path, val) => {
+            const m = Map().setIn(path, val);
+            expect(m.getIn(path)).toBe(val);
+          }
+        )
+      );
+    });
+
+    it('removeIn after setIn', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.string({ maxLength: 3 }), {
+            minLength: 1,
+            maxLength: 4,
+          }),
+          fc.integer(),
+          (path, val) => {
+            const m = Map().setIn(path, val).removeIn(path);
+            expect(m.getIn(path)).toBe(undefined);
+          }
+        )
+      );
+    });
+
+    it('updateIn with identity preserves value', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.string({ maxLength: 3 }), {
+            minLength: 1,
+            maxLength: 4,
+          }),
+          fc.integer(),
+          (path, val) => {
+            const m = Map().setIn(path, val);
+            expect(m.updateIn(path, (x) => x)).toEqual(m);
+          }
+        )
       );
     });
   });

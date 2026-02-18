@@ -9,6 +9,7 @@ import {
   mergeDeepWith,
 } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 
 describe('merge', () => {
   it('merges two maps', () => {
@@ -348,5 +349,70 @@ describe('merge', () => {
     const myEmptyRecord = new MyEmptyRecord();
     // merging with an empty record should return the same empty record instance
     expect(merge(myEmptyRecord, { a: 4 })).toBe(myEmptyRecord);
+  });
+
+  describe('property-based tests', () => {
+    const genMap = fc
+      .array(fc.tuple(fc.string({ maxLength: 5 }), fc.integer()), {
+        maxLength: 20,
+      })
+      .map((entries) => Map(entries));
+
+    it('merge identity: m.merge(Map()) equals m', () => {
+      fc.assert(
+        fc.property(genMap, (m) => {
+          expect(m.merge(Map())).toEqual(m);
+        })
+      );
+    });
+
+    it('merge right-bias: overlapping keys take value from B', () => {
+      fc.assert(
+        fc.property(genMap, genMap, (a, b) => {
+          const merged = a.merge(b);
+          b.forEach((val, key) => {
+            expect(merged.get(key)).toBe(val);
+          });
+        })
+      );
+    });
+
+    it('merge key completeness: merged has all keys from A and B', () => {
+      fc.assert(
+        fc.property(genMap, genMap, (a, b) => {
+          const merged = a.merge(b);
+          a.keySeq().forEach((k) => {
+            expect(merged.has(k)).toBe(true);
+          });
+          b.keySeq().forEach((k) => {
+            expect(merged.has(k)).toBe(true);
+          });
+        })
+      );
+    });
+
+    it('merge associativity with disjoint keys', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer(), { maxLength: 10 }),
+          fc.array(fc.integer(), { maxLength: 10 }),
+          fc.array(fc.integer(), { maxLength: 10 }),
+          (valsA, valsB, valsC) => {
+            const a = Map(valsA.map((v, i) => ['a' + i, v]));
+            const b = Map(valsB.map((v, i) => ['b' + i, v]));
+            const c = Map(valsC.map((v, i) => ['c' + i, v]));
+            expect(a.merge(b).merge(c)).toEqual(a.merge(b.merge(c)));
+          }
+        )
+      );
+    });
+
+    it('mergeDeep identity: m.mergeDeep(Map()) equals m', () => {
+      fc.assert(
+        fc.property(genMap, (m) => {
+          expect(m.mergeDeep(Map())).toEqual(m);
+        })
+      );
+    });
   });
 });

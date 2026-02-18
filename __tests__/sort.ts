@@ -1,5 +1,6 @@
 import { List, OrderedMap, Range, Seq } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 
 describe('sort', () => {
   it('sorts a sequence', () => {
@@ -74,5 +75,51 @@ describe('sort', () => {
         )
         .toArray()
     ).toEqual([2, 5, 8, 1, 4, 7, 3, 6, 9]);
+  });
+
+  describe('property-based tests', () => {
+    it('equivalence with Array.sort', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 200 }), (arr) => {
+          const comparator = (a: number, b: number) => a - b;
+          expect(List(arr).sort(comparator).toArray()).toEqual(
+            [...arr].sort(comparator)
+          );
+        })
+      );
+    });
+
+    it('idempotent: sorting twice equals sorting once', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 200 }), (arr) => {
+          const comparator = (a: number, b: number) => a - b;
+          const list = List(arr);
+          expect(list.sort(comparator).sort(comparator).toArray()).toEqual(
+            list.sort(comparator).toArray()
+          );
+        })
+      );
+    });
+
+    it('size preservation', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 200 }), (arr) => {
+          expect(List(arr).sort().size).toBe(arr.length);
+        })
+      );
+    });
+
+    it('sorted order: every adjacent pair satisfies a <= b', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 200 }), (arr) => {
+          const sorted = List(arr)
+            .sort((a: number, b: number) => a - b)
+            .toArray();
+          for (let i = 0; i < sorted.length - 1; i++) {
+            expect(sorted[i]! <= sorted[i + 1]!).toBe(true);
+          }
+        })
+      );
+    });
   });
 });

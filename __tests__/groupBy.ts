@@ -10,6 +10,7 @@ import {
   isOrdered,
 } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 
 describe('groupBy', () => {
   it.each`
@@ -103,5 +104,53 @@ describe('groupBy', () => {
       .map((group) => group.map((value) => value * 10));
 
     expect(mappedGroup.toJS()).toEqual({ 1: [10, 30, 50], 0: [20, 40, 60] });
+  });
+
+  describe('property-based tests', () => {
+    it('completeness: total elements across all groups equals original size', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          const list = List(arr);
+          const grouped = list.groupBy((x) => x % 3);
+          let total = 0;
+          grouped.forEach((group) => {
+            total += group.size;
+          });
+          expect(total).toBe(list.size);
+        })
+      );
+    });
+
+    it('correct grouping: every element in a group satisfies the key function', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          const list = List(arr);
+          const keyFn = (x: number) => x % 3;
+          const grouped = list.groupBy(keyFn);
+          grouped.forEach((group, key) => {
+            group.forEach((elem) => {
+              // Use === instead of toBe to handle 0 vs -0
+              expect(keyFn(elem) === key).toBe(true);
+            });
+          });
+        })
+      );
+    });
+
+    it('ungrouping reconstructs original elements', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 100 }), (arr) => {
+          const list = List(arr);
+          const grouped = list.groupBy((x) => x % 3);
+          const ungrouped = grouped
+            .valueSeq()
+            .flatMap((g) => g)
+            .toList()
+            .sort()
+            .toArray();
+          expect(ungrouped).toEqual([...arr].sort((a, b) => a - b));
+        })
+      );
+    });
   });
 });

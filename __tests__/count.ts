@@ -1,5 +1,6 @@
 import { Range, Seq } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 
 describe('count', () => {
   it('counts sequences with known lengths', () => {
@@ -75,6 +76,25 @@ describe('count', () => {
       expect(seq.size).toBe(undefined);
       expect(seq.isEmpty()).toBe(false);
       expect(seq.size).toBe(undefined);
+    });
+  });
+
+  describe('property-based tests', () => {
+    it('count() equals array length', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer()), (arr) => {
+          expect(Seq(arr).count()).toBe(arr.length);
+        })
+      );
+    });
+
+    it('count(pred) equals filter(pred).count()', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer()), (arr) => {
+          const pred = (x: number) => x % 2 === 0;
+          expect(Seq(arr).count(pred)).toBe(Seq(arr).filter(pred).count());
+        })
+      );
     });
   });
 });

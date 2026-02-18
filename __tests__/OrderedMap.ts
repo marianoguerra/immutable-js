@@ -1,5 +1,6 @@
-import { OrderedMap, Range, Seq } from 'immutable';
+import { Map, OrderedMap, Range, Seq } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 
 describe('OrderedMap', () => {
   it('converts from object', () => {
@@ -145,5 +146,72 @@ describe('OrderedMap', () => {
 
     expect(m1.hashCode()).toEqual(m2.hashCode());
     expect(m1.hashCode()).toEqual(m3.hashCode());
+  });
+
+  describe('property-based tests', () => {
+    it('preserves key insertion order', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 50 }),
+          (keys) => {
+            const entries: Array<[string, number]> = keys.map((k, i) => [k, i]);
+            const om = OrderedMap(entries);
+            expect(om.keySeq().toArray()).toEqual(keys);
+          }
+        )
+      );
+    });
+
+    it('set existing key preserves order', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), {
+            minLength: 1,
+            maxLength: 50,
+          }),
+          fc.integer(),
+          (keys, newVal) => {
+            if (keys.length === 0) return;
+            const entries: Array<[string, number]> = keys.map((k, i) => [k, i]);
+            const om = OrderedMap(entries);
+            const idx = Math.abs(newVal) % keys.length;
+            const updated = om.set(keys[idx]!, 999);
+            expect(updated.keySeq().toArray()).toEqual(keys);
+          }
+        )
+      );
+    });
+
+    it('filter preserves relative order', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 50 }),
+          (keys) => {
+            const entries: Array<[string, number]> = keys.map((k, i) => [k, i]);
+            const om = OrderedMap(entries);
+            const filtered = om.filter((v) => v % 2 === 0);
+            const expected = keys.filter((_k, i) => i % 2 === 0);
+            expect(filtered.keySeq().toArray()).toEqual(expected);
+          }
+        )
+      );
+    });
+
+    it('consistency with Map values', () => {
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.string({ maxLength: 5 }), { maxLength: 50 }),
+          (keys) => {
+            const entries: Array<[string, number]> = keys.map((k, i) => [k, i]);
+            const om = OrderedMap(entries);
+            const m = Map(entries);
+            om.forEach((val, key) => {
+              expect(m.get(key)).toBe(val);
+            });
+            expect(om.size).toBe(m.size);
+          }
+        )
+      );
+    });
   });
 });

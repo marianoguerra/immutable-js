@@ -1,5 +1,6 @@
 import { Seq, isCollection, isIndexed, isKeyed } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 
 describe('Seq', () => {
   it('constructor provides different instances', () => {
@@ -146,5 +147,37 @@ describe('Seq', () => {
       ['x', [1, 2]],
       ['y', { a: 'z' }],
     ]);
+  });
+
+  describe('property-based tests', () => {
+    it('array roundtrip: Seq(arr).toArray() equals arr', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer()), (arr) => {
+          expect(Seq(arr).toArray()).toEqual(arr);
+        })
+      );
+    });
+
+    it('object roundtrip: Seq(obj).toObject() equals obj', () => {
+      fc.assert(
+        fc.property(
+          fc.dictionary(fc.string({ maxLength: 5 }), fc.integer(), {
+            maxKeys: 20,
+          }),
+          (obj) => {
+            expect(Seq(obj).toObject()).toEqual(obj);
+          }
+        )
+      );
+    });
+
+    it('filter correctness: Seq(arr).filter(pred) equals arr.filter(pred)', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer()), (arr) => {
+          const pred = (x: number) => x % 2 === 0;
+          expect(Seq(arr).filter(pred).toArray()).toEqual(arr.filter(pred));
+        })
+      );
+    });
   });
 });

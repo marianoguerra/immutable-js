@@ -1,5 +1,6 @@
 import { List, Map, Record, Seq, isKeyed } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 
 describe('Record', () => {
   it('defines a constructor', () => {
@@ -315,5 +316,55 @@ describe('Record', () => {
     expect(() => {
       Record(defaultValues);
     }).toThrowErrorMatchingSnapshot();
+  });
+
+  describe('property-based tests', () => {
+    const TestRecord = Record({ a: 0, b: '', c: false });
+
+    it('get after set returns those values', () => {
+      fc.assert(
+        fc.property(fc.integer(), fc.string(), fc.boolean(), (a, b, c) => {
+          const r = TestRecord({ a, b, c });
+          expect(r.get('a')).toBe(a);
+          expect(r.get('b')).toBe(b);
+          expect(r.get('c')).toBe(c);
+        })
+      );
+    });
+
+    it('delete reverts to default', () => {
+      fc.assert(
+        fc.property(fc.integer(), fc.string(), fc.boolean(), (a, b, c) => {
+          const r = TestRecord({ a, b, c });
+          expect(r.delete('a').get('a')).toBe(0);
+          expect(r.delete('b').get('b')).toBe('');
+          expect(r.delete('c').get('c')).toBe(false);
+        })
+      );
+    });
+
+    it('value-based equality: same values produce equal Records', () => {
+      fc.assert(
+        fc.property(fc.integer(), fc.string(), fc.boolean(), (a, b, c) => {
+          const r1 = TestRecord({ a, b, c });
+          const r2 = TestRecord({ a, b, c });
+          expect(r1).toEqual(r2);
+          expect(r1.equals(r2)).toBe(true);
+        })
+      );
+    });
+
+    it('merge ignores unknown keys', () => {
+      fc.assert(
+        fc.property(fc.integer(), fc.string(), (a, unknown) => {
+          const r = TestRecord({ a });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const merged = r.merge({ unknown } as any);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          expect(merged.has('unknown' as any)).toBe(false);
+          expect(merged.get('a')).toBe(a);
+        })
+      );
+    });
   });
 });

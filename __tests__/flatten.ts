@@ -1,5 +1,6 @@
 import { Collection, List, Range, Seq, fromJS } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 
 describe('flatten', () => {
   it('flattens sequences one level deep', () => {
@@ -138,6 +139,54 @@ describe('flatten', () => {
         String.fromCharCode(v).toUpperCase(),
       ]);
       expect(letters.toJS()).toEqual(['a', 'A', 'b', 'B', 'c', 'C']);
+    });
+  });
+
+  describe('property-based tests', () => {
+    it('flatMap equivalence: coll.flatMap(f) equals coll.map(f).flatten(true)', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer(), { maxLength: 50 }), (arr) => {
+          const list = List(arr);
+          const f = (x: number) => List([x, x * 2]);
+          expect(list.flatMap(f).toArray()).toEqual(
+            list.map(f).flatten(true).toArray()
+          );
+        })
+      );
+    });
+
+    it('flatten preserves total count', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.array(fc.integer(), { maxLength: 10 }), {
+            maxLength: 10,
+          }),
+          (arrs) => {
+            const nested = List(arrs.map((a) => List(a)));
+            const totalInner = arrs.reduce((sum, a) => sum + a.length, 0);
+            expect(nested.flatten(true).count()).toBe(totalInner);
+          }
+        )
+      );
+    });
+
+    it('shallow flatten reduces one level', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.array(fc.integer(), { maxLength: 10 }), {
+            maxLength: 10,
+          }),
+          (arrs) => {
+            const nested = List(arrs.map((a) => List(a)));
+            const flattened = nested.flatten(true).toArray();
+            const expected = arrs.reduce<Array<number>>(
+              (acc, a) => acc.concat(a),
+              []
+            );
+            expect(flattened).toEqual(expected);
+          }
+        )
+      );
     });
   });
 });

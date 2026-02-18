@@ -1,5 +1,6 @@
 import { List, Seq, Set } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 
 describe('concat', () => {
   it('concats two sequences', () => {
@@ -217,6 +218,54 @@ describe('concat', () => {
     expect(result).toEqual({
       done: false,
       value: 42,
+    });
+  });
+
+  describe('property-based tests', () => {
+    it('associativity', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer()),
+          fc.array(fc.integer()),
+          fc.array(fc.integer()),
+          (a, b, c) => {
+            const la = List(a);
+            const lb = List(b);
+            const lc = List(c);
+            expect(la.concat(lb).concat(lc).toArray()).toEqual(
+              la.concat(lb.concat(lc)).toArray()
+            );
+          }
+        )
+      );
+    });
+
+    it('right identity', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer()), (arr) => {
+          const la = List(arr);
+          expect(la.concat(List()).toArray()).toEqual(la.toArray());
+        })
+      );
+    });
+
+    it('left identity', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer()), (arr) => {
+          const la = List(arr);
+          expect(List().concat(la).toArray()).toEqual(la.toArray());
+        })
+      );
+    });
+
+    it('size additivity', () => {
+      fc.assert(
+        fc.property(fc.array(fc.integer()), fc.array(fc.integer()), (a, b) => {
+          const la = List(a);
+          const lb = List(b);
+          expect(la.concat(lb).size).toBe(la.size + lb.size);
+        })
+      );
     });
   });
 });

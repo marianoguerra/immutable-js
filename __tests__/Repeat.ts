@@ -1,5 +1,6 @@
 import { Repeat } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
+import fc from 'fast-check';
 
 describe('Repeat', () => {
   it('constructor provides different instances', () => {
@@ -22,5 +23,46 @@ describe('Repeat', () => {
 
   it('does not claim to be equal to undefined', () => {
     expect(Repeat(1).equals(undefined)).toEqual(false);
+  });
+
+  describe('property-based tests', () => {
+    it('every index returns the value', () => {
+      fc.assert(
+        fc.property(
+          fc.integer(),
+          fc.integer({ min: 1, max: 100 }),
+          (val, n) => {
+            const r = Repeat(val, n);
+            for (let i = 0; i < n; i++) {
+              expect(r.get(i)).toBe(val);
+            }
+          }
+        )
+      );
+    });
+
+    it('size is correct', () => {
+      fc.assert(
+        fc.property(
+          fc.integer(),
+          fc.integer({ min: 0, max: 1000 }),
+          (val, n) => {
+            expect(Repeat(val, n).size).toBe(n);
+          }
+        )
+      );
+    });
+
+    it('toArray length matches', () => {
+      fc.assert(
+        fc.property(
+          fc.integer(),
+          fc.integer({ min: 0, max: 200 }),
+          (val, n) => {
+            expect(Repeat(val, n).toArray().length).toBe(n);
+          }
+        )
+      );
+    });
   });
 });
