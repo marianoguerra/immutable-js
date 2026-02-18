@@ -7,7 +7,6 @@ declare const Immutable: typeof ImmutableModule;
 
 // Declare globalThis.devtoolsFormatters
 declare global {
-  // eslint-disable-next-line no-var
   var devtoolsFormatters: DevToolsFormatter[];
 }
 

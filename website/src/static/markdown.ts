@@ -35,23 +35,6 @@ export function markdown(content: string, context: MarkdownContext): string {
     qualifier: /\b[A-Z][a-z0-9_]+/g,
   });
 
-  const marked = new Marked(
-    markedHighlight({
-      langPrefix: 'hljs language-',
-      highlight,
-    })
-  );
-
-  const renderer = new marked.Renderer();
-
-  renderer.code = function (code: string, lang: string, escaped: boolean) {
-    return (
-      '<code class="codeBlock">' +
-      (escaped ? code : escapeCode(code)) +
-      '</code>'
-    );
-  };
-
   const TYPE_REF_RX = /^(Immutable\.)?([#.\w]+)(?:&lt;\w*&gt;)?(?:\(\w*\))?$/;
   const PARAM_RX = /^\w+$/;
   const MDN_TYPES: { [name: string]: string } = {
@@ -63,10 +46,6 @@ export function markdown(content: string, context: MarkdownContext): string {
   };
   const MDN_BASE_URL =
     'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/';
-
-  renderer.codespan = function (text: string) {
-    return '<code>' + decorateCodeSpan(text) + '</code>';
-  };
 
   function decorateCodeSpan(text: string) {
     if (
@@ -118,8 +97,30 @@ export function markdown(content: string, context: MarkdownContext): string {
     return findDocsUrl(defs, elements);
   }
 
-  // @ts-expect-error -- issue with "context", probably because we are on a really old version of marked
-  return marked.parse(content, { renderer, context });
+  const renderer = {
+    code({ text, escaped }: { text: string; escaped?: boolean }) {
+      return (
+        '<code class="codeBlock">' +
+        (escaped ? text : escapeCode(text)) +
+        '</code>'
+      );
+    },
+
+    codespan({ text }: { text: string }) {
+      return '<code>' + decorateCodeSpan(text) + '</code>';
+    },
+  };
+
+  const marked = new Marked(
+    markedHighlight({
+      langPrefix: 'hljs language-',
+      highlight,
+    })
+  );
+
+  marked.use({ renderer });
+
+  return marked.parse(content) as string;
 }
 
 function findDocsUrl(

@@ -627,8 +627,10 @@ declare namespace Immutable {
    *
    * @ignore
    */
-  interface MapOf<R extends { [key in PropertyKey]: unknown }>
-    extends Map<keyof R, R[keyof R]> {
+  interface MapOf<R extends { [key in PropertyKey]: unknown }> extends Map<
+    keyof R,
+    R[keyof R]
+  > {
     /**
      * Returns the value associated with the provided key, or notSetValue if
      * the Collection does not contain this key.
