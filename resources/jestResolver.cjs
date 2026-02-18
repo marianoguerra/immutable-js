@@ -1,11 +1,10 @@
 const path = require('path');
-const pkg = require('../package.json');
 
 module.exports = (request, options) => {
   if (request === 'immutable') {
     if (process.env.CI) {
       // In CI environment, test the real built file to be sure that the build is not broken
-      return path.resolve(options.rootDir, pkg.exports['.'].require);
+      return path.resolve(options.rootDir, 'dist/immutable.mjs');
     }
 
     // In development mode, we want sourcemaps, live reload, etc., so point to the src/ directory

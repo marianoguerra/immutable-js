@@ -1,7 +1,7 @@
 /** @type {import('jest').Config} */
 const config = {
   moduleFileExtensions: ['js', 'ts'],
-  resolver: '<rootDir>/resources/jestResolver.js',
+  resolver: '<rootDir>/resources/jestResolver.cjs',
   testRegex: ['/__tests__/.*\\.(ts|js)$', '/website/.*\\.test\\.(ts|js)$'],
   testPathIgnorePatterns: ['/__tests__/ts-utils.ts'],
 };

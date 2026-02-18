@@ -8,13 +8,8 @@ const distPrefix = 'dist';
 const removeDistPrefix = (file) => path.basename(file);
 
 const expectedFiles = [
-  removeDistPrefix(packageJsonContent.exports['.'].require),
   removeDistPrefix(packageJsonContent.exports['.'].import),
   removeDistPrefix(packageJsonContent.exports['.'].types),
-
-  // extra files that are not in package.json
-  'immutable.min.js',
-  'immutable.js.flow',
 ];
 
 console.log('expected files: ', expectedFiles);
