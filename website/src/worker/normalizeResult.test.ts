@@ -1,10 +1,8 @@
 import * as Immutable from 'immutable';
+import installDevTools from '@immutable/devtools';
 import { describe, expect, it } from '@jest/globals';
 // @ts-expect-error immutable is loaded automatically
 import normalizeResult from './normalizeResult';
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports -- import does not work
-const installDevTools = require('@immutable/devtools');
 
 installDevTools(Immutable);
 

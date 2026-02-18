@@ -17,9 +17,7 @@ cp LICENSE npm/
 
 # Ensure a vanilla package.json before deploying so other tools do not interpret
 # The built output as requiring any further transformation.
-node -e "var package = require('./package.json'); \
-  package = Object.fromEntries(Object.entries(package).filter(([key]) => package.publishKeys.includes(key))); \
-  require('fs').writeFileSync('./npm/package.json', JSON.stringify(package, null, 2));"
+node ./resources/prepare-dist.mjs
 
 # Retain marginal support for bower on the npm branch
 cp npm/package.json npm/bower.json
