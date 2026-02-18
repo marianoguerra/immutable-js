@@ -289,8 +289,6 @@ class VNode {
     this.ownerID = ownerID;
   }
 
-  // TODO: seems like these methods are very similar
-
   removeBefore(ownerID, level, index) {
     if (
       (index & ((1 << (level + SHIFT)) - 1)) === 0 ||
@@ -438,10 +436,11 @@ function updateList(list, index, value) {
 
   if (index >= list.size || index < 0) {
     return list.withMutations((list) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
-      index < 0
-        ? setListBounds(list, index).set(0, value)
-        : setListBounds(list, 0, index + 1).set(index, value);
+      if (index < 0) {
+        setListBounds(list, index).set(0, value);
+      } else {
+        setListBounds(list, 0, index + 1).set(index, value);
+      }
     });
   }
 

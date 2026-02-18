@@ -67,8 +67,7 @@ export class CollectionImpl<K, V> implements ValueObject {
   ): void;
   __iterate(
     fn: (value: V, index: K, iter: this) => boolean | void,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    reverse: boolean = false
+    _reverse: boolean = false
   ): number | void {
     throw new Error(
       'CollectionImpl does not implement __iterate. Use a subclass instead.'
@@ -77,8 +76,7 @@ export class CollectionImpl<K, V> implements ValueObject {
 
   __iterator(
     type: IteratorType,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    reverse: boolean = false
+    _reverse: boolean = false
   ): Iterator<K | V | [K, V]> {
     throw new Error(
       'CollectionImpl does not implement __iterator. Use a subclass instead.'

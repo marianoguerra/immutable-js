@@ -70,9 +70,7 @@ export const Record = (defaultValues, name) => {
         indices[propName] = i;
         if (RecordTypePrototype[propName]) {
           /* eslint-disable no-console */
-          // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
-          typeof console === 'object' &&
-            console.warn &&
+          if (typeof console === 'object' && console.warn) {
             console.warn(
               'Cannot define ' +
                 recordName(this) +
@@ -80,6 +78,7 @@ export const Record = (defaultValues, name) => {
                 propName +
                 '" since that property name is part of the Record API.'
             );
+          }
           /* eslint-enable no-console */
         } else {
           setProp(RecordTypePrototype, propName);

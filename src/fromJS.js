@@ -27,8 +27,9 @@ function fromJSWith(stack, converter, value, key, keyPath, parentValue) {
       throw new TypeError('Cannot convert circular structure to Immutable');
     }
     stack.push(value);
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
-    keyPath && key !== '' && keyPath.push(key);
+    if (keyPath && key !== '') {
+      keyPath.push(key);
+    }
     const converted = converter.call(
       parentValue,
       key,
@@ -38,8 +39,9 @@ function fromJSWith(stack, converter, value, key, keyPath, parentValue) {
       keyPath && keyPath.slice()
     );
     stack.pop();
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
-    keyPath && keyPath.pop();
+    if (keyPath) {
+      keyPath.pop();
+    }
     return converted;
   }
   return value;
