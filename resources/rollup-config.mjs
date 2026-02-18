@@ -16,7 +16,10 @@ export default [
         extensions: ['.ts', '.tsx', '.js', '.jsx'],
       }),
       json(),
-      typescript({ tsconfig: './tsconfig.build.json' }),
+      typescript({
+        tsconfig: './tsconfig.build.json',
+        include: ['src/**/*.ts'],
+      }),
     ],
     output: [
       {
