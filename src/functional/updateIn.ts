@@ -168,13 +168,13 @@ function updateInDeeply<
     updater
   );
 
-  return nextUpdated === nextExisting
-    ? existing
-    : nextUpdated === NOT_SET
-      ? remove(existing, key)
-      : set(
-          wasNotSet ? (inImmutable ? emptyMap() : {}) : existing,
-          key,
-          nextUpdated
-        );
+  if (nextUpdated === nextExisting) {
+    return existing;
+  }
+  if (nextUpdated === NOT_SET) {
+    return remove(existing, key);
+  }
+  const collection = wasNotSet ? (inImmutable ? emptyMap() : {}) : existing;
+  // @ts-expect-error mixed type: new empty collection may not match generic C
+  return set(collection, key, nextUpdated);
 }
