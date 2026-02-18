@@ -23,7 +23,7 @@ function fromJSWith(stack, converter, value, key, keyPath, parentValue) {
     !isImmutable(value) &&
     (isArrayLike(value) || hasIterator(value) || isPlainObj(value))
   ) {
-    if (~stack.indexOf(value)) {
+    if (stack.includes(value)) {
       throw new TypeError('Cannot convert circular structure to Immutable');
     }
     stack.push(value);

@@ -115,12 +115,6 @@ function hashJSObj(obj: object | Function): number {
     return hashed;
   }
 
-  // @ts-expect-error used for old code, will be removed
-  hashed = obj[UID_HASH_KEY];
-  if (hashed !== undefined) {
-    return hashed;
-  }
-
   hashed = nextHash();
 
   weakMap.set(obj, hashed);
@@ -129,11 +123,7 @@ function hashJSObj(obj: object | Function): number {
 }
 
 function valueOf(obj: object): unknown {
-  return obj.valueOf !== Object.prototype.valueOf &&
-    typeof obj.valueOf === 'function'
-    ? // @ts-expect-error weird the "obj" parameter as `valueOf` should not have a parameter
-      obj.valueOf(obj)
-    : obj;
+  return obj.valueOf !== Object.prototype.valueOf ? obj.valueOf() : obj;
 }
 
 function nextHash(): number {
@@ -149,8 +139,6 @@ const weakMap: WeakMap<object, number> = new WeakMap();
 const symbolMap = Object.create(null);
 
 let _objHashUID = 0;
-
-const UID_HASH_KEY: symbol = Symbol('__immutablehash__');
 
 const STRING_HASH_CACHE_MIN_STRLEN = 16;
 const STRING_HASH_CACHE_MAX_SIZE = 255;

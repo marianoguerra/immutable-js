@@ -102,5 +102,5 @@ function resolveIndex(
 
 function isNeg(value: number): boolean {
   // Account for -0 which is negative, but not less than 0.
-  return value < 0 || (value === 0 && 1 / value === -Infinity);
+  return value < 0 || Object.is(value, -0);
 }

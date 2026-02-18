@@ -8,11 +8,5 @@ export default function shallowCopy<I, O extends object>(
   if (Array.isArray(from)) {
     return arrCopy(from);
   }
-  const to: Partial<O> = {};
-  for (const key in from) {
-    if (Object.hasOwn(from, key)) {
-      to[key] = from[key];
-    }
-  }
-  return to as O;
+  return Object.assign({}, from) as O;
 }

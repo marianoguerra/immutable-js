@@ -25,14 +25,6 @@ export class Iterator<V> implements globalThis.Iterator<V, undefined> {
     return '[Iterator]';
   }
 
-  inspect(): string {
-    return this.toString();
-  }
-
-  toSource(): string {
-    return this.toString();
-  }
-
   [Symbol.iterator]() {
     return this;
   }

@@ -134,7 +134,7 @@ export class RecordImpl {
   // @pragma Access
 
   has(k) {
-    return this._indices.hasOwnProperty(k);
+    return Object.hasOwn(this._indices, k);
   }
 
   get(k, notSetValue) {
@@ -232,9 +232,6 @@ RecordPrototype.asImmutable = asImmutable;
 RecordPrototype[Symbol.iterator] = RecordPrototype.entries;
 RecordPrototype.toJSON = RecordPrototype.toObject =
   CollectionPrototype.toObject;
-RecordPrototype.inspect = RecordPrototype.toSource = function () {
-  return this.toString();
-};
 
 function makeRecord(likeRecord, values, ownerID) {
   const record = Object.create(Object.getPrototypeOf(likeRecord));

@@ -215,24 +215,24 @@ mixin(CollectionImpl, {
     return reify(this, mapFactory(this, mapper, context));
   },
 
-  reduce(reducer, initialReduction, context) {
+  reduce(reducer, initialReduction = NOT_SET, context) {
     return reduce(
       this,
       reducer,
       initialReduction,
       context,
-      arguments.length < 2,
+      initialReduction === NOT_SET,
       false
     );
   },
 
-  reduceRight(reducer, initialReduction, context) {
+  reduceRight(reducer, initialReduction = NOT_SET, context) {
     return reduce(
       this,
       reducer,
       initialReduction,
       context,
-      arguments.length < 2,
+      initialReduction === NOT_SET,
       true
     );
   },
@@ -482,10 +482,6 @@ CollectionPrototype[IS_COLLECTION_SYMBOL] = true;
 CollectionPrototype[Symbol.iterator] = CollectionPrototype.values;
 CollectionPrototype.toJSON = CollectionPrototype.toArray;
 CollectionPrototype.__toStringMapper = quoteString;
-CollectionPrototype.inspect = CollectionPrototype.toSource = function () {
-  return this.toString();
-};
-CollectionPrototype.chain = CollectionPrototype.flatMap;
 CollectionPrototype.contains = CollectionPrototype.includes;
 
 mixin(KeyedCollectionImpl, {
@@ -559,10 +555,13 @@ mixin(IndexedCollectionImpl, {
     return reify(this, sliceFactory(this, begin, end, false));
   },
 
-  splice(index, removeNum, ...values) {
-    const numArgs = arguments.length;
-    removeNum = Math.max(removeNum || 0, 0);
-    if (numArgs === 0 || (numArgs === 2 && !removeNum)) {
+  splice(index, removeNum = NOT_SET, ...values) {
+    if (index === undefined) {
+      return this;
+    }
+    const hasRemoveNum = removeNum !== NOT_SET;
+    removeNum = hasRemoveNum ? Math.max(removeNum || 0, 0) : 0;
+    if (hasRemoveNum && !removeNum && values.length === 0) {
       return this;
     }
     // If index is negative, it should resolve relative to the size of the
@@ -572,7 +571,7 @@ mixin(IndexedCollectionImpl, {
     const spliced = this.slice(0, index);
     return reify(
       this,
-      numArgs === 1
+      !hasRemoveNum
         ? spliced
         : spliced.concat(values, this.slice(index + removeNum))
     );
