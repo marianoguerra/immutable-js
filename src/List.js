@@ -220,12 +220,11 @@ export class ListImpl extends IndexedCollectionImpl {
 
   __iterator(type, reverse) {
     let index = reverse ? this.size : 0;
-    function* gen() {
-      for (const value of iterateList(this, reverse)) {
+    return (function* (self) {
+      for (const value of iterateList(self, reverse)) {
         yield getValueFromType(type, reverse ? --index : index++, value);
       }
-    }
-    return gen.call(this);
+    })(this);
   }
 
   __iterate(fn, reverse) {

@@ -116,12 +116,11 @@ export class ToIndexedSequence extends IndexedSeqImpl {
     if (reverse) {
       ensureSize(this);
     }
-    function* gen() {
+    return (function* (self) {
       for (const value of iterator) {
-        yield getValueFromType(type, reverse ? this.size - ++i : i++, value);
+        yield getValueFromType(type, reverse ? self.size - ++i : i++, value);
       }
-    }
-    return gen.call(this);
+    })(this);
   }
 }
 
@@ -218,9 +217,6 @@ export function flipFactory(collection) {
   flipSequence.has = (key) => collection.includes(key);
   flipSequence.includes = (key) => collection.has(key);
   flipSequence.cacheResult = cacheResultThrough;
-  flipSequence.__iterateUncached = function (fn, reverse) {
-    return collection.__iterate((v, k) => fn(k, v, this) !== false, reverse);
-  };
   flipSequence.__iteratorUncached = function (type, reverse) {
     if (type === ITERATE_ENTRIES) {
       const iterator = collection.__iterator(type, reverse);
@@ -247,12 +243,6 @@ export function mapFactory(collection, mapper, context) {
     return v === NOT_SET
       ? notSetValue
       : mapper.call(context, v, key, collection);
-  };
-  mappedSequence.__iterateUncached = function (fn, reverse) {
-    return collection.__iterate(
-      (v, k, c) => fn(mapper.call(context, v, k, c), k, this) !== false,
-      reverse
-    );
   };
   mappedSequence.__iteratorUncached = function (type, reverse) {
     const iterator = collection.__iterator(ITERATE_ENTRIES, reverse);
@@ -302,16 +292,15 @@ export function reverseFactory(collection, useKeys) {
       ensureSize(collection);
     }
     const iterator = collection.__iterator(ITERATE_ENTRIES, !reverse);
-    function* gen() {
+    return (function* (self) {
       for (const [key, value] of iterator) {
         yield getValueFromType(
           type,
-          useKeys ? key : reverse ? this.size - ++i : i++,
+          useKeys ? key : reverse ? self.size - ++i : i++,
           value
         );
       }
-    }
-    return gen.call(this);
+    })(this);
   };
   return reversedSequence;
 }
@@ -330,16 +319,6 @@ export function filterFactory(collection, predicate, context, useKeys) {
         : notSetValue;
     };
   }
-  filterSequence.__iterateUncached = function (fn, reverse) {
-    let iterations = 0;
-    collection.__iterate((v, k, c) => {
-      if (predicate.call(context, v, k, c)) {
-        iterations++;
-        return fn(v, useKeys ? k : iterations - 1, this);
-      }
-    }, reverse);
-    return iterations;
-  };
   filterSequence.__iteratorUncached = function (type, reverse) {
     const iterator = collection.__iterator(ITERATE_ENTRIES, reverse);
     let iterations = 0;
@@ -430,28 +409,6 @@ export function sliceFactory(collection, begin, end, useKeys) {
     };
   }
 
-  sliceSeq.__iterateUncached = function (fn, reverse) {
-    if (sliceSize === 0) {
-      return 0;
-    }
-    if (reverse) {
-      return this.cacheResult().__iterate(fn, reverse);
-    }
-    let skipped = 0;
-    let isSkipping = true;
-    let iterations = 0;
-    collection.__iterate((v, k) => {
-      if (!(isSkipping && (isSkipping = skipped++ < resolvedBegin))) {
-        iterations++;
-        return (
-          fn(v, useKeys ? k : iterations - 1, this) !== false &&
-          iterations !== sliceSize
-        );
-      }
-    });
-    return iterations;
-  };
-
   sliceSeq.__iteratorUncached = function (type, reverse) {
     if (sliceSize !== 0 && reverse) {
       return this.cacheResult().__iterator(type, reverse);
@@ -466,8 +423,12 @@ export function sliceFactory(collection, begin, end, useKeys) {
       for (let i = 0; i < resolvedBegin; i++) {
         iterator.next();
       }
-      // Phase 2: yield up to sliceSize items
-      for (let iterations = 0; iterations < sliceSize; iterations++) {
+      // Phase 2: yield up to sliceSize items (all remaining if sliceSize is undefined)
+      for (
+        let iterations = 0;
+        sliceSize === undefined || iterations < sliceSize;
+        iterations++
+      ) {
         const step = iterator.next();
         if (step.done) {
           return;
@@ -489,17 +450,6 @@ export function sliceFactory(collection, begin, end, useKeys) {
 
 export function takeWhileFactory(collection, predicate, context) {
   const takeSequence = makeSequence(collection);
-  takeSequence.__iterateUncached = function (fn, reverse) {
-    if (reverse) {
-      return this.cacheResult().__iterate(fn, reverse);
-    }
-    let iterations = 0;
-    collection.__iterate(
-      (v, k, c) =>
-        predicate.call(context, v, k, c) && ++iterations && fn(v, k, this)
-    );
-    return iterations;
-  };
   takeSequence.__iteratorUncached = function (type, reverse) {
     if (reverse) {
       return this.cacheResult().__iterator(type, reverse);
@@ -519,20 +469,6 @@ export function takeWhileFactory(collection, predicate, context) {
 
 export function skipWhileFactory(collection, predicate, context, useKeys) {
   const skipSequence = makeSequence(collection);
-  skipSequence.__iterateUncached = function (fn, reverse) {
-    if (reverse) {
-      return this.cacheResult().__iterate(fn, reverse);
-    }
-    let isSkipping = true;
-    let iterations = 0;
-    collection.__iterate((v, k, c) => {
-      if (!(isSkipping && (isSkipping = predicate.call(context, v, k, c)))) {
-        iterations++;
-        return fn(v, useKeys ? k : iterations - 1, this);
-      }
-    });
-    return iterations;
-  };
   skipSequence.__iteratorUncached = function (type, reverse) {
     if (reverse) {
       return this.cacheResult().__iterator(type, reverse);
@@ -586,32 +522,6 @@ class ConcatSeq extends SeqImpl {
     }
   }
 
-  __iterateUncached(fn, reverse) {
-    if (this._wrappedIterables.length === 0) {
-      return;
-    }
-
-    if (reverse) {
-      return this.cacheResult().__iterate(fn, reverse);
-    }
-
-    const useKeys = isKeyed(this);
-    const iteratorType = useKeys ? ITERATE_ENTRIES : ITERATE_VALUES;
-    let index = 0;
-    for (const iterable of this._wrappedIterables) {
-      for (const entry of iterable.__iterator(iteratorType, reverse)) {
-        const fnResult = useKeys
-          ? fn(entry[1], entry[0], this)
-          : fn(entry, index, this);
-        index++;
-        if (fnResult === false) {
-          return index;
-        }
-      }
-    }
-    return index;
-  }
-
   __iteratorUncached(type, reverse) {
     if (this._wrappedIterables.length === 0) {
       return emptyIterator();
@@ -622,9 +532,17 @@ class ConcatSeq extends SeqImpl {
     }
 
     const wrappedIterables = this._wrappedIterables;
+    const reIndex = !isKeyed(this) && type === ITERATE_ENTRIES;
     return (function* () {
+      let index = 0;
       for (const iterable of wrappedIterables) {
-        yield* iterable.__iterator(type, reverse);
+        if (reIndex) {
+          for (const value of iterable.__iterator(ITERATE_VALUES, reverse)) {
+            yield [index++, value];
+          }
+        } else {
+          yield* iterable.__iterator(type, reverse);
+        }
       }
     })();
   }
@@ -666,28 +584,6 @@ export function concatFactory(collection, values) {
 
 export function flattenFactory(collection, depth, useKeys) {
   const flatSequence = makeSequence(collection);
-  flatSequence.__iterateUncached = function (fn, reverse) {
-    if (reverse) {
-      return this.cacheResult().__iterate(fn, reverse);
-    }
-    let iterations = 0;
-    let stopped = false;
-    function flatDeep(iter, currentDepth) {
-      iter.__iterate((v, k) => {
-        if ((!depth || currentDepth < depth) && isCollection(v)) {
-          flatDeep(v, currentDepth + 1);
-        } else {
-          iterations++;
-          if (fn(v, useKeys ? k : iterations - 1, flatSequence) === false) {
-            stopped = true;
-          }
-        }
-        return !stopped;
-      }, reverse);
-    }
-    flatDeep(collection, 0);
-    return iterations;
-  };
   flatSequence.__iteratorUncached = function (type, reverse) {
     if (reverse) {
       return this.cacheResult().__iterator(type, reverse);
@@ -720,16 +616,6 @@ export function flatMapFactory(collection, mapper, context) {
 export function interposeFactory(collection, separator) {
   const interposedSequence = makeSequence(collection);
   interposedSequence.size = collection.size && collection.size * 2 - 1;
-  interposedSequence.__iterateUncached = function (fn, reverse) {
-    let iterations = 0;
-    collection.__iterate(
-      (v) =>
-        (!iterations || fn(separator, iterations++, this) !== false) &&
-        fn(v, iterations++, this) !== false,
-      reverse
-    );
-    return iterations;
-  };
   interposedSequence.__iteratorUncached = function (type, reverse) {
     const iterator = collection.__iterator(ITERATE_VALUES, reverse);
     let iterations = 0;
@@ -807,24 +693,9 @@ export function zipWithFactory(keyIter, zipper, iters, zipAll) {
   // Note: this a generic base implementation of __iterate in terms of
   // __iterator which may be more generically useful in the future.
   zipSequence.__iterate = function (fn, reverse) {
-    /* generic:
-    var iterator = this.__iterator(ITERATE_ENTRIES, reverse);
-    var step;
-    var iterations = 0;
-    while (!(step = iterator.next()).done) {
-      iterations++;
-      if (fn(step.value[1], step.value[0], this) === false) {
-        break;
-      }
-    }
-    return iterations;
-    */
-    // indexed:
-    const iterator = this.__iterator(ITERATE_VALUES, reverse);
-    let step;
     let iterations = 0;
-    while (!(step = iterator.next()).done) {
-      if (fn(step.value, iterations++, this) === false) {
+    for (const value of this.__iterator(ITERATE_VALUES, reverse)) {
+      if (fn(value, iterations++, this) === false) {
         break;
       }
     }

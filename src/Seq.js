@@ -7,6 +7,7 @@ import {
   getIterator,
   isEntriesIterable,
   isKeysIterable,
+  ITERATE_ENTRIES,
 } from './Iterator';
 import { wrapIndex } from './TrieUtils';
 import { isAssociative } from './predicates/isAssociative';
@@ -41,7 +42,19 @@ export class SeqImpl extends CollectionImpl {
     return this;
   }
 
-  // abstract __iterateUncached(fn, reverse)
+  __iterateUncached(fn, reverse) {
+    let iterations = 0;
+    for (const [key, value] of this.__iteratorUncached(
+      ITERATE_ENTRIES,
+      reverse
+    )) {
+      iterations++;
+      if (fn(value, key, this) === false) {
+        break;
+      }
+    }
+    return iterations;
+  }
 
   __iterate(fn, reverse) {
     const cache = this._cache;
@@ -240,13 +253,13 @@ class CollectionSeq extends IndexedSeqImpl {
     }
     const collection = this._collection;
     const iterator = getIterator(collection);
+    if (!isIterator(iterator)) {
+      return 0;
+    }
     let iterations = 0;
-    if (isIterator(iterator)) {
-      let step;
-      while (!(step = iterator.next()).done) {
-        if (fn(step.value, iterations++, this) === false) {
-          break;
-        }
+    for (const value of iterator) {
+      if (fn(value, iterations++, this) === false) {
+        break;
       }
     }
     return iterations;

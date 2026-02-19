@@ -15,10 +15,7 @@ export class Iterator<V> implements globalThis.Iterator<V, undefined> {
   declare next: () => IteratorResult<V, undefined>;
 
   constructor(next: () => IteratorResult<V, undefined>) {
-    if (next) {
-      // Map extends Iterator and has a `next` method, do not erase it in that case. We could have checked `if (next && !this.next)` too.
-      this.next = next;
-    }
+    this.next = next;
   }
 
   toString() {
