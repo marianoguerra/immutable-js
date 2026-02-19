@@ -113,8 +113,7 @@ function hashSymbol(sym: symbol): number {
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 function hashJSObj(obj: object | Function): number {
-  let hashed: number | undefined;
-  hashed = weakMap.get(obj);
+  let hashed = weakMap.get(obj);
   if (hashed !== undefined) {
     return hashed;
   }

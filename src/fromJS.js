@@ -9,10 +9,10 @@ import isPlainObj from './utils/isPlainObj';
 export function fromJS(value, converter) {
   return fromJSWith(
     [],
-    converter || defaultConverter,
+    converter ?? defaultConverter,
     value,
     '',
-    converter && converter.length > 2 ? [] : undefined,
+    converter?.length > 2 ? [] : undefined,
     { '': value }
   );
 }

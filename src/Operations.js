@@ -355,7 +355,7 @@ export function groupByFactory(collection, grouper, context) {
   const groups = (isOrdered(collection) ? OrderedMap() : Map()).asMutable();
   collection.__iterate((v, k) => {
     groups.update(grouper.call(context, v, k, collection), (a) => {
-      a = a || [];
+      a ??= [];
       a.push(isKeyedIter ? [k, v] : v);
       return a;
     });
@@ -386,7 +386,7 @@ export function sliceFactory(collection, begin, end, useKeys) {
   // begin or end can not be resolved if they were provided as negative numbers and
   // this collection's size is unknown. In that case, cache first so there is
   // a known size and these do not resolve to NaN.
-  if (typeof originalSize === 'undefined' && (begin < 0 || end < 0)) {
+  if (originalSize === undefined && (begin < 0 || end < 0)) {
     return sliceFactory(collection.toSeq().cacheResult(), begin, end, useKeys);
   }
 
