@@ -14,6 +14,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const perfDir = path.resolve(__dirname, '../perf/');
 const distPath = path.resolve(__dirname, '../dist/immutable.js');
 
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const result = { baseline: null, compare: null };
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--baseline' && args[i + 1]) {
+      result.baseline = args[++i];
+    } else if (args[i] === '--compare' && args[i + 1]) {
+      result.compare = args[++i];
+    }
+  }
+  return result;
+}
+
 async function loadCurrentDist() {
   return import(pathToFileURL(distPath).href);
 }
@@ -28,10 +41,92 @@ async function loadMainDist() {
     return null;
   }
 
-  // Write old source to a temp file so we can import() it as ESM
+  // Detect UMD vs ESM: UMD typically starts with (function or !function
+  const isUMD =
+    oldSrc.trimStart().startsWith('(function') ||
+    oldSrc.trimStart().startsWith('!function');
+
+  if (isUMD) {
+    // Wrap UMD in ESM: execute in a vm context and re-export
+    const tmpDir = await mkdtemp(path.join(tmpdir(), 'immutable-bench-'));
+    const tmpFile = path.join(tmpDir, 'immutable-old.mjs');
+    const wrapped = `
+var module = { exports: {} };
+var exports = module.exports;
+var define = undefined;
+${oldSrc}
+export default module.exports;
+export const List = module.exports.List;
+export const Map = module.exports.Map;
+export const OrderedMap = module.exports.OrderedMap;
+export const Set = module.exports.Set;
+export const OrderedSet = module.exports.OrderedSet;
+export const Stack = module.exports.Stack;
+export const Range = module.exports.Range;
+export const Repeat = module.exports.Repeat;
+export const Record = module.exports.Record;
+export const Seq = module.exports.Seq;
+export const Collection = module.exports.Collection;
+export const is = module.exports.is;
+export const fromJS = module.exports.fromJS;
+export const hash = module.exports.hash;
+`;
+    await writeFile(tmpFile, wrapped);
+    try {
+      return await import(pathToFileURL(tmpFile).href);
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true });
+    }
+  }
+
+  // ESM source: write to temp file and import
   const tmpDir = await mkdtemp(path.join(tmpdir(), 'immutable-bench-'));
   const tmpFile = path.join(tmpDir, 'immutable-old.mjs');
   await writeFile(tmpFile, oldSrc);
+  try {
+    return await import(pathToFileURL(tmpFile).href);
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+}
+
+async function loadDistFromFile(filePath) {
+  const src = await readFile(filePath, 'utf8');
+
+  const isUMD =
+    src.trimStart().startsWith('(function') ||
+    src.trimStart().startsWith('!function');
+
+  const tmpDir = await mkdtemp(path.join(tmpdir(), 'immutable-bench-'));
+  const tmpFile = path.join(tmpDir, 'immutable-loaded.mjs');
+
+  if (isUMD) {
+    const wrapped = `
+var module = { exports: {} };
+var exports = module.exports;
+var define = undefined;
+${src}
+export default module.exports;
+export const List = module.exports.List;
+export const Map = module.exports.Map;
+export const OrderedMap = module.exports.OrderedMap;
+export const Set = module.exports.Set;
+export const OrderedSet = module.exports.OrderedSet;
+export const Stack = module.exports.Stack;
+export const Range = module.exports.Range;
+export const Repeat = module.exports.Repeat;
+export const Record = module.exports.Record;
+export const Seq = module.exports.Seq;
+export const Collection = module.exports.Collection;
+export const is = module.exports.is;
+export const fromJS = module.exports.fromJS;
+export const hash = module.exports.hash;
+`;
+    await writeFile(tmpFile, wrapped);
+  } else {
+    await writeFile(tmpFile, src);
+  }
+
   try {
     return await import(pathToFileURL(tmpFile).href);
   } finally {
@@ -109,7 +204,7 @@ function collectTests(modules, perfSources) {
   return Object.keys(tests).map((key) => tests[key]);
 }
 
-function runBenchmarks(tests) {
+function runBenchmarks(tests, labels) {
   const suites = [];
 
   tests.forEach((test) => {
@@ -120,10 +215,8 @@ function runBenchmarks(tests) {
       },
       onComplete(event) {
         process.stdout.write('\r\x1B[K');
-        const stats = Array.prototype.map.call(
-          event.currentTarget,
-          (target) => target.stats
-        );
+        const targets = Array.prototype.slice.call(event.currentTarget);
+        const stats = targets.map((target) => target.stats);
 
         const pad = (n, s) =>
           Array(Math.max(0, 1 + n - s.length)).join(' ') + s;
@@ -133,56 +226,44 @@ function runBenchmarks(tests) {
             .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         const pct = (p) => Math.floor(p * 10000) / 100 + '%';
 
-        const dualRuns = stats.length === 2;
+        const numVersions = stats.length;
 
-        if (dualRuns) {
-          const prevMean = 1 / stats[1].mean;
-          const prevLowmoe = 1 / (stats[1].mean + stats[1].moe);
-          const prevHighmoe = 1 / (stats[1].mean - stats[1].moe);
+        // Print each version's stats
+        for (let i = 0; i < numVersions; i++) {
+          const mean = 1 / stats[i].mean;
+          const lowmoe = 1 / (stats[i].mean + stats[i].moe);
+          const highmoe = 1 / (stats[i].mean - stats[i].moe);
+          const label = labels[i] || `v${i}`;
 
           console.log(
-            '  Old: '.bold.gray +
-              (pad(9, fmt(prevLowmoe)) +
+            ('  ' + label + ': ').bold.gray +
+              (pad(9, fmt(lowmoe)) +
                 ' ' +
-                pad(9, fmt(prevMean)) +
+                pad(9, fmt(mean)) +
                 ' ' +
-                pad(9, fmt(prevHighmoe)) +
+                pad(9, fmt(highmoe)) +
                 ' ops/sec')
           );
         }
 
-        const mean = 1 / stats[0].mean;
-        const lowmoe = 1 / (stats[0].mean + stats[0].moe);
-        const highmoe = 1 / (stats[0].mean - stats[0].moe);
-
-        console.log(
-          (dualRuns ? '  New: '.bold.gray : '  ') +
-            (pad(9, fmt(lowmoe)) +
-              ' ' +
-              pad(9, fmt(mean)) +
-              ' ' +
-              pad(9, fmt(highmoe)) +
-              ' ops/sec')
-        );
-
-        if (dualRuns) {
-          const prevMean = 1 / stats[1].mean;
-          const diffMean = (mean - prevMean) / prevMean;
-
-          const comparison = event.currentTarget[1].compare(
-            event.currentTarget[0]
-          );
-          const comparison2 = event.currentTarget[0].compare(
-            event.currentTarget[1]
-          );
-          console.log('  compare: ' + comparison + ' ' + comparison2);
-          console.log('  diff: ' + pct(diffMean));
+        // Print diffs between consecutive pairs
+        for (let i = 1; i < numVersions; i++) {
+          const prevMean = 1 / stats[i].mean;
+          const curMean = 1 / stats[0].mean;
+          const diffMean = (curMean - prevMean) / prevMean;
 
           const sq = (p) => p * p;
           const rme = Math.sqrt(
-            (sq(stats[0].rme / 100) + sq(stats[1].rme / 100)) / 2
+            (sq(stats[0].rme / 100) + sq(stats[i].rme / 100)) / 2
           );
-          console.log('  rme: ' + pct(rme));
+
+          console.log(
+            ('  ' + labels[0] + ' vs ' + labels[i] + ': ').gray +
+              'diff: ' +
+              pct(diffMean) +
+              '  rme: ' +
+              pct(rme)
+          );
         }
       },
     });
@@ -204,19 +285,48 @@ function runBenchmarks(tests) {
 }
 
 async function main() {
-  const [currentModule, mainModule, perfSources] = await Promise.all([
-    loadCurrentDist(),
-    loadMainDist(),
-    loadPerfTests(),
-  ]);
+  const { baseline, compare } = parseArgs();
 
-  const modules =
-    mainModule && currentModule !== mainModule
-      ? [currentModule, mainModule]
-      : [currentModule];
+  const perfSources = await loadPerfTests();
+
+  let modules;
+  let labels;
+
+  if (baseline || compare) {
+    // 3-way (or 2-way with explicit paths) mode
+    const currentModule = await loadCurrentDist();
+    modules = [currentModule];
+    labels = ['current'];
+
+    if (baseline) {
+      const baselineModule = await loadDistFromFile(baseline);
+      modules.push(baselineModule);
+      labels.push('baseline');
+    }
+
+    if (compare) {
+      const compareModule = await loadDistFromFile(compare);
+      modules.push(compareModule);
+      labels.push('compare');
+    }
+  } else {
+    // Default 2-way: current vs main
+    const [currentModule, mainModule] = await Promise.all([
+      loadCurrentDist(),
+      loadMainDist(),
+    ]);
+
+    if (mainModule && currentModule !== mainModule) {
+      modules = [currentModule, mainModule];
+      labels = ['current', 'main'];
+    } else {
+      modules = [currentModule];
+      labels = ['current'];
+    }
+  }
 
   const tests = collectTests(modules, perfSources);
-  await runBenchmarks(tests);
+  await runBenchmarks(tests, labels);
   console.log('all done');
 }
 
