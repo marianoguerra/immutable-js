@@ -22,34 +22,33 @@ describe('Iterators', function () {
 
       var map = Immutable.Map(mapObj);
       var list = Immutable.List(array);
-      var nestedList = Immutable.List(nestedArray.map(function (a) {
-        return Immutable.List(a);
-      }));
+      var nestedList = Immutable.List(
+        nestedArray.map(function (a) {
+          return Immutable.List(a);
+        })
+      );
       var fromEntriesList = Immutable.List(entries);
 
       // Map for-of (entries, values, keys)
       describe('Map for-of', function () {
         it('entries ' + N, function () {
           var iter = map.entries();
-          var step;
-          while (!(step = iter.next()).done) {
-            step.value;
+          while (!iter.next().done) {
+            // drain
           }
         });
 
         it('values ' + N, function () {
           var iter = map.values();
-          var step;
-          while (!(step = iter.next()).done) {
-            step.value;
+          while (!iter.next().done) {
+            // drain
           }
         });
 
         it('keys ' + N, function () {
           var iter = map.keys();
-          var step;
-          while (!(step = iter.next()).done) {
-            step.value;
+          while (!iter.next().done) {
+            // drain
           }
         });
       });
@@ -62,9 +61,8 @@ describe('Iterators', function () {
 
         it(N + ' items', function () {
           var iter = filtered.values();
-          var step;
-          while (!(step = iter.next()).done) {
-            step.value;
+          while (!iter.next().done) {
+            // drain
           }
         });
       });
@@ -73,9 +71,8 @@ describe('Iterators', function () {
       describe('List flatten iterator', function () {
         it(N + ' items', function () {
           var iter = nestedList.flatten().values();
-          var step;
-          while (!(step = iter.next()).done) {
-            step.value;
+          while (!iter.next().done) {
+            // drain
           }
         });
       });
@@ -89,9 +86,8 @@ describe('Iterators', function () {
 
         it(N + ' items', function () {
           var iter = skipped.values();
-          var step;
-          while (!(step = iter.next()).done) {
-            step.value;
+          while (!iter.next().done) {
+            // drain
           }
         });
       });
@@ -105,9 +101,8 @@ describe('Iterators', function () {
 
         it(N + ' items', function () {
           var iter = concatenated.values();
-          var step;
-          while (!(step = iter.next()).done) {
-            step.value;
+          while (!iter.next().done) {
+            // drain
           }
         });
       });
@@ -118,9 +113,8 @@ describe('Iterators', function () {
 
         it(N + ' items', function () {
           var iter = fromEntries.entries();
-          var step;
-          while (!(step = iter.next()).done) {
-            step.value;
+          while (!iter.next().done) {
+            // drain
           }
         });
       });
@@ -132,9 +126,8 @@ describe('Iterators', function () {
 
         it(N + ' items', function () {
           var iter = sliced.values();
-          var step;
-          while (!(step = iter.next()).done) {
-            step.value;
+          while (!iter.next().done) {
+            // drain
           }
         });
       });
@@ -148,9 +141,8 @@ describe('Iterators', function () {
 
         it(N + ' items', function () {
           var iter = taken.values();
-          var step;
-          while (!(step = iter.next()).done) {
-            step.value;
+          while (!iter.next().done) {
+            // drain
           }
         });
       });
@@ -161,26 +153,30 @@ describe('Iterators', function () {
 
         it(N + ' items', function () {
           var iter = interposed.values();
-          var step;
-          while (!(step = iter.next()).done) {
-            step.value;
+          while (!iter.next().done) {
+            // drain
           }
         });
       });
 
       // Chained lazy ops (filter -> map -> takeWhile)
       describe('Chained lazy ops', function () {
-        var threeQuarterN = Math.floor(N * 3 / 4);
+        var threeQuarterN = Math.floor((N * 3) / 4);
         var chained = list
-          .filter(function (v) { return v % 2 === 0; })
-          .map(function (v) { return v * 2; })
-          .takeWhile(function (v) { return v < threeQuarterN; });
+          .filter(function (v) {
+            return v % 2 === 0;
+          })
+          .map(function (v) {
+            return v * 2;
+          })
+          .takeWhile(function (v) {
+            return v < threeQuarterN;
+          });
 
         it(N + ' items', function () {
           var iter = chained.values();
-          var step;
-          while (!(step = iter.next()).done) {
-            step.value;
+          while (!iter.next().done) {
+            // drain
           }
         });
       });

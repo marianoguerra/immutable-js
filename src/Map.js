@@ -1,11 +1,6 @@
 import { Collection, KeyedCollection, KeyedCollectionImpl } from './Collection';
 import { hash } from './Hash';
-import {
-  Iterator,
-  iteratorValue,
-  iteratorDone,
-  getValueFromType,
-} from './Iterator';
+import { Iterator, iteratorDone, getValueFromType } from './Iterator';
 import { sortFactory } from './Operations';
 import { OrderedMap } from './OrderedMap';
 import {

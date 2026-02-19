@@ -532,19 +532,17 @@ export function takeWhileFactory(collection, predicate, context) {
     if (reverse) {
       return this.cacheResult().__iterator(type, reverse);
     }
-    const self = this;
     const iterator = collection.__iterator(ITERATE_ENTRIES, reverse);
-    function* gen() {
+    const g = (function* (seq) {
       let step;
       while (!(step = iterator.next()).done) {
         const [k, v] = step.value;
-        if (!predicate.call(context, v, k, self)) {
+        if (!predicate.call(context, v, k, seq)) {
           return;
         }
         yield getValueFromType(type, k, v);
       }
-    }
-    const g = gen();
+    })(this);
     return new Iterator(() => g.next());
   };
   return takeSequence;
@@ -570,15 +568,14 @@ export function skipWhileFactory(collection, predicate, context, useKeys) {
     if (reverse) {
       return this.cacheResult().__iterator(type, reverse);
     }
-    const self = this;
     const iterator = collection.__iterator(ITERATE_ENTRIES, reverse);
     let iterations = 0;
-    function* gen() {
+    const g = (function* (seq) {
       // Phase 1: skip while predicate holds
       let step;
       while (!(step = iterator.next()).done) {
         const [k, v] = step.value;
-        if (!predicate.call(context, v, k, self)) {
+        if (!predicate.call(context, v, k, seq)) {
           // First non-matching element
           yield useKeys
             ? getValueFromType(type, k, v)
@@ -593,8 +590,7 @@ export function skipWhileFactory(collection, predicate, context, useKeys) {
           ? getValueFromType(type, k, v)
           : getValueFromType(type, iterations++, v);
       }
-    }
-    const g = gen();
+    })(this);
     return new Iterator(() => g.next());
   };
   return skipSequence;
