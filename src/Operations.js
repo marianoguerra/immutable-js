@@ -682,26 +682,14 @@ class ConcatSeq extends SeqImpl {
       return this.cacheResult().__iterator(type, reverse);
     }
 
-    let iterableIndex = 0;
-    let currentIterator = this._wrappedIterables[iterableIndex].__iterator(
-      type,
-      reverse
-    );
-    return new Iterator(() => {
-      let next = currentIterator.next();
-      while (next.done) {
-        iterableIndex++;
-        if (iterableIndex === this._wrappedIterables.length) {
-          return next;
-        }
-        currentIterator = this._wrappedIterables[iterableIndex].__iterator(
-          type,
-          reverse
-        );
-        next = currentIterator.next();
+    const wrappedIterables = this._wrappedIterables;
+    function* gen() {
+      for (const iterable of wrappedIterables) {
+        yield* iterable.__iterator(type, reverse);
       }
-      return next;
-    });
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   }
 }
 
