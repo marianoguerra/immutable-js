@@ -189,27 +189,25 @@ export class FromEntriesSequence extends KeyedSeqImpl {
 
   __iterator(type, reverse) {
     const iterator = this._iter.__iterator(ITERATE_VALUES, reverse);
-    return new Iterator(() => {
-      while (true) {
-        const step = iterator.next();
-        if (step.done) {
-          return step;
-        }
+    function* gen() {
+      let step;
+      while (!(step = iterator.next()).done) {
         const entry = step.value;
         // Check if entry exists first so array access doesn't throw for holes
         // in the parent iteration.
         if (entry) {
           validateEntry(entry);
           const indexedCollection = isCollection(entry);
-          return iteratorValue(
+          yield getValueFromType(
             type,
             indexedCollection ? entry.get(0) : entry[0],
-            indexedCollection ? entry.get(1) : entry[1],
-            step
+            indexedCollection ? entry.get(1) : entry[1]
           );
         }
       }
-    });
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   }
 }
 
