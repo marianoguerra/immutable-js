@@ -131,7 +131,11 @@ export class MapImpl extends KeyedCollectionImpl {
   // @pragma Mutability
 
   __iterator(type, reverse) {
-    return new MapIterator(this, type, reverse);
+    if (!this._root) {
+      return new Iterator(iteratorDone);
+    }
+    const g = mapIteratorGenerator(this._root, type, reverse);
+    return new Iterator(() => g.next());
   }
 
   __iterate(fn, reverse) {
@@ -556,63 +560,24 @@ ValueNode.prototype.iterate = function (fn, _reverse) {
   return fn(this.entry);
 };
 
-class MapIterator extends Iterator {
-  constructor(map, type, reverse) {
-    super();
-
-    this._type = type;
-    this._reverse = reverse;
-    this._stack = map._root && mapIteratorFrame(map._root);
-  }
-
-  next() {
-    const type = this._type;
-    let stack = this._stack;
-    while (stack) {
-      const node = stack.node;
-      const index = stack.index++;
-      let maxIndex;
-      if (node.entry) {
-        if (index === 0) {
-          return mapIteratorValue(type, node.entry);
-        }
-      } else if (node.entries) {
-        maxIndex = node.entries.length - 1;
-        if (index <= maxIndex) {
-          return mapIteratorValue(
-            type,
-            node.entries[this._reverse ? maxIndex - index : index]
-          );
-        }
-      } else {
-        maxIndex = node.nodes.length - 1;
-        if (index <= maxIndex) {
-          const subNode = node.nodes[this._reverse ? maxIndex - index : index];
-          if (subNode) {
-            if (subNode.entry) {
-              return mapIteratorValue(type, subNode.entry);
-            }
-            stack = this._stack = mapIteratorFrame(subNode, stack);
-          }
-          continue;
-        }
-      }
-      stack = this._stack = this._stack.__prev;
+function* mapIteratorGenerator(node, type, reverse) {
+  if (node.entry) {
+    yield getValueFromType(type, node.entry[0], node.entry[1]);
+  } else if (node.entries) {
+    const len = node.entries.length;
+    for (let i = 0; i < len; i++) {
+      const entry = node.entries[reverse ? len - 1 - i : i];
+      yield getValueFromType(type, entry[0], entry[1]);
     }
-    return iteratorDone();
+  } else if (node.nodes) {
+    const len = node.nodes.length;
+    for (let i = 0; i < len; i++) {
+      const subNode = node.nodes[reverse ? len - 1 - i : i];
+      if (subNode) {
+        yield* mapIteratorGenerator(subNode, type, reverse);
+      }
+    }
   }
-}
-
-function mapIteratorValue(type, [key, value]) {
-  return iteratorValue(type, key, value);
-}
-
-function mapIteratorFrame(node, prev) {
-  return {
-    node,
-    index: 0,
-    __prev: prev,
-  };
 }
 
 function makeMap(size, root, ownerID, hash) {
