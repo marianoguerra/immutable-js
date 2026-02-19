@@ -34,16 +34,12 @@ Set.fromKeys = (value) => Set(KeyedCollection(value).keySeq());
 
 Set.intersect = (sets) => {
   sets = Collection(sets).toArray();
-  return sets.length
-    ? SetPrototype.intersect.apply(Set(sets.pop()), sets)
-    : emptySet();
+  return sets.length ? Set(sets.pop()).intersect(...sets) : emptySet();
 };
 
 Set.union = (sets) => {
   const setArray = Collection(sets).toArray();
-  return setArray.length
-    ? SetPrototype.union.apply(Set(setArray.pop()), setArray)
-    : emptySet();
+  return setArray.length ? Set(setArray.pop()).union(...setArray) : emptySet();
 };
 
 export class SetImpl extends SetCollectionImpl {
@@ -113,11 +109,11 @@ export class SetImpl extends SetCollectionImpl {
       return Set(iters[0]);
     }
     return this.withMutations((set) => {
-      for (let ii = 0; ii < iters.length; ii++) {
-        if (typeof iters[ii] === 'string') {
-          set.add(iters[ii]);
+      for (const iter of iters) {
+        if (typeof iter === 'string') {
+          set.add(iter);
         } else {
-          SetCollection(iters[ii]).forEach((value) => set.add(value));
+          SetCollection(iter).forEach((value) => set.add(value));
         }
       }
     });
@@ -185,6 +181,7 @@ SetPrototype.merge = SetPrototype.concat = SetPrototype.union;
 SetPrototype.withMutations = withMutations;
 SetPrototype.asImmutable = asImmutable;
 SetPrototype.asMutable = asMutable;
+SetPrototype[Symbol.toStringTag] = 'Immutable.Set';
 
 SetPrototype.__empty = emptySet;
 SetPrototype.__make = makeSet;

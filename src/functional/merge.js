@@ -62,8 +62,8 @@ export function mergeWithSources(collection, sources, merger) {
           merged[key] = nextVal;
         }
       };
-  for (let i = 0; i < sources.length; i++) {
-    Collection(sources[i]).forEach(mergeItem);
+  for (const source of sources) {
+    Collection(source).forEach(mergeItem);
   }
   return merged;
 }

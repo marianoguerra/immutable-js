@@ -523,7 +523,7 @@ KeyedCollectionPrototype[IS_KEYED_SYMBOL] = true;
 KeyedCollectionPrototype[Symbol.iterator] = CollectionPrototype.entries;
 KeyedCollectionPrototype.toJSON = toObject;
 KeyedCollectionPrototype.__toStringMapper = (v, k) =>
-  quoteString(k) + ': ' + quoteString(v);
+  `${quoteString(k)}: ${quoteString(v)}`;
 
 mixin(IndexedCollectionImpl, {
   // ### Conversion to other types

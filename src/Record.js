@@ -72,11 +72,7 @@ export const Record = (defaultValues, name) => {
           /* eslint-disable no-console */
           if (typeof console === 'object' && console.warn) {
             console.warn(
-              'Cannot define ' +
-                recordName(this) +
-                ' with property "' +
-                propName +
-                '" since that property name is part of the Record API.'
+              `Cannot define ${recordName(this)} with property "${propName}" since that property name is part of the Record API.`
             );
           }
           /* eslint-enable no-console */
@@ -109,14 +105,10 @@ export const Record = (defaultValues, name) => {
 
 export class RecordImpl {
   toString() {
-    let str = recordName(this) + ' { ';
-    const keys = this._keys;
-    let k;
-    for (let i = 0, l = keys.length; i !== l; i++) {
-      k = keys[i];
-      str += (i ? ', ' : '') + k + ': ' + quoteString(this.get(k));
-    }
-    return str + ' }';
+    const body = this._keys
+      .map((k) => `${k}: ${quoteString(this.get(k))}`)
+      .join(', ');
+    return `${recordName(this)} { ${body} }`;
   }
 
   equals(other) {
@@ -229,6 +221,7 @@ RecordPrototype.withMutations = withMutations;
 RecordPrototype.asMutable = asMutable;
 RecordPrototype.asImmutable = asImmutable;
 RecordPrototype[Symbol.iterator] = RecordPrototype.entries;
+RecordPrototype[Symbol.toStringTag] = 'Immutable.Record';
 RecordPrototype.toJSON = RecordPrototype.toObject =
   CollectionPrototype.toObject;
 

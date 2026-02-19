@@ -176,6 +176,7 @@ MapPrototype.withMutations = withMutations;
 MapPrototype.wasAltered = wasAltered;
 MapPrototype.asImmutable = asImmutable;
 MapPrototype.asMutable = asMutable;
+MapPrototype[Symbol.toStringTag] = 'Immutable.Map';
 
 function updateLinearEntries(
   node,
@@ -236,9 +237,9 @@ function spliceEntries(node, ownerID, key, value, idx, len, exists, removed) {
 
 function linearGet(shift, keyHash, key, notSetValue) {
   const entries = this.entries;
-  for (let ii = 0, len = entries.length; ii < len; ii++) {
-    if (is(key, entries[ii][0])) {
-      return entries[ii][1];
+  for (const entry of entries) {
+    if (is(key, entry[0])) {
+      return entry[1];
     }
   }
   return notSetValue;
@@ -712,8 +713,7 @@ function createNodes(ownerID, entries, key, value) {
     ownerID = new OwnerID();
   }
   let node = new ValueNode(ownerID, hash(key), [key, value]);
-  for (let ii = 0; ii < entries.length; ii++) {
-    const entry = entries[ii];
+  for (const entry of entries) {
     node = node.update(ownerID, 0, hash(entry[0]), entry[0], entry[1]);
   }
   return node;

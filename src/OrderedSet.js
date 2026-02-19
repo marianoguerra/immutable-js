@@ -38,6 +38,7 @@ OrderedSet.isOrderedSet = isOrderedSet;
 
 const OrderedSetPrototype = OrderedSetImpl.prototype;
 OrderedSetPrototype[IS_ORDERED_SYMBOL] = true;
+OrderedSetPrototype[Symbol.toStringTag] = 'Immutable.OrderedSet';
 OrderedSetPrototype.zip = IndexedCollectionPrototype.zip;
 OrderedSetPrototype.zipWith = IndexedCollectionPrototype.zipWith;
 OrderedSetPrototype.zipAll = IndexedCollectionPrototype.zipAll;

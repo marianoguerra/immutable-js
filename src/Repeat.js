@@ -25,7 +25,7 @@ export class RepeatImpl extends IndexedSeqImpl {
     if (this.size === 0) {
       return 'Repeat []';
     }
-    return 'Repeat [ ' + this._value + ' ' + this.size + ' times ]';
+    return `Repeat [ ${this._value} ${this.size} times ]`;
   }
 
   get(index, notSetValue) {

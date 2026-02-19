@@ -50,7 +50,7 @@ export class StackImpl extends IndexedCollectionImpl {
   }
 
   peek() {
-    return this._head && this._head.value;
+    return this._head?.value;
   }
 
   // @pragma Modification
@@ -192,6 +192,7 @@ StackPrototype.withMutations = withMutations;
 StackPrototype.wasAltered = wasAltered;
 StackPrototype.asImmutable = asImmutable;
 StackPrototype.asMutable = asMutable;
+StackPrototype[Symbol.toStringTag] = 'Immutable.Stack';
 
 function returnStack(stack, newSize, head) {
   if (stack.__ownerID) {

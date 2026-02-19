@@ -171,8 +171,7 @@ export class ListImpl extends IndexedCollectionImpl {
 
   concat(...collections) {
     const seqs = [];
-    for (let i = 0; i < collections.length; i++) {
-      const collection = collections[i];
+    for (const collection of collections) {
       const seq = IndexedCollection(
         typeof collection !== 'string' && hasIterator(collection)
           ? collection
@@ -282,6 +281,7 @@ ListPrototype.withMutations = withMutations;
 ListPrototype.wasAltered = wasAltered;
 ListPrototype.asImmutable = asImmutable;
 ListPrototype.asMutable = asMutable;
+ListPrototype[Symbol.toStringTag] = 'Immutable.List';
 
 class VNode {
   constructor(array, ownerID) {
