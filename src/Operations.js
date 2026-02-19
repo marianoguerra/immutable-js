@@ -766,29 +766,23 @@ export function flattenFactory(collection, depth, useKeys) {
     if (reverse) {
       return this.cacheResult().__iterator(type, reverse);
     }
-    let iterator = collection.__iterator(type, reverse);
-    const stack = [];
     let iterations = 0;
-    return new Iterator(() => {
-      while (iterator) {
-        const step = iterator.next();
-        if (step.done !== false) {
-          iterator = stack.pop();
-          continue;
-        }
-        let v = step.value;
-        if (type === ITERATE_ENTRIES) {
-          v = v[1];
-        }
-        if ((!depth || stack.length < depth) && isCollection(v)) {
-          stack.push(iterator);
-          iterator = v.__iterator(type, reverse);
+    function* flatGen(iter, currentDepth) {
+      const innerIterator = iter.__iterator(ITERATE_ENTRIES, reverse);
+      let step;
+      while (!(step = innerIterator.next()).done) {
+        const [k, v] = step.value;
+        if ((!depth || currentDepth < depth) && isCollection(v)) {
+          yield* flatGen(v, currentDepth + 1);
         } else {
-          return useKeys ? step : iteratorValue(type, iterations++, v, step);
+          yield useKeys
+            ? getValueFromType(type, k, v)
+            : getValueFromType(type, iterations++, v);
         }
       }
-      return iteratorDone();
-    });
+    }
+    const g = flatGen(collection, 0);
+    return new Iterator(() => g.next());
   };
   return flatSequence;
 }
