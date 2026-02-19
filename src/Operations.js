@@ -368,18 +368,17 @@ export function filterFactory(collection, predicate, context, useKeys) {
   filterSequence.__iteratorUncached = function (type, reverse) {
     const iterator = collection.__iterator(ITERATE_ENTRIES, reverse);
     let iterations = 0;
-    return new Iterator(() => {
-      while (true) {
-        const step = iterator.next();
-        if (step.done) {
-          return step;
-        }
+    function* gen() {
+      let step;
+      while (!(step = iterator.next()).done) {
         const [key, value] = step.value;
         if (predicate.call(context, value, key, collection)) {
-          return iteratorValue(type, useKeys ? key : iterations++, value, step);
+          yield getValueFromType(type, useKeys ? key : iterations++, value);
         }
       }
-    });
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   };
   return filterSequence;
 }
