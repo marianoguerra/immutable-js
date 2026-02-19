@@ -9,6 +9,7 @@ import {
   Iterator,
   iteratorValue,
   iteratorDone,
+  getValueFromType,
   ITERATE_KEYS,
   ITERATE_VALUES,
   ITERATE_ENTRIES,

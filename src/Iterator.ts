@@ -72,19 +72,19 @@ export function iteratorValue<K, V>(
   };
 }
 
-function getValueFromType<K, V>(type: typeof ITERATE_KEYS, k: K, v: V): K;
-function getValueFromType<K, V>(
+export function getValueFromType<K, V>(type: typeof ITERATE_KEYS, k: K, v: V): K;
+export function getValueFromType<K, V>(
   type: typeof ITERATE_VALUES,
   k: K,
   v: V
 ): V | undefined;
-function getValueFromType<K, V>(
+export function getValueFromType<K, V>(
   type: typeof ITERATE_ENTRIES,
   k: K,
   v: V
 ): [K, V] | undefined;
-function getValueFromType<K, V>(type: IteratorType, k: K, v: V): K | V | [K, V];
-function getValueFromType<K, V>(
+export function getValueFromType<K, V>(type: IteratorType, k: K, v: V): K | V | [K, V];
+export function getValueFromType<K, V>(
   type: IteratorType,
   k: K,
   v: V
