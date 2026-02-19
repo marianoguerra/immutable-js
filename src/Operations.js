@@ -278,12 +278,11 @@ export function mapFactory(collection, mapper, context) {
       if (step.done) {
         return step;
       }
-      const entry = step.value;
-      const key = entry[0];
+      const [key, value] = step.value;
       return iteratorValue(
         type,
         key,
-        mapper.call(context, entry[1], key, collection),
+        mapper.call(context, value, key, collection),
         step
       );
     });
@@ -329,11 +328,11 @@ export function reverseFactory(collection, useKeys) {
       if (step.done) {
         return step;
       }
-      const entry = step.value;
+      const [key, value] = step.value;
       return iteratorValue(
         type,
-        useKeys ? entry[0] : reverse ? this.size - ++i : i++,
-        entry[1],
+        useKeys ? key : reverse ? this.size - ++i : i++,
+        value,
         step
       );
     });
@@ -374,9 +373,7 @@ export function filterFactory(collection, predicate, context, useKeys) {
         if (step.done) {
           return step;
         }
-        const entry = step.value;
-        const key = entry[0];
-        const value = entry[1];
+        const [key, value] = step.value;
         if (predicate.call(context, value, key, collection)) {
           return iteratorValue(type, useKeys ? key : iterations++, value, step);
         }
@@ -543,9 +540,7 @@ export function takeWhileFactory(collection, predicate, context) {
       if (step.done) {
         return step;
       }
-      const entry = step.value;
-      const k = entry[0];
-      const v = entry[1];
+      const [k, v] = step.value;
       if (!predicate.call(context, v, k, this)) {
         iterating = false;
         return iteratorDone();
@@ -594,9 +589,7 @@ export function skipWhileFactory(collection, predicate, context, useKeys) {
           }
           return iteratorValue(type, iterations++, step.value[1], step);
         }
-        const entry = step.value;
-        k = entry[0];
-        v = entry[1];
+        [k, v] = step.value;
         if (skipping) {
           skipping = predicate.call(context, v, k, this);
         }

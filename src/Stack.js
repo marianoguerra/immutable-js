@@ -172,8 +172,8 @@ export class StackImpl extends IndexedCollectionImpl {
     let node = this._head;
     return new Iterator(() => {
       if (node) {
-        const value = node.value;
-        node = node.next;
+        const { value, next } = node;
+        node = next;
         return iteratorValue(type, iterations++, value);
       }
       return iteratorDone();

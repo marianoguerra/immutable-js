@@ -111,8 +111,7 @@ export function emptyOrderedMap() {
 }
 
 function updateOrderedMap(omap, k, v) {
-  const map = omap._map;
-  const list = omap._list;
+  const { _map: map, _list: list } = omap;
   const i = map.get(k);
   const has = i !== undefined;
   let newMap;

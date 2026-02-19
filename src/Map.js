@@ -132,9 +132,9 @@ export class MapImpl extends KeyedCollectionImpl {
   __iterate(fn, reverse) {
     let iterations = 0;
     if (this._root) {
-      this._root.iterate((entry) => {
+      this._root.iterate(([key, value]) => {
         iterations++;
-        return fn(entry[1], entry[0], this);
+        return fn(value, key, this);
       }, reverse);
     }
     return iterations;
@@ -237,9 +237,9 @@ function spliceEntries(node, ownerID, key, value, idx, len, exists, removed) {
 
 function linearGet(shift, keyHash, key, notSetValue) {
   const entries = this.entries;
-  for (const entry of entries) {
-    if (is(key, entry[0])) {
-      return entry[1];
+  for (const [k, v] of entries) {
+    if (is(key, k)) {
+      return v;
     }
   }
   return notSetValue;
@@ -598,13 +598,13 @@ class MapIterator extends Iterator {
   }
 }
 
-function mapIteratorValue(type, entry) {
-  return iteratorValue(type, entry[0], entry[1]);
+function mapIteratorValue(type, [key, value]) {
+  return iteratorValue(type, key, value);
 }
 
 function mapIteratorFrame(node, prev) {
   return {
-    node: node,
+    node,
     index: 0,
     __prev: prev,
   };
@@ -713,8 +713,8 @@ function createNodes(ownerID, entries, key, value) {
     ownerID = new OwnerID();
   }
   let node = new ValueNode(ownerID, hash(key), [key, value]);
-  for (const entry of entries) {
-    node = node.update(ownerID, 0, hash(entry[0]), entry[0], entry[1]);
+  for (const [k, v] of entries) {
+    node = node.update(ownerID, 0, hash(k), k, v);
   }
   return node;
 }

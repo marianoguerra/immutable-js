@@ -50,8 +50,8 @@ export class SeqImpl extends CollectionImpl {
       const size = cache.length;
       let i = 0;
       while (i !== size) {
-        const entry = cache[reverse ? size - ++i : i++];
-        if (fn(entry[1], entry[0], this) === false) {
+        const [key, value] = cache[reverse ? size - ++i : i++];
+        if (fn(value, key, this) === false) {
           break;
         }
       }
@@ -71,8 +71,8 @@ export class SeqImpl extends CollectionImpl {
         if (i === size) {
           return iteratorDone();
         }
-        const entry = cache[reverse ? size - ++i : i++];
-        return iteratorValue(type, entry[0], entry[1]);
+        const [key, value] = cache[reverse ? size - ++i : i++];
+        return iteratorValue(type, key, value);
       });
     }
     return this.__iteratorUncached(type, reverse);
