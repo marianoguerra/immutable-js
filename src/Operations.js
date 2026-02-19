@@ -572,31 +572,32 @@ export function skipWhileFactory(collection, predicate, context, useKeys) {
     if (reverse) {
       return this.cacheResult().__iterator(type, reverse);
     }
+    const self = this;
     const iterator = collection.__iterator(ITERATE_ENTRIES, reverse);
-    let skipping = true;
     let iterations = 0;
-    return new Iterator(() => {
+    function* gen() {
+      // Phase 1: skip while predicate holds
       let step;
-      let k;
-      let v;
-      do {
-        step = iterator.next();
-        if (step.done) {
-          if (useKeys || type === ITERATE_VALUES) {
-            return step;
-          }
-          if (type === ITERATE_KEYS) {
-            return iteratorValue(type, iterations++, undefined, step);
-          }
-          return iteratorValue(type, iterations++, step.value[1], step);
+      while (!(step = iterator.next()).done) {
+        const [k, v] = step.value;
+        if (!predicate.call(context, v, k, self)) {
+          // First non-matching element
+          yield useKeys
+            ? getValueFromType(type, k, v)
+            : getValueFromType(type, iterations++, v);
+          break;
         }
-        [k, v] = step.value;
-        if (skipping) {
-          skipping = predicate.call(context, v, k, this);
-        }
-      } while (skipping);
-      return type === ITERATE_ENTRIES ? step : iteratorValue(type, k, v, step);
-    });
+      }
+      // Phase 2: yield all remaining
+      while (!(step = iterator.next()).done) {
+        const [k, v] = step.value;
+        yield useKeys
+          ? getValueFromType(type, k, v)
+          : getValueFromType(type, iterations++, v);
+      }
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   };
   return skipSequence;
 }
