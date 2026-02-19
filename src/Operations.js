@@ -488,24 +488,28 @@ export function sliceFactory(collection, begin, end, useKeys) {
       return new Iterator(iteratorDone);
     }
     const iterator = collection.__iterator(type, reverse);
-    let skipped = 0;
-    let iterations = 0;
-    return new Iterator(() => {
-      while (skipped++ < resolvedBegin) {
+    function* gen() {
+      // Phase 1: skip
+      for (let i = 0; i < resolvedBegin; i++) {
         iterator.next();
       }
-      if (++iterations > sliceSize) {
-        return iteratorDone();
+      // Phase 2: yield up to sliceSize items
+      for (let iterations = 0; iterations < sliceSize; iterations++) {
+        const step = iterator.next();
+        if (step.done) {
+          return;
+        }
+        if (useKeys || type === ITERATE_VALUES) {
+          yield step.value;
+        } else if (type === ITERATE_KEYS) {
+          yield getValueFromType(type, iterations, undefined);
+        } else {
+          yield getValueFromType(type, iterations, step.value[1]);
+        }
       }
-      const step = iterator.next();
-      if (useKeys || type === ITERATE_VALUES || step.done) {
-        return step;
-      }
-      if (type === ITERATE_KEYS) {
-        return iteratorValue(type, iterations - 1, undefined, step);
-      }
-      return iteratorValue(type, iterations - 1, step.value[1], step);
-    });
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   };
 
   return sliceSeq;
