@@ -798,18 +798,20 @@ export function interposeFactory(collection, separator) {
   interposedSequence.__iteratorUncached = function (type, reverse) {
     const iterator = collection.__iterator(ITERATE_VALUES, reverse);
     let iterations = 0;
-    let step;
-    return new Iterator(() => {
-      if (!step || iterations % 2) {
-        step = iterator.next();
-        if (step.done) {
-          return step;
-        }
+    function* gen() {
+      const first = iterator.next();
+      if (first.done) {
+        return;
       }
-      return iterations % 2
-        ? iteratorValue(type, iterations++, separator)
-        : iteratorValue(type, iterations++, step.value, step);
-    });
+      yield getValueFromType(type, iterations++, first.value);
+      let step;
+      while (!(step = iterator.next()).done) {
+        yield getValueFromType(type, iterations++, separator);
+        yield getValueFromType(type, iterations++, step.value);
+      }
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   };
   return interposedSequence;
 }
