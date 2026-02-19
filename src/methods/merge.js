@@ -9,15 +9,15 @@ export function merge(...iters) {
 
 export function mergeWith(merger, ...iters) {
   if (typeof merger !== 'function') {
-    throw new TypeError('Invalid merger function: ' + merger);
+    throw new TypeError(`Invalid merger function: ${merger}`);
   }
   return mergeIntoKeyedWith(this, iters, merger);
 }
 
 function mergeIntoKeyedWith(collection, collections, merger) {
   const iters = [];
-  for (let ii = 0; ii < collections.length; ii++) {
-    const collection = KeyedCollection(collections[ii]);
+  for (const item of collections) {
+    const collection = KeyedCollection(item);
     if (collection.size !== 0) {
       iters.push(collection);
     }
@@ -44,8 +44,8 @@ function mergeIntoKeyedWith(collection, collections, merger) {
       : (value, key) => {
           collection.set(key, value);
         };
-    for (let ii = 0; ii < iters.length; ii++) {
-      iters[ii].forEach(mergeIntoCollection);
+    for (const iter of iters) {
+      iter.forEach(mergeIntoCollection);
     }
   });
 }

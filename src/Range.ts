@@ -50,7 +50,7 @@ export class RangeImpl extends IndexedSeqImpl implements Seq.Indexed<number> {
   override toString(): string {
     return this.size === 0
       ? 'Range []'
-      : `Range [ ${this._start}...${this._end}${this._step !== 1 ? ' by ' + this._step : ''} ]`;
+      : `Range [ ${this._start}...${this._end}${this._step !== 1 ? ` by ${this._step}` : ''} ]`;
   }
 
   get<NSV>(index: number, notSetValue: NSV): number | NSV;
@@ -128,13 +128,14 @@ export class RangeImpl extends IndexedSeqImpl implements Seq.Indexed<number> {
     const step = this._step;
     let value = reverse ? this._start + (size - 1) * step : this._start;
     let i = 0;
-    return (function* () {
+    function* gen() {
       while (i !== size) {
         const v = value;
         value += reverse ? -step : step;
         yield getValueFromType(type, reverse ? size - ++i : i++, v);
       }
-    })();
+    }
+    return gen();
   }
 
   override equals(other: unknown): boolean {

@@ -155,15 +155,9 @@ mixin(CollectionImpl, {
 
   __toString(head, tail) {
     if (this.size === 0) {
-      return head + tail;
+      return `${head}${tail}`;
     }
-    return (
-      head +
-      ' ' +
-      this.toSeq().map(this.__toStringMapper).join(', ') +
-      ' ' +
-      tail
-    );
+    return `${head} ${this.toSeq().map(this.__toStringMapper).join(', ')} ${tail}`;
   },
 
   // ### ES6 Collection methods (ES6 Array and Map)
@@ -196,7 +190,7 @@ mixin(CollectionImpl, {
 
   join(separator) {
     assertNotInfinite(this.size);
-    separator = separator !== undefined ? '' + separator : ',';
+    separator = separator !== undefined ? String(separator) : ',';
     let joined = '';
     let isFirst = true;
     this.__iterate((v) => {

@@ -79,11 +79,12 @@ export class RepeatImpl extends IndexedSeqImpl {
     const size = this.size;
     let i = 0;
     const value = this._value;
-    return (function* () {
+    function* gen() {
       while (i !== size) {
         yield getValueFromType(type, reverse ? size - ++i : i++, value);
       }
-    })();
+    }
+    return gen();
   }
 
   equals(other) {

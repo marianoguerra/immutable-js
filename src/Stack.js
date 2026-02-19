@@ -170,13 +170,14 @@ export class StackImpl extends IndexedCollectionImpl {
     }
     let iterations = 0;
     let node = this._head;
-    return (function* () {
+    function* gen() {
       while (node) {
         const { value, next } = node;
         node = next;
         yield getValueFromType(type, iterations++, value);
       }
-    })();
+    }
+    return gen();
   }
 }
 

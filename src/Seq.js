@@ -79,12 +79,13 @@ export class SeqImpl extends CollectionImpl {
     if (cache) {
       const size = cache.length;
       let i = 0;
-      return (function* () {
+      function* gen() {
         while (i !== size) {
           const [key, value] = cache[reverse ? size - ++i : i++];
           yield getValueFromType(type, key, value);
         }
-      })();
+      }
+      return gen();
     }
     return this.__iteratorUncached(type, reverse);
   }
@@ -180,12 +181,13 @@ export class ArraySeq extends IndexedSeqImpl {
     const array = this._array;
     const size = array.length;
     let i = 0;
-    return (function* () {
+    function* gen() {
       while (i !== size) {
         const ii = reverse ? size - ++i : i++;
         yield getValueFromType(type, ii, array[ii]);
       }
-    })();
+    }
+    return gen();
   }
 }
 
@@ -231,12 +233,13 @@ class ObjectSeq extends KeyedSeqImpl {
     const keys = this._keys;
     const size = keys.length;
     let i = 0;
-    return (function* () {
+    function* gen() {
       while (i !== size) {
         const key = keys[reverse ? size - ++i : i++];
         yield getValueFromType(type, key, object[key]);
       }
-    })();
+    }
+    return gen();
   }
 }
 ObjectSeq.prototype[IS_ORDERED_SYMBOL] = true;
@@ -276,11 +279,12 @@ class CollectionSeq extends IndexedSeqImpl {
       return emptyIterator();
     }
     let iterations = 0;
-    return (function* () {
+    function* gen() {
       for (const value of iterator) {
         yield getValueFromType(type, iterations++, value);
       }
-    })();
+    }
+    return gen();
   }
 }
 
@@ -298,8 +302,7 @@ export function keyedSeqFromValue(value) {
     return new ObjectSeq(value);
   }
   throw new TypeError(
-    'Expected Array or collection object of [k, v] entries, or keyed object: ' +
-      value
+    `Expected Array or collection object of [k, v] entries, or keyed object: ${value}`
   );
 }
 
@@ -309,7 +312,7 @@ export function indexedSeqFromValue(value) {
     return seq;
   }
   throw new TypeError(
-    'Expected Array or collection object of values: ' + value
+    `Expected Array or collection object of values: ${value}`
   );
 }
 
@@ -326,7 +329,7 @@ function seqFromValue(value) {
     return new ObjectSeq(value);
   }
   throw new TypeError(
-    'Expected Array or collection object of values, or keyed object: ' + value
+    `Expected Array or collection object of values, or keyed object: ${value}`
   );
 }
 

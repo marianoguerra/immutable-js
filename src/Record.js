@@ -69,13 +69,10 @@ export const Record = (defaultValues, name) => {
         const propName = keys[i];
         indices[propName] = i;
         if (RecordTypePrototype[propName]) {
-          /* eslint-disable no-console */
-          if (typeof console === 'object' && console.warn) {
-            console.warn(
-              `Cannot define ${recordName(this)} with property "${propName}" since that property name is part of the Record API.`
-            );
-          }
-          /* eslint-enable no-console */
+          // eslint-disable-next-line no-console
+          console.warn(
+            `Cannot define ${recordName(this)} with property "${propName}" since that property name is part of the Record API.`
+          );
         } else {
           setProp(RecordTypePrototype, propName);
         }
