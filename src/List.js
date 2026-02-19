@@ -220,22 +220,18 @@ export class ListImpl extends IndexedCollectionImpl {
 
   __iterator(type, reverse) {
     let index = reverse ? this.size : 0;
-    const values = iterateList(this, reverse);
     function* gen() {
-      let value;
-      while ((value = values()) !== DONE) {
+      for (const value of iterateList(this, reverse)) {
         yield getValueFromType(type, reverse ? --index : index++, value);
       }
     }
-    const g = gen();
+    const g = gen.call(this);
     return new Iterator(() => g.next());
   }
 
   __iterate(fn, reverse) {
     let index = reverse ? this.size : 0;
-    const values = iterateList(this, reverse);
-    let value;
-    while ((value = values()) !== DONE) {
+    for (const value of iterateList(this, reverse)) {
       if (fn(value, reverse ? --index : index++, this) === false) {
         break;
       }
@@ -358,66 +354,50 @@ class VNode {
   }
 }
 
-const DONE = {};
-
-function iterateList(list, reverse) {
+function* iterateList(list, reverse) {
   const left = list._origin;
   const right = list._capacity;
   const tailPos = getTailOffset(right);
   const tail = list._tail;
 
-  return iterateNodeOrLeaf(list._root, list._level, 0);
+  yield* iterateNodeOrLeaf(list._root, list._level, 0);
 
-  function iterateNodeOrLeaf(node, level, offset) {
-    return level === 0
-      ? iterateLeaf(node, offset)
-      : iterateNode(node, level, offset);
+  function* iterateNodeOrLeaf(node, level, offset) {
+    if (level === 0) {
+      yield* iterateLeaf(node, offset);
+    } else {
+      yield* iterateNode(node, level, offset);
+    }
   }
 
-  function iterateLeaf(node, offset) {
+  function* iterateLeaf(node, offset) {
     const array = offset === tailPos ? tail && tail.array : node && node.array;
     let from = offset > left ? 0 : left - offset;
     let to = right - offset;
     if (to > SIZE) {
       to = SIZE;
     }
-    return () => {
-      if (from === to) {
-        return DONE;
-      }
+    while (from !== to) {
       const idx = reverse ? --to : from++;
-      return array && array[idx];
-    };
+      yield array && array[idx];
+    }
   }
 
-  function iterateNode(node, level, offset) {
-    let values;
+  function* iterateNode(node, level, offset) {
     const array = node && node.array;
     let from = offset > left ? 0 : (left - offset) >> level;
     let to = ((right - offset) >> level) + 1;
     if (to > SIZE) {
       to = SIZE;
     }
-    return () => {
-      while (true) {
-        if (values) {
-          const value = values();
-          if (value !== DONE) {
-            return value;
-          }
-          values = null;
-        }
-        if (from === to) {
-          return DONE;
-        }
-        const idx = reverse ? --to : from++;
-        values = iterateNodeOrLeaf(
-          array && array[idx],
-          level - SHIFT,
-          offset + (idx << level)
-        );
-      }
-    };
+    while (from !== to) {
+      const idx = reverse ? --to : from++;
+      yield* iterateNodeOrLeaf(
+        array && array[idx],
+        level - SHIFT,
+        offset + (idx << level)
+      );
+    }
   }
 }
 
