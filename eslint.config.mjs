@@ -15,6 +15,7 @@ export default tseslintConfig(
     ignores: [
       'npm/',
       'dist/',
+      'builds/',
       'website/out/',
       'website/.next/',
       'website/next-env.d.ts',

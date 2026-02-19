@@ -1,8 +1,8 @@
 import { CollectionImpl } from './Collection';
 import {
   Iterator,
-  iteratorValue,
   iteratorDone,
+  getValueFromType,
   hasIterator,
   isIterator,
   getIterator,
@@ -67,13 +67,14 @@ export class SeqImpl extends CollectionImpl {
     if (cache) {
       const size = cache.length;
       let i = 0;
-      return new Iterator(() => {
-        if (i === size) {
-          return iteratorDone();
+      function* gen() {
+        while (i !== size) {
+          const [key, value] = cache[reverse ? size - ++i : i++];
+          yield getValueFromType(type, key, value);
         }
-        const [key, value] = cache[reverse ? size - ++i : i++];
-        return iteratorValue(type, key, value);
-      });
+      }
+      const g = gen();
+      return new Iterator(() => g.next());
     }
     return this.__iteratorUncached(type, reverse);
   }
@@ -169,13 +170,14 @@ export class ArraySeq extends IndexedSeqImpl {
     const array = this._array;
     const size = array.length;
     let i = 0;
-    return new Iterator(() => {
-      if (i === size) {
-        return iteratorDone();
+    function* gen() {
+      while (i !== size) {
+        const ii = reverse ? size - ++i : i++;
+        yield getValueFromType(type, ii, array[ii]);
       }
-      const ii = reverse ? size - ++i : i++;
-      return iteratorValue(type, ii, array[ii]);
-    });
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   }
 }
 
@@ -220,13 +222,14 @@ class ObjectSeq extends KeyedSeqImpl {
     const keys = this._keys;
     const size = keys.length;
     let i = 0;
-    return new Iterator(() => {
-      if (i === size) {
-        return iteratorDone();
+    function* gen() {
+      while (i !== size) {
+        const key = keys[reverse ? size - ++i : i++];
+        yield getValueFromType(type, key, object[key]);
       }
-      const key = keys[reverse ? size - ++i : i++];
-      return iteratorValue(type, key, object[key]);
-    });
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   }
 }
 ObjectSeq.prototype[IS_ORDERED_SYMBOL] = true;
@@ -266,10 +269,14 @@ class CollectionSeq extends IndexedSeqImpl {
       return new Iterator(iteratorDone);
     }
     let iterations = 0;
-    return new Iterator(() => {
-      const step = iterator.next();
-      return step.done ? step : iteratorValue(type, iterations++, step.value);
-    });
+    function* gen() {
+      let step;
+      while (!(step = iterator.next()).done) {
+        yield getValueFromType(type, iterations++, step.value);
+      }
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   }
 }
 

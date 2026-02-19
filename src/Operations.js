@@ -7,7 +7,6 @@ import {
 import {
   getIterator,
   Iterator,
-  iteratorValue,
   iteratorDone,
   getValueFromType,
   ITERATE_KEYS,
@@ -118,17 +117,18 @@ export class ToIndexedSequence extends IndexedSeqImpl {
     if (reverse) {
       ensureSize(this);
     }
-    return new Iterator(() => {
-      const step = iterator.next();
-      return step.done
-        ? step
-        : iteratorValue(
-            type,
-            reverse ? this.size - ++i : i++,
-            step.value,
-            step
-          );
-    });
+    function* gen() {
+      let step;
+      while (!(step = iterator.next()).done) {
+        yield getValueFromType(
+          type,
+          reverse ? this.size - ++i : i++,
+          step.value
+        );
+      }
+    }
+    const g = gen.call(this);
+    return new Iterator(() => g.next());
   }
 }
 
@@ -150,12 +150,14 @@ export class ToSetSequence extends SetSeqImpl {
 
   __iterator(type, reverse) {
     const iterator = this._iter.__iterator(ITERATE_VALUES, reverse);
-    return new Iterator(() => {
-      const step = iterator.next();
-      return step.done
-        ? step
-        : iteratorValue(type, step.value, step.value, step);
-    });
+    function* gen() {
+      let step;
+      while (!(step = iterator.next()).done) {
+        yield getValueFromType(type, step.value, step.value);
+      }
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   }
 }
 
@@ -236,15 +238,14 @@ export function flipFactory(collection) {
   flipSequence.__iteratorUncached = function (type, reverse) {
     if (type === ITERATE_ENTRIES) {
       const iterator = collection.__iterator(type, reverse);
-      return new Iterator(() => {
-        const step = iterator.next();
-        if (!step.done) {
-          const k = step.value[0];
-          step.value[0] = step.value[1];
-          step.value[1] = k;
+      function* gen() {
+        let step;
+        while (!(step = iterator.next()).done) {
+          yield [step.value[1], step.value[0]];
         }
-        return step;
-      });
+      }
+      const g = gen();
+      return new Iterator(() => g.next());
     }
     return collection.__iterator(
       type === ITERATE_VALUES ? ITERATE_KEYS : ITERATE_VALUES,
@@ -272,19 +273,19 @@ export function mapFactory(collection, mapper, context) {
   };
   mappedSequence.__iteratorUncached = function (type, reverse) {
     const iterator = collection.__iterator(ITERATE_ENTRIES, reverse);
-    return new Iterator(() => {
-      const step = iterator.next();
-      if (step.done) {
-        return step;
+    function* gen() {
+      let step;
+      while (!(step = iterator.next()).done) {
+        const [key, value] = step.value;
+        yield getValueFromType(
+          type,
+          key,
+          mapper.call(context, value, key, collection)
+        );
       }
-      const [key, value] = step.value;
-      return iteratorValue(
-        type,
-        key,
-        mapper.call(context, value, key, collection),
-        step
-      );
-    });
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   };
   return mappedSequence;
 }
@@ -316,25 +317,25 @@ export function reverseFactory(collection, useKeys) {
       !reverse
     );
   };
-  reversedSequence.__iterator = (type, reverse) => {
+  reversedSequence.__iterator = function (type, reverse) {
     let i = 0;
     if (reverse) {
       ensureSize(collection);
     }
     const iterator = collection.__iterator(ITERATE_ENTRIES, !reverse);
-    return new Iterator(() => {
-      const step = iterator.next();
-      if (step.done) {
-        return step;
+    function* gen() {
+      let step;
+      while (!(step = iterator.next()).done) {
+        const [key, value] = step.value;
+        yield getValueFromType(
+          type,
+          useKeys ? key : reverse ? this.size - ++i : i++,
+          value
+        );
       }
-      const [key, value] = step.value;
-      return iteratorValue(
-        type,
-        useKeys ? key : reverse ? this.size - ++i : i++,
-        value,
-        step
-      );
-    });
+    }
+    const g = gen.call(this);
+    return new Iterator(() => g.next());
   };
   return reversedSequence;
 }
@@ -900,24 +901,24 @@ export function zipWithFactory(keyIter, zipper, iters, zipAll) {
       (i) => ((i = Collection(i)), getIterator(reverse ? i.reverse() : i))
     );
     let iterations = 0;
-    let isDone = false;
-    return new Iterator(() => {
-      let steps;
-      if (!isDone) {
-        steps = iterators.map((i) => i.next());
-        isDone = zipAll
+    function* gen() {
+      while (true) {
+        const steps = iterators.map((i) => i.next());
+        const isDone = zipAll
           ? steps.every((s) => s.done)
           : steps.some((s) => s.done);
+        if (isDone) {
+          return;
+        }
+        yield getValueFromType(
+          type,
+          iterations++,
+          zipper(...steps.map((s) => s.value))
+        );
       }
-      if (isDone) {
-        return iteratorDone();
-      }
-      return iteratorValue(
-        type,
-        iterations++,
-        zipper(...steps.map((s) => s.value))
-      );
-    });
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   };
   return zipSequence;
 }

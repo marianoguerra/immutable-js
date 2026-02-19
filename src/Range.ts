@@ -1,10 +1,5 @@
 import type { Seq } from '../type-definitions/immutable';
-import {
-  Iterator,
-  iteratorValue,
-  iteratorDone,
-  type IteratorType,
-} from './Iterator';
+import { Iterator, getValueFromType, type IteratorType } from './Iterator';
 import { IndexedSeqImpl } from './Seq';
 import { wrapIndex, wholeSlice, resolveBegin, resolveEnd } from './TrieUtils';
 import deepEqual from './utils/deepEqual';
@@ -133,14 +128,17 @@ export class RangeImpl extends IndexedSeqImpl implements Seq.Indexed<number> {
     const step = this._step;
     let value = reverse ? this._start + (size - 1) * step : this._start;
     let i = 0;
-    return new Iterator<number>(() => {
-      if (i === size) {
-        return iteratorDone();
+    function* gen() {
+      while (i !== size) {
+        const v = value;
+        value += reverse ? -step : step;
+        yield getValueFromType(type, reverse ? size - ++i : i++, v);
       }
-      const v = value;
-      value += reverse ? -step : step;
-      return iteratorValue(type, reverse ? size - ++i : i++, v);
-    });
+    }
+    const g = gen();
+    return new Iterator<number>(
+      () => g.next() as IteratorResult<number, undefined>
+    );
   }
 
   override equals(other: unknown): boolean {

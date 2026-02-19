@@ -1,5 +1,5 @@
 import { IndexedCollection, IndexedCollectionImpl } from './Collection';
-import { Iterator, iteratorValue, iteratorDone } from './Iterator';
+import { Iterator, getValueFromType } from './Iterator';
 import { ArraySeq } from './Seq';
 import { wholeSlice, resolveBegin, resolveEnd, wrapIndex } from './TrieUtils';
 import { asImmutable } from './methods/asImmutable';
@@ -170,14 +170,15 @@ export class StackImpl extends IndexedCollectionImpl {
     }
     let iterations = 0;
     let node = this._head;
-    return new Iterator(() => {
-      if (node) {
+    function* gen() {
+      while (node) {
         const { value, next } = node;
         node = next;
-        return iteratorValue(type, iterations++, value);
+        yield getValueFromType(type, iterations++, value);
       }
-      return iteratorDone();
-    });
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   }
 }
 
