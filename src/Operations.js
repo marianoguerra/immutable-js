@@ -532,23 +532,20 @@ export function takeWhileFactory(collection, predicate, context) {
     if (reverse) {
       return this.cacheResult().__iterator(type, reverse);
     }
+    const self = this;
     const iterator = collection.__iterator(ITERATE_ENTRIES, reverse);
-    let iterating = true;
-    return new Iterator(() => {
-      if (!iterating) {
-        return iteratorDone();
+    function* gen() {
+      let step;
+      while (!(step = iterator.next()).done) {
+        const [k, v] = step.value;
+        if (!predicate.call(context, v, k, self)) {
+          return;
+        }
+        yield getValueFromType(type, k, v);
       }
-      const step = iterator.next();
-      if (step.done) {
-        return step;
-      }
-      const [k, v] = step.value;
-      if (!predicate.call(context, v, k, this)) {
-        iterating = false;
-        return iteratorDone();
-      }
-      return type === ITERATE_ENTRIES ? step : iteratorValue(type, k, v, step);
-    });
+    }
+    const g = gen();
+    return new Iterator(() => g.next());
   };
   return takeSequence;
 }
