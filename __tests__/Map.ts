@@ -82,7 +82,6 @@ describe('Map', () => {
 
   it('does not accept a scalar', () => {
     expect(() => {
-      // @ts-expect-error -- scalar is not a valid argument
       Map(3);
     }).toThrow(
       'Expected Array or collection object of [k, v] entries, or keyed object: 3'
