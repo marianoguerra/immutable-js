@@ -220,10 +220,9 @@ export class ListImpl extends IndexedCollectionImpl {
 
   __iterator(type, reverse) {
     let index = reverse ? this.size : 0;
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const self = this;
+    const iter = iterateList(this, reverse);
     function* gen() {
-      for (const value of iterateList(self, reverse)) {
+      for (const value of iter) {
         yield getValueFromType(type, reverse ? --index : index++, value);
       }
     }
@@ -411,7 +410,7 @@ export function emptyList() {
 function updateList(list, index, value) {
   index = wrapIndex(list, index);
 
-  if (index !== index) {
+  if (Number.isNaN(index)) {
     return list;
   }
 

@@ -662,12 +662,13 @@ function mergeIntoNode(node, ownerID, shift, keyHash, entry) {
   const idx1 = (shift === 0 ? node.keyHash : node.keyHash >>> shift) & MASK;
   const idx2 = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
 
-  let newNode;
+  const newNode = new ValueNode(ownerID, keyHash, entry);
   const nodes =
     idx1 === idx2
       ? [mergeIntoNode(node, ownerID, shift + SHIFT, keyHash, entry)]
-      : ((newNode = new ValueNode(ownerID, keyHash, entry)),
-        idx1 < idx2 ? [node, newNode] : [newNode, node]);
+      : idx1 < idx2
+        ? [node, newNode]
+        : [newNode, node];
 
   return new BitmapIndexedNode(ownerID, (1 << idx1) | (1 << idx2), nodes);
 }

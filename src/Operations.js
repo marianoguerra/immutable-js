@@ -116,11 +116,10 @@ export class ToIndexedSequence extends IndexedSeqImpl {
     if (reverse) {
       ensureSize(this);
     }
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const self = this;
+    const size = this.size;
     function* gen() {
       for (const value of iterator) {
-        yield getValueFromType(type, reverse ? self.size - ++i : i++, value);
+        yield getValueFromType(type, reverse ? size - ++i : i++, value);
       }
     }
     return gen();
@@ -215,7 +214,7 @@ export function flipFactory(collection) {
   flipSequence.size = collection.size;
   flipSequence.flip = () => collection;
   flipSequence.reverse = function () {
-    const reversedSequence = collection.reverse.apply(this); // super.reverse()
+    const reversedSequence = collection.reverse.call(this); // super.reverse()
     reversedSequence.flip = () => collection.reverse();
     return reversedSequence;
   };
@@ -299,13 +298,12 @@ export function reverseFactory(collection, useKeys) {
       ensureSize(collection);
     }
     const iterator = collection.__iterator(ITERATE_ENTRIES, !reverse);
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const self = this;
+    const size = this.size;
     function* gen() {
       for (const [key, value] of iterator) {
         yield getValueFromType(
           type,
-          useKeys ? key : reverse ? self.size - ++i : i++,
+          useKeys ? key : reverse ? size - ++i : i++,
           value
         );
       }
@@ -356,10 +354,11 @@ export function groupByFactory(collection, grouper, context) {
   const isKeyedIter = isKeyed(collection);
   const groups = (isOrdered(collection) ? OrderedMap() : Map()).asMutable();
   collection.__iterate((v, k) => {
-    groups.update(
-      grouper.call(context, v, k, collection),
-      (a) => ((a = a || []), a.push(isKeyedIter ? [k, v] : v), a)
-    );
+    groups.update(grouper.call(context, v, k, collection), (a) => {
+      a = a || [];
+      a.push(isKeyedIter ? [k, v] : v);
+      return a;
+    });
   });
   const coerce = collectionClass(collection);
   return groups.map((arr) => reify(collection, coerce(arr))).asImmutable();
@@ -400,8 +399,8 @@ export function sliceFactory(collection, begin, end, useKeys) {
   // In that case, resolvedSize will be NaN and sliceSize will remain undefined.
   const resolvedSize = resolvedEnd - resolvedBegin;
   let sliceSize;
-  if (resolvedSize === resolvedSize) {
-    sliceSize = resolvedSize < 0 ? 0 : resolvedSize;
+  if (!Number.isNaN(resolvedSize)) {
+    sliceSize = Math.max(0, resolvedSize);
   }
 
   const sliceSeq = makeSequence(collection);
@@ -699,7 +698,9 @@ function maxCompare(comparator, a, b) {
   // b is considered the new max if the comparator declares them equal, but
   // they are not equal and b is in fact a nullish value.
   return (
-    (comp === 0 && b !== a && (b === undefined || b === null || b !== b)) ||
+    (comp === 0 &&
+      b !== a &&
+      (b === undefined || b === null || Number.isNaN(b))) ||
     comp > 0
   );
 }
@@ -720,9 +721,10 @@ export function zipWithFactory(keyIter, zipper, iters, zipAll) {
     return iterations;
   };
   zipSequence.__iteratorUncached = function (type, reverse) {
-    const iterators = iters.map(
-      (i) => ((i = Collection(i)), getIterator(reverse ? i.reverse() : i))
-    );
+    const iterators = iters.map((i) => {
+      const col = Collection(i);
+      return getIterator(reverse ? col.reverse() : col);
+    });
     let iterations = 0;
     function* gen() {
       while (true) {

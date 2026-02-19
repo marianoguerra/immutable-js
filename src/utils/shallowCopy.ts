@@ -6,5 +6,5 @@ export default function shallowCopy<I, O extends object>(
   if (Array.isArray(from)) {
     return from.slice();
   }
-  return Object.assign({}, from) as O;
+  return { ...from } as O;
 }
