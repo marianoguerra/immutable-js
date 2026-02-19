@@ -14,6 +14,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const perfDir = path.resolve(__dirname, '../perf/');
 const distPath = path.resolve(__dirname, '../dist/immutable.js');
 
+function isUMDSource(src) {
+  // Strip leading whitespace, line comments, and block comments before checking
+  const stripped = src.replace(/^(\s|\/\/[^\n]*\n|\/\*[\s\S]*?\*\/)+/, '');
+  return stripped.startsWith('(function') || stripped.startsWith('!function');
+}
+
 function parseArgs() {
   const args = process.argv.slice(2);
   const result = { baseline: null, compare: null };
@@ -41,10 +47,7 @@ async function loadMainDist() {
     return null;
   }
 
-  // Detect UMD vs ESM: UMD typically starts with (function or !function
-  const isUMD =
-    oldSrc.trimStart().startsWith('(function') ||
-    oldSrc.trimStart().startsWith('!function');
+  const isUMD = isUMDSource(oldSrc);
 
   if (isUMD) {
     // Wrap UMD in ESM: execute in a vm context and re-export
@@ -93,9 +96,7 @@ export const hash = module.exports.hash;
 async function loadDistFromFile(filePath) {
   const src = await readFile(filePath, 'utf8');
 
-  const isUMD =
-    src.trimStart().startsWith('(function') ||
-    src.trimStart().startsWith('!function');
+  const isUMD = isUMDSource(src);
 
   const tmpDir = await mkdtemp(path.join(tmpdir(), 'immutable-bench-'));
   const tmpFile = path.join(tmpDir, 'immutable-loaded.mjs');

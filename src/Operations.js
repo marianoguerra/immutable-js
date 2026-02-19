@@ -6,8 +6,7 @@ import {
 } from './Collection';
 import {
   getIterator,
-  Iterator,
-  iteratorDone,
+  emptyIterator,
   getValueFromType,
   ITERATE_KEYS,
   ITERATE_VALUES,
@@ -118,17 +117,11 @@ export class ToIndexedSequence extends IndexedSeqImpl {
       ensureSize(this);
     }
     function* gen() {
-      let step;
-      while (!(step = iterator.next()).done) {
-        yield getValueFromType(
-          type,
-          reverse ? this.size - ++i : i++,
-          step.value
-        );
+      for (const value of iterator) {
+        yield getValueFromType(type, reverse ? this.size - ++i : i++, value);
       }
     }
-    const g = gen.call(this);
-    return new Iterator(() => g.next());
+    return gen.call(this);
   }
 }
 
@@ -150,14 +143,11 @@ export class ToSetSequence extends SetSeqImpl {
 
   __iterator(type, reverse) {
     const iterator = this._iter.__iterator(ITERATE_VALUES, reverse);
-    function* gen() {
-      let step;
-      while (!(step = iterator.next()).done) {
-        yield getValueFromType(type, step.value, step.value);
+    return (function* () {
+      for (const value of iterator) {
+        yield getValueFromType(type, value, value);
       }
-    }
-    const g = gen();
-    return new Iterator(() => g.next());
+    })();
   }
 }
 
@@ -191,10 +181,8 @@ export class FromEntriesSequence extends KeyedSeqImpl {
 
   __iterator(type, reverse) {
     const iterator = this._iter.__iterator(ITERATE_VALUES, reverse);
-    function* gen() {
-      let step;
-      while (!(step = iterator.next()).done) {
-        const entry = step.value;
+    return (function* () {
+      for (const entry of iterator) {
         // Check if entry exists first so array access doesn't throw for holes
         // in the parent iteration.
         if (entry) {
@@ -207,9 +195,7 @@ export class FromEntriesSequence extends KeyedSeqImpl {
           );
         }
       }
-    }
-    const g = gen();
-    return new Iterator(() => g.next());
+    })();
   }
 }
 
@@ -238,14 +224,11 @@ export function flipFactory(collection) {
   flipSequence.__iteratorUncached = function (type, reverse) {
     if (type === ITERATE_ENTRIES) {
       const iterator = collection.__iterator(type, reverse);
-      function* gen() {
-        let step;
-        while (!(step = iterator.next()).done) {
-          yield [step.value[1], step.value[0]];
+      return (function* () {
+        for (const entry of iterator) {
+          yield [entry[1], entry[0]];
         }
-      }
-      const g = gen();
-      return new Iterator(() => g.next());
+      })();
     }
     return collection.__iterator(
       type === ITERATE_VALUES ? ITERATE_KEYS : ITERATE_VALUES,
@@ -273,19 +256,15 @@ export function mapFactory(collection, mapper, context) {
   };
   mappedSequence.__iteratorUncached = function (type, reverse) {
     const iterator = collection.__iterator(ITERATE_ENTRIES, reverse);
-    function* gen() {
-      let step;
-      while (!(step = iterator.next()).done) {
-        const [key, value] = step.value;
+    return (function* () {
+      for (const [key, value] of iterator) {
         yield getValueFromType(
           type,
           key,
           mapper.call(context, value, key, collection)
         );
       }
-    }
-    const g = gen();
-    return new Iterator(() => g.next());
+    })();
   };
   return mappedSequence;
 }
@@ -324,9 +303,7 @@ export function reverseFactory(collection, useKeys) {
     }
     const iterator = collection.__iterator(ITERATE_ENTRIES, !reverse);
     function* gen() {
-      let step;
-      while (!(step = iterator.next()).done) {
-        const [key, value] = step.value;
+      for (const [key, value] of iterator) {
         yield getValueFromType(
           type,
           useKeys ? key : reverse ? this.size - ++i : i++,
@@ -334,8 +311,7 @@ export function reverseFactory(collection, useKeys) {
         );
       }
     }
-    const g = gen.call(this);
-    return new Iterator(() => g.next());
+    return gen.call(this);
   };
   return reversedSequence;
 }
@@ -367,17 +343,13 @@ export function filterFactory(collection, predicate, context, useKeys) {
   filterSequence.__iteratorUncached = function (type, reverse) {
     const iterator = collection.__iterator(ITERATE_ENTRIES, reverse);
     let iterations = 0;
-    function* gen() {
-      let step;
-      while (!(step = iterator.next()).done) {
-        const [key, value] = step.value;
+    return (function* () {
+      for (const [key, value] of iterator) {
         if (predicate.call(context, value, key, collection)) {
           yield getValueFromType(type, useKeys ? key : iterations++, value);
         }
       }
-    }
-    const g = gen();
-    return new Iterator(() => g.next());
+    })();
   };
   return filterSequence;
 }
@@ -486,7 +458,7 @@ export function sliceFactory(collection, begin, end, useKeys) {
     }
     // Don't bother instantiating parent iterator if taking 0.
     if (sliceSize === 0) {
-      return new Iterator(iteratorDone);
+      return emptyIterator();
     }
     const iterator = collection.__iterator(type, reverse);
     function* gen() {
@@ -509,8 +481,7 @@ export function sliceFactory(collection, begin, end, useKeys) {
         }
       }
     }
-    const g = gen();
-    return new Iterator(() => g.next());
+    return gen();
   };
 
   return sliceSeq;
@@ -534,17 +505,14 @@ export function takeWhileFactory(collection, predicate, context) {
       return this.cacheResult().__iterator(type, reverse);
     }
     const iterator = collection.__iterator(ITERATE_ENTRIES, reverse);
-    const g = (function* (seq) {
-      let step;
-      while (!(step = iterator.next()).done) {
-        const [k, v] = step.value;
+    return (function* (seq) {
+      for (const [k, v] of iterator) {
         if (!predicate.call(context, v, k, seq)) {
           return;
         }
         yield getValueFromType(type, k, v);
       }
     })(this);
-    return new Iterator(() => g.next());
   };
   return takeSequence;
 }
@@ -571,28 +539,19 @@ export function skipWhileFactory(collection, predicate, context, useKeys) {
     }
     const iterator = collection.__iterator(ITERATE_ENTRIES, reverse);
     let iterations = 0;
-    const g = (function* (seq) {
+    return (function* (seq) {
       // Phase 1: skip while predicate holds
-      let step;
-      while (!(step = iterator.next()).done) {
-        const [k, v] = step.value;
-        if (!predicate.call(context, v, k, seq)) {
-          // First non-matching element
-          yield useKeys
-            ? getValueFromType(type, k, v)
-            : getValueFromType(type, iterations++, v);
-          break;
+      let skipping = true;
+      for (const [k, v] of iterator) {
+        if (skipping && predicate.call(context, v, k, seq)) {
+          continue;
         }
-      }
-      // Phase 2: yield all remaining
-      while (!(step = iterator.next()).done) {
-        const [k, v] = step.value;
+        skipping = false;
         yield useKeys
           ? getValueFromType(type, k, v)
           : getValueFromType(type, iterations++, v);
       }
     })(this);
-    return new Iterator(() => g.next());
   };
   return skipSequence;
 }
@@ -636,41 +595,26 @@ class ConcatSeq extends SeqImpl {
       return this.cacheResult().__iterate(fn, reverse);
     }
 
-    let iterableIndex = 0;
     const useKeys = isKeyed(this);
     const iteratorType = useKeys ? ITERATE_ENTRIES : ITERATE_VALUES;
-    let currentIterator = this._wrappedIterables[iterableIndex].__iterator(
-      iteratorType,
-      reverse
-    );
-
-    let keepGoing = true;
     let index = 0;
-    while (keepGoing) {
-      let next = currentIterator.next();
-      while (next.done) {
-        iterableIndex++;
-        if (iterableIndex === this._wrappedIterables.length) {
+    for (const iterable of this._wrappedIterables) {
+      for (const entry of iterable.__iterator(iteratorType, reverse)) {
+        const fnResult = useKeys
+          ? fn(entry[1], entry[0], this)
+          : fn(entry, index, this);
+        index++;
+        if (fnResult === false) {
           return index;
         }
-        currentIterator = this._wrappedIterables[iterableIndex].__iterator(
-          iteratorType,
-          reverse
-        );
-        next = currentIterator.next();
       }
-      const fnResult = useKeys
-        ? fn(next.value[1], next.value[0], this)
-        : fn(next.value, index, this);
-      keepGoing = fnResult !== false;
-      index++;
     }
     return index;
   }
 
   __iteratorUncached(type, reverse) {
     if (this._wrappedIterables.length === 0) {
-      return new Iterator(iteratorDone);
+      return emptyIterator();
     }
 
     if (reverse) {
@@ -678,13 +622,11 @@ class ConcatSeq extends SeqImpl {
     }
 
     const wrappedIterables = this._wrappedIterables;
-    function* gen() {
+    return (function* () {
       for (const iterable of wrappedIterables) {
         yield* iterable.__iterator(type, reverse);
       }
-    }
-    const g = gen();
-    return new Iterator(() => g.next());
+    })();
   }
 }
 
@@ -752,10 +694,7 @@ export function flattenFactory(collection, depth, useKeys) {
     }
     let iterations = 0;
     function* flatGen(iter, currentDepth) {
-      const innerIterator = iter.__iterator(ITERATE_ENTRIES, reverse);
-      let step;
-      while (!(step = innerIterator.next()).done) {
-        const [k, v] = step.value;
+      for (const [k, v] of iter.__iterator(ITERATE_ENTRIES, reverse)) {
         if ((!depth || currentDepth < depth) && isCollection(v)) {
           yield* flatGen(v, currentDepth + 1);
         } else {
@@ -765,8 +704,7 @@ export function flattenFactory(collection, depth, useKeys) {
         }
       }
     }
-    const g = flatGen(collection, 0);
-    return new Iterator(() => g.next());
+    return flatGen(collection, 0);
   };
   return flatSequence;
 }
@@ -795,20 +733,16 @@ export function interposeFactory(collection, separator) {
   interposedSequence.__iteratorUncached = function (type, reverse) {
     const iterator = collection.__iterator(ITERATE_VALUES, reverse);
     let iterations = 0;
-    function* gen() {
-      const first = iterator.next();
-      if (first.done) {
-        return;
+    return (function* () {
+      let isFirst = true;
+      for (const value of iterator) {
+        if (!isFirst) {
+          yield getValueFromType(type, iterations++, separator);
+        }
+        isFirst = false;
+        yield getValueFromType(type, iterations++, value);
       }
-      yield getValueFromType(type, iterations++, first.value);
-      let step;
-      while (!(step = iterator.next()).done) {
-        yield getValueFromType(type, iterations++, separator);
-        yield getValueFromType(type, iterations++, step.value);
-      }
-    }
-    const g = gen();
-    return new Iterator(() => g.next());
+    })();
   };
   return interposedSequence;
 }
@@ -901,7 +835,7 @@ export function zipWithFactory(keyIter, zipper, iters, zipAll) {
       (i) => ((i = Collection(i)), getIterator(reverse ? i.reverse() : i))
     );
     let iterations = 0;
-    function* gen() {
+    return (function* () {
       while (true) {
         const steps = iterators.map((i) => i.next());
         const isDone = zipAll
@@ -916,9 +850,7 @@ export function zipWithFactory(keyIter, zipper, iters, zipAll) {
           zipper(...steps.map((s) => s.value))
         );
       }
-    }
-    const g = gen();
-    return new Iterator(() => g.next());
+    })();
   };
   return zipSequence;
 }

@@ -1,7 +1,6 @@
 import { CollectionImpl } from './Collection';
 import {
-  Iterator,
-  iteratorDone,
+  emptyIterator,
   getValueFromType,
   hasIterator,
   isIterator,
@@ -67,14 +66,12 @@ export class SeqImpl extends CollectionImpl {
     if (cache) {
       const size = cache.length;
       let i = 0;
-      function* gen() {
+      return (function* () {
         while (i !== size) {
           const [key, value] = cache[reverse ? size - ++i : i++];
           yield getValueFromType(type, key, value);
         }
-      }
-      const g = gen();
-      return new Iterator(() => g.next());
+      })();
     }
     return this.__iteratorUncached(type, reverse);
   }
@@ -170,14 +167,12 @@ export class ArraySeq extends IndexedSeqImpl {
     const array = this._array;
     const size = array.length;
     let i = 0;
-    function* gen() {
+    return (function* () {
       while (i !== size) {
         const ii = reverse ? size - ++i : i++;
         yield getValueFromType(type, ii, array[ii]);
       }
-    }
-    const g = gen();
-    return new Iterator(() => g.next());
+    })();
   }
 }
 
@@ -222,14 +217,12 @@ class ObjectSeq extends KeyedSeqImpl {
     const keys = this._keys;
     const size = keys.length;
     let i = 0;
-    function* gen() {
+    return (function* () {
       while (i !== size) {
         const key = keys[reverse ? size - ++i : i++];
         yield getValueFromType(type, key, object[key]);
       }
-    }
-    const g = gen();
-    return new Iterator(() => g.next());
+    })();
   }
 }
 ObjectSeq.prototype[IS_ORDERED_SYMBOL] = true;
@@ -266,17 +259,14 @@ class CollectionSeq extends IndexedSeqImpl {
     const collection = this._collection;
     const iterator = getIterator(collection);
     if (!isIterator(iterator)) {
-      return new Iterator(iteratorDone);
+      return emptyIterator();
     }
     let iterations = 0;
-    function* gen() {
-      let step;
-      while (!(step = iterator.next()).done) {
-        yield getValueFromType(type, iterations++, step.value);
+    return (function* () {
+      for (const value of iterator) {
+        yield getValueFromType(type, iterations++, value);
       }
-    }
-    const g = gen();
-    return new Iterator(() => g.next());
+    })();
   }
 }
 

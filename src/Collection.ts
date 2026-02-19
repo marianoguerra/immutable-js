@@ -77,7 +77,7 @@ export class CollectionImpl<K, V> implements ValueObject {
   __iterator(
     type: IteratorType,
     _reverse: boolean = false
-  ): Iterator<K | V | [K, V]> {
+  ): IterableIterator<K | V | [K, V]> {
     throw new Error(
       'CollectionImpl does not implement __iterator. Use a subclass instead.'
     );

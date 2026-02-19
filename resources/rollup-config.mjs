@@ -19,6 +19,7 @@ export default [
       typescript({
         tsconfig: './tsconfig.build.json',
         include: ['src/**/*.ts'],
+        removeComments: true,
       }),
     ],
     output: [

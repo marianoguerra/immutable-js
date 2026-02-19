@@ -1,6 +1,6 @@
 import { Collection, KeyedCollection, KeyedCollectionImpl } from './Collection';
 import { hash } from './Hash';
-import { Iterator, iteratorDone, getValueFromType } from './Iterator';
+import { emptyIterator, getValueFromType } from './Iterator';
 import { sortFactory } from './Operations';
 import { OrderedMap } from './OrderedMap';
 import {
@@ -127,10 +127,9 @@ export class MapImpl extends KeyedCollectionImpl {
 
   __iterator(type, reverse) {
     if (!this._root) {
-      return new Iterator(iteratorDone);
+      return emptyIterator();
     }
-    const g = mapIteratorGenerator(this._root, type, reverse);
-    return new Iterator(() => g.next());
+    return mapIteratorGenerator(this._root, type, reverse);
   }
 
   __iterate(fn, reverse) {
