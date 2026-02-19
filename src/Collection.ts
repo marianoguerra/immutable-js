@@ -112,9 +112,9 @@ export function IndexedCollection<T>(
 }
 
 /**
- * Interface representing all oredered collections.
+ * Interface representing all ordered collections.
  * This includes `List`, `Stack`, `Map`, `OrderedMap`, `Set`, and `OrderedSet`.
- * return of `isOrdered()` return true in that case.
+ * `isOrdered()` returns true for these types.
  */
 interface OrderedCollection<T> {
   /**

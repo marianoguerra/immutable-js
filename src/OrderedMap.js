@@ -100,6 +100,7 @@ OrderedMap.isOrderedMap = isOrderedMap;
 
 OrderedMapImpl.prototype[IS_ORDERED_SYMBOL] = true;
 OrderedMapImpl.prototype[DELETE] = OrderedMapImpl.prototype.remove;
+OrderedMapImpl.prototype[Symbol.toStringTag] = 'Immutable.OrderedMap';
 
 function makeOrderedMap(map, list, ownerID, hash) {
   return new OrderedMapImpl(map, list, ownerID, hash);
@@ -117,7 +118,7 @@ function updateOrderedMap(omap, k, v) {
   let newMap;
   let newList;
   if (v === NOT_SET) {
-    // removed
+    // entry is being removed
     if (!has) {
       return omap;
     }

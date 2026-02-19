@@ -749,7 +749,16 @@ describe('List', () => {
     expect(notOkArray).toHaveLength(0);
   });
 
-  // TODO: assert that findIndex only calls the function as much as it needs to.
+  it('findIndex only calls the predicate as much as it needs to', () => {
+    const v = List.of(0, 1, 2, 3, 4);
+    let calls = 0;
+    const idx = v.findIndex((x) => {
+      calls++;
+      return x === 2;
+    });
+    expect(idx).toBe(2);
+    expect(calls).toBe(3);
+  });
 
   it('forEach iterates in the correct order', () => {
     let n = 0;

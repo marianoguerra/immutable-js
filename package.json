@@ -61,6 +61,7 @@
     "files",
     "keywords"
   ],
+  "sideEffects": false,
   "engines": {
     "npm": ">=7.0.0"
   },
@@ -70,7 +71,7 @@
     "test:types": "tstyche",
     "format": "npm run lint:format -- --write",
     "lint": "run-s lint:*",
-    "lint:format": "prettier --check \"{__tests__,src,type-definitions,website/src,perf,resources}/**/*{.js,.mjs,.ts,.tsx,.flow,.css}\"",
+    "lint:format": "prettier --check \"{__tests__,src,type-definitions,website/src,perf,resources}/**/*{.js,.mjs,.ts,.tsx,.css}\"",
     "lint:js": "eslint",
     "type-check": "run-s type-check:*",
     "type-check:ts": "tsc --project tsconfig.src.json && tsc --project type-definitions/tsconfig.json && tsc --project __tests__/tsconfig.json",

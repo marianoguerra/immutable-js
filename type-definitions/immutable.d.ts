@@ -13,7 +13,7 @@
  *
  * In order to better explain what kinds of values the Immutable.js API expects
  * and produces, this documentation is presented in a statically typed dialect of
- * JavaScript (like [Flow][] or [TypeScript][]). You *don't need* to use these
+ * JavaScript (like [TypeScript][]). You *don't need* to use these
  * type checking tools in order to use Immutable.js, however becoming familiar
  * with their syntax will help you get a deeper understanding of this API.
  *
@@ -87,7 +87,6 @@
  *
  * [ES2015]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/New_in_JavaScript/ECMAScript_6_support_in_Mozilla
  * [TypeScript]: https://www.typescriptlang.org/
- * [Flow]: https://flowtype.org/
  * [Iterable]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols
  */
 
@@ -2126,58 +2125,6 @@ declare namespace Immutable {
    * ```
    *
    *
-   * **Flow Typing Records:**
-   *
-   * Immutable.js exports two Flow types designed to make it easier to use
-   * Records with flow typed code, `RecordOf<TProps>` and `RecordFactory<TProps>`.
-   *
-   * When defining a new kind of Record factory function, use a flow type that
-   * describes the values the record contains along with `RecordFactory<TProps>`.
-   * To type instances of the Record (which the factory function returns),
-   * use `RecordOf<TProps>`.
-   *
-   * Typically, new Record definitions will export both the Record factory
-   * function as well as the Record instance type for use in other code.
-   *
-   * ```js
-   * import type { RecordFactory, RecordOf } from 'immutable';
-   *
-   * // Use RecordFactory<TProps> for defining new Record factory functions.
-   * type Point3DProps = { x: number, y: number, z: number };
-   * const defaultValues: Point3DProps = { x: 0, y: 0, z: 0 };
-   * const makePoint3D: RecordFactory<Point3DProps> = Record(defaultValues);
-   * export makePoint3D;
-   *
-   * // Use RecordOf<T> for defining new instances of that Record.
-   * export type Point3D = RecordOf<Point3DProps>;
-   * const some3DPoint: Point3D = makePoint3D({ x: 10, y: 20, z: 30 });
-   * ```
-   *
-   * **Flow Typing Record Subclasses:**
-   *
-   * Records can be subclassed as a means to add additional methods to Record
-   * instances. This is generally discouraged in favor of a more functional API,
-   * since Subclasses have some minor overhead. However the ability to create
-   * a rich API on Record types can be quite valuable.
-   *
-   * When using Flow to type Subclasses, do not use `RecordFactory<TProps>`,
-   * instead apply the props type when subclassing:
-   *
-   * ```js
-   * type PersonProps = {name: string, age: number};
-   * const defaultValues: PersonProps = {name: 'Aristotle', age: 2400};
-   * const PersonRecord = Record(defaultValues);
-   * class Person extends PersonRecord<PersonProps> {
-   *   getName(): string {
-   *     return this.get('name')
-   *   }
-   *
-   *   setName(name: string): this {
-   *     return this.set('name', name);
-   *   }
-   * }
-   * ```
-   *
    * **Choosing Records vs plain JavaScript objects**
    *
    * Records offer a persistently immutable alternative to plain JavaScript
@@ -2192,7 +2139,7 @@ declare namespace Immutable {
    *   immutable, however Record instances will *throw* if attempted to be
    *   mutated directly. Records provide this additional guarantee, however at
    *   some marginal runtime cost. While JS objects are mutable by nature, the
-   *   use of type-checking tools like [Flow](https://medium.com/@gcanti/immutability-with-flow-faa050a1aef4)
+   *   use of type-checking tools like [TypeScript](https://www.typescriptlang.org/)
    *   can help gain confidence in code written to favor immutability.
    *
    * - *Value equality*: Records use value equality when compared with `is()`
@@ -2208,7 +2155,7 @@ declare namespace Immutable {
    *
    * - *Default values*: Records provide default values for every key, which
    *   can be useful when constructing Records with often unchanging values.
-   *   However default values can make using Flow and TypeScript more laborious.
+   *   However default values can make using TypeScript more laborious.
    *
    * - *Serialization*: Records use a custom internal representation to
    *   efficiently store and update their values. Converting to and from this
@@ -2298,7 +2245,7 @@ declare namespace Immutable {
      *
      * If the requested key is not defined by this Record type, then
      * notSetValue will be returned if provided. Note that this scenario would
-     * produce an error when using Flow or TypeScript.
+     * produce an error when using TypeScript.
      */
     get<K extends keyof TProps>(key: K, notSetValue?: unknown): TProps[K];
     get<T>(key: string, notSetValue: T): T;

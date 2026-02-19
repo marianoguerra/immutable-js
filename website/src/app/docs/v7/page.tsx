@@ -6,7 +6,7 @@ import { SIDEBAR_LINKS, VERSION } from '../currentVersion';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Documentation v5 — Immutable.js`,
+    title: `Documentation v7 — Immutable.js`,
   };
 }
 

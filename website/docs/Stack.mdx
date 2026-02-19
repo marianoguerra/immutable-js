@@ -267,7 +267,7 @@ const b = Stack([3, 4, 5]);
 const c = a.zipAll(b); // Stack [ [ 1, 3 ], [ 2, 4 ], [ undefined, 5 ] ]
 ```
 
-Note: Since zipAll will return a collection as large as the largest input, some results may contain undefined values. TypeScript cannot account for these without cases (as of v2.5).
+Note: Since zipAll will return a collection as large as the largest input, some results may contain undefined values. TypeScript cannot account for these without cases.
 
 <MemberLabel label="zipWith()" />
 

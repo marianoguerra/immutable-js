@@ -6,7 +6,7 @@
 
                                                   ---  Have a general question?  ---
 
-First check out the Docs: https://immutable-js.github.io/immutable-js/docs/
+First check out the Docs: https://immutable-js.com/docs/
 And check out the Wiki: https://github.com/immutable-js/immutable-js/wiki/
 Search existing issues: https://github.com/immutable-js/immutable-js/search?type=Issues&q=question
 Ask on Stack Overflow!: https://stackoverflow.com/questions/tagged/immutable.js?sort=votes

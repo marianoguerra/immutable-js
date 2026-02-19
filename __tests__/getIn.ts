@@ -23,11 +23,11 @@ describe('getIn', () => {
     expect(() => Map().getIn({ a: 1, b: 2 })).toThrow(
       'Invalid keyPath: expected Ordered Collection or Array: [object Object]'
     );
-    // TODO: should expect error
+    // @ts-expect-error -- string is not a valid keyPath
     expect(() => Map().getIn('abc')).toThrow(
       'Invalid keyPath: expected Ordered Collection or Array: abc'
     );
-    // TODO: should expect error
+    // @ts-expect-error -- string is not a valid keyPath
     expect(() => getIn(Map(), 'abc')).toThrow(
       'Invalid keyPath: expected Ordered Collection or Array: abc'
     );

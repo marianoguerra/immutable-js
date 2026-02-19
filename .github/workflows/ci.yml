@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - 5.x
+      - 7.x
       - 6.x
   pull_request: ~
 
@@ -67,7 +67,7 @@ jobs:
       - name: 'Build JS files'
         run: npm run build
 
-      - name: 'Ensure all files are builded'
+      - name: 'Ensure all files are built'
         run: npm run check-build-output
 
       - name: 'Run unit tests'
@@ -95,7 +95,7 @@ jobs:
           key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: ${{ runner.OS }}-node-
       - run: npm ci
-      - run: NODE_OPTIONS=--openssl-legacy-provider npm run website:build
+      - run: npm run website:build
       - run: npm run check-git-clean
 
   publish:
@@ -117,7 +117,7 @@ jobs:
           restore-keys: ${{ runner.OS }}-node-
       - run: npm ci
       - run: npm run build
-      - run: NODE_OPTIONS=--openssl-legacy-provider npm run website:build
+      - run: npm run website:build
       - name: Push NPM Branch
         if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v3

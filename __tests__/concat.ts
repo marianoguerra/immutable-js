@@ -187,7 +187,7 @@ describe('concat', () => {
     let meta = Seq();
 
     for (let i = 0; i < 10000; ++i) {
-      meta = meta.concat(i) as Seq<unknown, unknown>; // TODO fix typing
+      meta = meta.concat(i) as Seq<unknown, unknown>;
     }
 
     expect(meta.toList().size).toBe(10000);
@@ -197,7 +197,7 @@ describe('concat', () => {
     const nbLoops = 10000;
     let meta = Seq();
     for (let i = 1; i < nbLoops; i++) {
-      meta = meta.concat(i) as Seq<unknown, unknown>; // TODO fix typing
+      meta = meta.concat(i) as Seq<unknown, unknown>;
     }
     const it = meta[Symbol.iterator]();
     let done = false;

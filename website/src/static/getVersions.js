@@ -7,7 +7,7 @@ let versionsFromGitTag;
 function getVersions() {
   if (!versions) {
     // VERSION does not work in sitemap generation
-    versions = ['v5'].concat(getVersionFromGitTag());
+    versions = ['v7'].concat(getVersionFromGitTag());
   }
   return versions;
 }

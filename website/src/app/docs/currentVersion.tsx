@@ -1,4 +1,4 @@
-export const VERSION = 'v5';
+export const VERSION = 'v7';
 
 export const SIDEBAR_LINKS = [
   {
