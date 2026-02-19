@@ -544,7 +544,7 @@ BitmapIndexedNode.prototype.iterate = HashArrayMapNode.prototype.iterate =
     const nodes = this.nodes;
     for (let ii = 0, maxIndex = nodes.length - 1; ii <= maxIndex; ii++) {
       const node = nodes[reverse ? maxIndex - ii : ii];
-      if (node && node.iterate(fn, reverse) === false) {
+      if (node?.iterate(fn, reverse) === false) {
         return false;
       }
     }

@@ -550,8 +550,7 @@ class ConcatSeq extends SeqImpl {
 
 export function concatFactory(collection, values) {
   const isKeyedCollection = isKeyed(collection);
-  const iters = [collection]
-    .concat(values)
+  const iters = [collection, ...values]
     .map((v) => {
       if (!isCollection(v)) {
         v = isKeyedCollection

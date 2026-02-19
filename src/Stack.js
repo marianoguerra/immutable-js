@@ -84,7 +84,7 @@ export class StackImpl extends IndexedCollectionImpl {
     iter.__iterate((value) => {
       newSize++;
       head = {
-        value: value,
+        value,
         next: head,
       };
     }, /* reverse */ true);

@@ -606,7 +606,7 @@ mixin(IndexedCollectionImpl, {
   },
 
   interleave(...collections) {
-    const thisAndCollections = [this].concat(collections);
+    const thisAndCollections = [this, ...collections];
     const zipped = zipWithFactory(
       this.toSeq(),
       IndexedSeq.of,
@@ -632,7 +632,7 @@ mixin(IndexedCollectionImpl, {
   },
 
   zipAll(...collections) {
-    const thisAndCollections = [this].concat(collections);
+    const thisAndCollections = [this, ...collections];
 
     return reify(
       this,
@@ -641,7 +641,7 @@ mixin(IndexedCollectionImpl, {
   },
 
   zipWith(zipper, ...collections) {
-    const thisAndCollections = [this].concat(collections);
+    const thisAndCollections = [this, ...collections];
 
     return reify(this, zipWithFactory(this, zipper, thisAndCollections));
   },

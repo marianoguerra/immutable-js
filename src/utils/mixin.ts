@@ -8,10 +8,9 @@ export default function mixin<C extends Constructor>(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   methods: Record<string, Function>
 ): C {
-  const keyCopier = (key: string | symbol): void => {
+  for (const key of Reflect.ownKeys(methods)) {
     // @ts-expect-error how to handle symbol ?
     ctor.prototype[key] = methods[key];
-  };
-  Reflect.ownKeys(methods).forEach(keyCopier);
+  }
   return ctor;
 }

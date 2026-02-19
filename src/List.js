@@ -300,8 +300,7 @@ class VNode {
     let newChild;
     if (level > 0) {
       const oldChild = this.array[originIndex];
-      newChild =
-        oldChild && oldChild.removeBefore(ownerID, level - SHIFT, index);
+      newChild = oldChild?.removeBefore(ownerID, level - SHIFT, index);
       if (newChild === oldChild && removingFirst) {
         return this;
       }
@@ -336,8 +335,7 @@ class VNode {
     let newChild;
     if (level > 0) {
       const oldChild = this.array[sizeIndex];
-      newChild =
-        oldChild && oldChild.removeAfter(ownerID, level - SHIFT, index);
+      newChild = oldChild?.removeAfter(ownerID, level - SHIFT, index);
       if (newChild === oldChild && sizeIndex === this.array.length - 1) {
         return this;
       }
@@ -369,7 +367,7 @@ function* iterateList(list, reverse) {
   }
 
   function* iterateLeaf(node, offset) {
-    const array = offset === tailPos ? tail && tail.array : node && node.array;
+    const array = offset === tailPos ? tail?.array : node?.array;
     let from = offset > left ? 0 : left - offset;
     let to = right - offset;
     if (to > SIZE) {
@@ -377,12 +375,12 @@ function* iterateList(list, reverse) {
     }
     while (from !== to) {
       const idx = reverse ? --to : from++;
-      yield array && array[idx];
+      yield array?.[idx];
     }
   }
 
   function* iterateNode(node, level, offset) {
-    const array = node && node.array;
+    const array = node?.array;
     let from = offset > left ? 0 : (left - offset) >> level;
     let to = ((right - offset) >> level) + 1;
     if (to > SIZE) {
@@ -391,7 +389,7 @@ function* iterateList(list, reverse) {
     while (from !== to) {
       const idx = reverse ? --to : from++;
       yield* iterateNodeOrLeaf(
-        array && array[idx],
+        array?.[idx],
         level - SHIFT,
         offset + (idx << level)
       );
@@ -501,10 +499,10 @@ function updateVNode(node, ownerID, level, index, value, didAlter) {
 }
 
 function editableVNode(node, ownerID) {
-  if (ownerID && node && ownerID === node.ownerID) {
+  if (ownerID && ownerID === node?.ownerID) {
     return node;
   }
-  return new VNode(node ? node.array.slice() : [], ownerID);
+  return new VNode(node?.array.slice() ?? [], ownerID);
 }
 
 function listNodeFor(list, rawIndex) {
@@ -557,7 +555,7 @@ function setListBounds(list, begin, end) {
   let offsetShift = 0;
   while (newOrigin + offsetShift < 0) {
     newRoot = new VNode(
-      newRoot && newRoot.array.length ? [undefined, newRoot] : [],
+      newRoot?.array.length ? [undefined, newRoot] : [],
       owner
     );
     newLevel += SHIFT;
@@ -575,10 +573,7 @@ function setListBounds(list, begin, end) {
 
   // New size might need creating a higher root.
   while (newTailOffset >= 1 << (newLevel + SHIFT)) {
-    newRoot = new VNode(
-      newRoot && newRoot.array.length ? [newRoot] : [],
-      owner
-    );
+    newRoot = new VNode(newRoot?.array.length ? [newRoot] : [], owner);
     newLevel += SHIFT;
   }
 
