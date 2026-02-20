@@ -26,11 +26,13 @@ describe('Map', () => {
     expect(m.get('c')).toBe('C');
   });
 
-  it('constructor provides different instances', () => {
-    expect(Map()).not.toBe(Map());
-    expect(Map()).toEqual(Map());
+  it('constructor provides different instances for non-empty maps', () => {
     expect(Map({ a: 'A' })).not.toBe(Map({ a: 'A' }));
     expect(Map({ a: 'A' })).toEqual(Map({ a: 'A' }));
+  });
+
+  it('empty map is a singleton', () => {
+    expect(Map()).toBe(Map());
   });
 
   it('constructor provides initial values', () => {

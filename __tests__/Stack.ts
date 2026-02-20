@@ -11,11 +11,13 @@ function arrayOfSize(s: number): Array<number> {
 }
 
 describe('Stack', () => {
-  it('constructor provides different instances', () => {
-    expect(Stack()).not.toBe(Stack());
-    expect(Stack()).toEqual(Stack());
+  it('constructor provides different instances for non-empty stacks', () => {
     expect(Stack(['a'])).not.toBe(Stack(['a']));
     expect(Stack(['a'])).toEqual(Stack(['a']));
+  });
+
+  it('empty stack is a singleton', () => {
+    expect(Stack()).toBe(Stack());
   });
 
   it('constructor provides initial values', () => {

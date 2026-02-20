@@ -3,11 +3,13 @@ import { describe, expect, it, jest } from '@jest/globals';
 import fc from 'fast-check';
 
 describe('Set', () => {
-  it('constructor provides different instances', () => {
-    expect(Set()).not.toBe(Set());
-    expect(Set()).toEqual(Set());
+  it('constructor provides different instances for non-empty sets', () => {
     expect(Set([1])).not.toBe(Set([1]));
     expect(Set([1])).toEqual(Set([1]));
+  });
+
+  it('empty set is a singleton', () => {
+    expect(Set()).toBe(Set());
   });
 
   it('accepts array of values', () => {

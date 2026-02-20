@@ -181,68 +181,11 @@ MapPrototype.asImmutable = asImmutable;
 MapPrototype.asMutable = asMutable;
 MapPrototype[Symbol.toStringTag] = 'Immutable.Map';
 
-function updateLinearEntries(
-  node,
-  ownerID,
-  key,
-  value,
-  didChangeSize,
-  didAlter
-) {
-  const removed = value === NOT_SET;
-  const entries = node.entries;
-  let idx = 0;
-  const len = entries.length;
-  for (; idx < len; idx++) {
-    if (is(key, entries[idx][0])) {
-      break;
-    }
-  }
-  const exists = idx < len;
-
-  if (exists ? entries[idx][1] === value : removed) {
-    return undefined;
-  }
-
-  SetRef(didAlter);
-  if (removed || !exists) {
-    SetRef(didChangeSize);
-  }
-
-  return { idx, len, exists, removed };
-}
-
-function spliceEntries(node, ownerID, key, value, idx, len, exists, removed) {
-  const entries = node.entries;
-  const isEditable = ownerID && ownerID === node.ownerID;
-  const newEntries = isEditable ? entries : entries.slice();
-
-  if (exists) {
-    if (removed) {
-      if (idx === len - 1) {
-        newEntries.pop();
-      } else {
-        newEntries[idx] = newEntries.pop();
-      }
-    } else {
-      newEntries[idx] = [key, value];
-    }
-  } else {
-    newEntries.push([key, value]);
-  }
-
-  if (isEditable) {
-    node.entries = newEntries;
-  }
-
-  return { newEntries, isEditable };
-}
-
 function linearGet(shift, keyHash, key, notSetValue) {
   const entries = this.entries;
-  for (const [k, v] of entries) {
-    if (is(key, k)) {
-      return v;
+  for (let ii = 0, len = entries.length; ii < len; ii++) {
+    if (is(key, entries[ii][0])) {
+      return entries[ii][1];
     }
   }
   return notSetValue;
@@ -255,40 +198,56 @@ class ArrayMapNode {
   }
 
   update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
-    const result = updateLinearEntries(
-      this,
-      ownerID,
-      key,
-      value,
-      didChangeSize,
-      didAlter
-    );
-    if (!result) {
+    const removed = value === NOT_SET;
+    const entries = this.entries;
+    let idx = 0;
+    const len = entries.length;
+    for (; idx < len; idx++) {
+      if (is(key, entries[idx][0])) {
+        break;
+      }
+    }
+    const exists = idx < len;
+
+    if (exists ? entries[idx][1] === value : removed) {
       return this;
     }
-    const { idx, len, exists, removed } = result;
+
+    SetRef(didAlter);
+    if (removed || !exists) {
+      SetRef(didChangeSize);
+    }
 
     if (removed && len === 1) {
       return; // undefined
     }
 
     if (!exists && !removed && len >= MAX_ARRAY_MAP_SIZE) {
-      return createNodes(ownerID, this.entries, key, value);
+      return createNodes(ownerID, entries, key, value);
     }
 
-    const { newEntries, isEditable } = spliceEntries(
-      this,
-      ownerID,
-      key,
-      value,
-      idx,
-      len,
-      exists,
-      removed
-    );
+    const isEditable = ownerID && ownerID === this.ownerID;
+    const newEntries = isEditable ? entries : entries.slice();
+
+    if (exists) {
+      if (removed) {
+        if (idx === len - 1) {
+          newEntries.pop();
+        } else {
+          newEntries[idx] = newEntries.pop();
+        }
+      } else {
+        newEntries[idx] = [key, value];
+      }
+    } else {
+      newEntries.push([key, value]);
+    }
+
     if (isEditable) {
+      this.entries = newEntries;
       return this;
     }
+
     return new ArrayMapNode(ownerID, newEntries);
   }
 }
@@ -455,36 +414,52 @@ class HashCollisionNode {
       return mergeIntoNode(this, ownerID, shift, keyHash, [key, value]);
     }
 
-    const result = updateLinearEntries(
-      this,
-      ownerID,
-      key,
-      value,
-      didChangeSize,
-      didAlter
-    );
-    if (!result) {
+    const removed = value === NOT_SET;
+    const entries = this.entries;
+    let idx = 0;
+    const len = entries.length;
+    for (; idx < len; idx++) {
+      if (is(key, entries[idx][0])) {
+        break;
+      }
+    }
+    const exists = idx < len;
+
+    if (exists ? entries[idx][1] === value : removed) {
       return this;
     }
-    const { idx, len, exists, removed } = result;
+
+    SetRef(didAlter);
+    if (removed || !exists) {
+      SetRef(didChangeSize);
+    }
 
     if (removed && len === 2) {
-      return new ValueNode(ownerID, this.keyHash, this.entries[idx ^ 1]);
+      return new ValueNode(ownerID, this.keyHash, entries[idx ^ 1]);
     }
 
-    const { newEntries, isEditable } = spliceEntries(
-      this,
-      ownerID,
-      key,
-      value,
-      idx,
-      len,
-      exists,
-      removed
-    );
+    const isEditable = ownerID && ownerID === this.ownerID;
+    const newEntries = isEditable ? entries : entries.slice();
+
+    if (exists) {
+      if (removed) {
+        if (idx === len - 1) {
+          newEntries.pop();
+        } else {
+          newEntries[idx] = newEntries.pop();
+        }
+      } else {
+        newEntries[idx] = [key, value];
+      }
+    } else {
+      newEntries.push([key, value]);
+    }
+
     if (isEditable) {
+      this.entries = newEntries;
       return this;
     }
+
     return new HashCollisionNode(ownerID, this.keyHash, newEntries);
   }
 }
@@ -578,8 +553,9 @@ function makeMap(size, root, ownerID, hash) {
   return new MapImpl(size, root, ownerID, hash);
 }
 
+let EMPTY_MAP;
 export function emptyMap() {
-  return makeMap(0);
+  return EMPTY_MAP || (EMPTY_MAP = makeMap(0));
 }
 
 function updateMap(map, k, v) {

@@ -209,6 +209,7 @@ function makeStack(size, head, ownerID, hash) {
   return new StackImpl(size, head, ownerID, hash);
 }
 
+let EMPTY_STACK;
 function emptyStack() {
-  return makeStack(0);
+  return EMPTY_STACK || (EMPTY_STACK = makeStack(0));
 }

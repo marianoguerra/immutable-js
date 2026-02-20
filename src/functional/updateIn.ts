@@ -173,6 +173,5 @@ function updateInDeeply<
     return remove(existing, key);
   }
   const collection = wasNotSet ? (inImmutable ? emptyMap() : {}) : existing;
-  // @ts-expect-error mixed type: new empty collection may not match generic C
   return set(collection, key, nextUpdated);
 }
