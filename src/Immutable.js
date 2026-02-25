@@ -50,13 +50,9 @@ import { updateIn } from './functional/updateIn';
 
 import { version } from '../package.json';
 
-// Note: Iterable is deprecated
-const Iterable = Collection;
-
 export {
   version,
   Collection,
-  Iterable,
   Seq,
   Map,
   OrderedMap,

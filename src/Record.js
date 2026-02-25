@@ -59,10 +59,6 @@ export const Record = (defaultValues, name) => {
       hasInitialized = true;
       const keys = Object.keys(defaultValues);
       const indices = (RecordTypePrototype._indices = {});
-      // Deprecated: left to attempt not to break any external code which
-      // relies on a ._name property existing on record instances.
-      // Use Record.getDescriptiveName() instead
-      RecordTypePrototype._name = name;
       RecordTypePrototype._keys = keys;
       RecordTypePrototype._defaultValues = defaultValues;
       for (let i = 0; i < keys.length; i++) {
