@@ -34,14 +34,10 @@ export class OrderedMapImpl extends MapImpl {
     return this.__toString('OrderedMap {', '}');
   }
 
-  // @pragma Access
-
   get(k, notSetValue) {
     const index = this._map.get(k);
     return index !== undefined ? this._list.get(index)[1] : notSetValue;
   }
-
-  // @pragma Modification
 
   clear() {
     if (this.size === 0) {

@@ -67,8 +67,6 @@ export class ListImpl extends IndexedCollectionImpl {
     this.__altered = false;
   }
 
-  // @pragma Construction
-
   create(value) {
     return List(value);
   }
@@ -76,8 +74,6 @@ export class ListImpl extends IndexedCollectionImpl {
   toString() {
     return this.__toString('List [', ']');
   }
-
-  // @pragma Access
 
   get(index, notSetValue) {
     index = wrapIndex(this, index);
@@ -88,8 +84,6 @@ export class ListImpl extends IndexedCollectionImpl {
     }
     return notSetValue;
   }
-
-  // @pragma Modification
 
   set(index, value) {
     return updateList(this, index, value);
@@ -167,8 +161,6 @@ export class ListImpl extends IndexedCollectionImpl {
     });
   }
 
-  // @pragma Composition
-
   concat(...collections) {
     const seqs = [];
     for (const collection of collections) {
@@ -203,8 +195,6 @@ export class ListImpl extends IndexedCollectionImpl {
       }
     });
   }
-
-  // @pragma Iteration
 
   slice(begin, end) {
     const size = this.size;

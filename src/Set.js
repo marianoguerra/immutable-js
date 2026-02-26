@@ -58,13 +58,9 @@ export class SetImpl extends SetCollectionImpl {
     return this.__toString('Set {', '}');
   }
 
-  // @pragma Access
-
   has(value) {
     return this._map.has(value);
   }
-
-  // @pragma Modification
 
   add(value) {
     return updateSet(this, this._map.set(value, value));
@@ -77,8 +73,6 @@ export class SetImpl extends SetCollectionImpl {
   clear() {
     return updateSet(this, this._map.clear());
   }
-
-  // @pragma Composition
 
   map(mapper, context) {
     // keep track if the set is altered by the map function

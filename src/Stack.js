@@ -38,8 +38,6 @@ export class StackImpl extends IndexedCollectionImpl {
     return this.__toString('Stack [', ']');
   }
 
-  // @pragma Access
-
   get(index, notSetValue) {
     let head = this._head;
     index = wrapIndex(this, index);
@@ -52,8 +50,6 @@ export class StackImpl extends IndexedCollectionImpl {
   peek() {
     return this._head?.value;
   }
-
-  // @pragma Modification
 
   push(...values) {
     if (values.length === 0) {
@@ -127,8 +123,6 @@ export class StackImpl extends IndexedCollectionImpl {
     return returnStack(this, newSize, head);
   }
 
-  // @pragma Mutability
-
   __ensureOwner(ownerID) {
     if (ownerID === this.__ownerID) {
       return this;
@@ -143,8 +137,6 @@ export class StackImpl extends IndexedCollectionImpl {
     }
     return makeStack(this.size, this._head, ownerID, this.__hash);
   }
-
-  // @pragma Iteration
 
   __iterate(fn, reverse) {
     if (reverse) {

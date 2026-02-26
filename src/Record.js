@@ -115,8 +115,6 @@ export class RecordImpl {
     return recordSeq(this).hashCode();
   }
 
-  // @pragma Access
-
   has(k) {
     return Object.hasOwn(this._indices, k);
   }
@@ -129,8 +127,6 @@ export class RecordImpl {
     const value = this._values.get(index);
     return value === undefined ? this._defaultValues[k] : value;
   }
-
-  // @pragma Modification
 
   set(k, v) {
     if (this.has(k)) {

@@ -59,15 +59,11 @@ export class MapImpl extends KeyedCollectionImpl {
     return this.__toString('Map {', '}');
   }
 
-  // @pragma Access
-
   get(k, notSetValue) {
     return this._root
       ? this._root.get(0, hash(k), k, notSetValue)
       : notSetValue;
   }
-
-  // @pragma Modification
 
   set(k, v) {
     return updateMap(this, k, v);
@@ -103,8 +99,6 @@ export class MapImpl extends KeyedCollectionImpl {
     return emptyMap();
   }
 
-  // @pragma Composition
-
   sort(comparator) {
     // Late binding
     return OrderedMap(sortFactory(this, comparator));
@@ -122,8 +116,6 @@ export class MapImpl extends KeyedCollectionImpl {
       });
     });
   }
-
-  // @pragma Mutability
 
   __iterator(type, reverse) {
     if (!this._root) {
