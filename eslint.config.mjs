@@ -15,7 +15,6 @@ export default tseslintConfig(
     ignores: [
       'npm/',
       'dist/',
-      'builds/',
       'website/out/',
       'website/.next/',
       'website/next-env.d.ts',
@@ -24,11 +23,6 @@ export default tseslintConfig(
   {
     languageOptions: {
       globals: globals.browser,
-
-      // parserOptions: {
-      //   projectService: true,
-      //   tsconfigRootDir: import.meta.dirname,
-      // },
     },
   },
   pluginJs.configs.recommended,
@@ -75,7 +69,6 @@ export default tseslintConfig(
               position: 'before',
             },
           ],
-          // warnOnUnassignedImports: true,
         },
       ],
     },
@@ -144,8 +137,6 @@ export default tseslintConfig(
     plugins: { jest: pluginJest },
     rules: {
       ...pluginJest.configs['flat/recommended'].rules,
-      // TODO activate style rules later
-      // ...pluginJest.configs['jest/style'].rules,
       'jest/expect-expect': [
         'error',
         {

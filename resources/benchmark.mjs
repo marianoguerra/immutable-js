@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import 'colors';
+import pc from 'picocolors';
 
 const require = createRequire(import.meta.url);
 const Benchmark = require('benchmark');
@@ -211,8 +211,8 @@ function runBenchmarks(tests, labels) {
   tests.forEach((test) => {
     const suite = new Benchmark.Suite(test.description, {
       onStart(event) {
-        console.log(event.currentTarget.name.bold);
-        process.stdout.write('  ...running...  '.gray);
+        console.log(pc.bold(event.currentTarget.name));
+        process.stdout.write(pc.gray('  ...running...  '));
       },
       onComplete(event) {
         process.stdout.write('\r\x1B[K');
@@ -237,7 +237,7 @@ function runBenchmarks(tests, labels) {
           const label = labels[i] || `v${i}`;
 
           console.log(
-            ('  ' + label + ': ').bold.gray +
+            pc.gray(pc.bold('  ' + label + ': ')) +
               (pad(9, fmt(lowmoe)) +
                 ' ' +
                 pad(9, fmt(mean)) +
@@ -259,7 +259,7 @@ function runBenchmarks(tests, labels) {
           );
 
           console.log(
-            ('  ' + labels[0] + ' vs ' + labels[i] + ': ').gray +
+            pc.gray('  ' + labels[0] + ' vs ' + labels[i] + ': ') +
               'diff: ' +
               pct(diffMean) +
               '  rme: ' +

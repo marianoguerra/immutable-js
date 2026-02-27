@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import { deflate } from 'zlib';
-import 'colors';
+import pc from 'picocolors';
 
 const VERIFY_AGAINST_VERSION = '4';
 
@@ -17,10 +17,15 @@ const bytes = (b) =>
 
 const diff = (n, o) => {
   const d = n - o;
-  return d === 0 ? '' : d < 0 ? ` ${bytes(d)}`.green : ` +${bytes(d)}`.red;
+  return d === 0
+    ? ''
+    : d < 0
+      ? pc.green(` ${bytes(d)}`)
+      : pc.red(` +${bytes(d)}`);
 };
 
-const percentage = (s, b) => ` ${Math.floor(10000 * (1 - s / b)) / 100}%`.grey;
+const percentage = (s, b) =>
+  pc.gray(` ${Math.floor(10000 * (1 - s / b)) / 100}%`);
 
 let bundlephobaInfoCache;
 
@@ -72,11 +77,13 @@ Promise.allSettled([
   bundlephobaInfo('gzip'),
 ]).then(([rawNew, zipNew, rawMin, zipMin, zipOld]) => {
   console.log('\n  immutable.js');
-  console.log(`  Raw: ${space(14, bytes(promiseNumberValue(rawNew)).cyan)}`);
+  console.log(
+    `  Raw: ${space(14, pc.cyan(bytes(promiseNumberValue(rawNew))))}`
+  );
 
   if (zipOld.status === 'fulfilled') {
     console.log(
-      `  Zip: ${space(14, bytes(promiseNumberValue(zipNew)).cyan)}${percentage(
+      `  Zip: ${space(14, pc.cyan(bytes(promiseNumberValue(zipNew))))}${percentage(
         promiseNumberValue(zipNew),
         promiseNumberValue(rawNew)
       )}${space(15, diff(promiseNumberValue(zipNew), promiseNumberValue(zipOld)))}`
@@ -84,9 +91,11 @@ Promise.allSettled([
   }
 
   console.log('\n  immutable.min.js');
-  console.log(`  Raw: ${space(14, bytes(promiseNumberValue(rawMin)).cyan)}`);
   console.log(
-    `  Zip: ${space(14, bytes(promiseNumberValue(zipMin)).cyan)}${percentage(
+    `  Raw: ${space(14, pc.cyan(bytes(promiseNumberValue(rawMin))))}`
+  );
+  console.log(
+    `  Zip: ${space(14, pc.cyan(bytes(promiseNumberValue(zipMin))))}${percentage(
       promiseNumberValue(zipMin),
       promiseNumberValue(rawMin)
     )}`

@@ -63,6 +63,7 @@
   ],
   "sideEffects": false,
   "engines": {
+    "node": ">=18.0.0",
     "npm": ">=7.0.0"
   },
   "scripts": {
@@ -118,7 +119,7 @@
     "@types/react": "19.2.14",
     "benchmark": "2.1.4",
     "codemirror": "^6.0.1",
-    "colors": "1.4.0",
+    "picocolors": "^1.1.0",
     "cpy-cli": "^7.0.0",
     "eslint": "^9.27.0",
     "eslint-import-resolver-typescript": "^4.4.1",
@@ -134,7 +135,7 @@
     "marked-highlight": "^2.1.0",
     "next": "^16.1.0",
     "next-sitemap": "4.2.3",
-    "npm-run-all": "4.1.5",
+    "npm-run-all2": "^7.0.0",
     "prettier": "^3.5.0",
     "prismjs": "^1.29.0",
     "random-seed": "0.3.0",
