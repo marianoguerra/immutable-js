@@ -7,26 +7,6 @@ export type IteratorType =
   | typeof ITERATE_VALUES
   | typeof ITERATE_ENTRIES;
 
-export class Iterator<V> implements globalThis.Iterator<V, undefined> {
-  static KEYS = ITERATE_KEYS;
-  static VALUES = ITERATE_VALUES;
-  static ENTRIES = ITERATE_ENTRIES;
-
-  declare next: () => IteratorResult<V, undefined>;
-
-  constructor(next: () => IteratorResult<V, undefined>) {
-    this.next = next;
-  }
-
-  toString() {
-    return '[Iterator]';
-  }
-
-  [Symbol.iterator]() {
-    return this;
-  }
-}
-
 export function getValueFromType<K, V>(
   type: typeof ITERATE_KEYS,
   k: K,
@@ -70,7 +50,7 @@ export function hasIterator(
 
 export function isIterator(
   maybeIterator: unknown
-): maybeIterator is Iterator<unknown> {
+): maybeIterator is globalThis.Iterator<unknown> {
   return !!(
     maybeIterator &&
     // @ts-expect-error: maybeIterator is typed as `{}`
@@ -78,14 +58,16 @@ export function isIterator(
   );
 }
 
-export function getIterator(iterable: unknown): Iterator<unknown> | undefined {
+export function getIterator(
+  iterable: unknown
+): globalThis.Iterator<unknown> | undefined {
   const iteratorFn = getIteratorFn(iterable);
   return iteratorFn?.call(iterable);
 }
 
 function getIteratorFn(
   iterable: unknown
-): (() => Iterator<unknown>) | undefined {
+): (() => globalThis.Iterator<unknown>) | undefined {
   const iteratorFn =
     iterable &&
     // @ts-expect-error: maybeIterator is typed as `{}`

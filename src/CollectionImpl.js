@@ -13,7 +13,7 @@ import {
   not,
   reduce,
 } from './CollectionHelperMethods';
-import { ITERATE_KEYS, ITERATE_VALUES, Iterator } from './Iterator';
+import { ITERATE_KEYS, ITERATE_VALUES } from './Iterator';
 import { List } from './List';
 import { Map } from './Map';
 import {
@@ -73,8 +73,6 @@ import mixin from './utils/mixin';
 import quoteString from './utils/quoteString';
 
 export { Collection, CollectionPrototype, IndexedCollectionPrototype };
-
-Collection.Iterator = Iterator;
 
 mixin(CollectionImpl, {
   // ### Conversion to other types
