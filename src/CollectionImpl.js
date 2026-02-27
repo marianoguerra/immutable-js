@@ -672,10 +672,7 @@ mixin(KeyedSeqImpl, KeyedCollectionPrototype);
 mixin(IndexedSeqImpl, IndexedCollectionPrototype);
 mixin(SetSeqImpl, SetCollectionPrototype);
 
-function asValues(collection) {
-  return isKeyed(collection) ? collection.valueSeq() : collection;
-}
+const asValues = (collection) =>
+  isKeyed(collection) ? collection.valueSeq() : collection;
 
-function defaultZipper(...values) {
-  return values;
-}
+const defaultZipper = (...values) => values;

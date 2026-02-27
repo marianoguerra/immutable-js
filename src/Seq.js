@@ -118,9 +118,7 @@ export const IndexedSeq = (value) =>
         ? value.toSeq().entrySeq()
         : indexedSeqFromValue(value);
 
-IndexedSeq.of = function (...values) {
-  return IndexedSeq(values);
-};
+IndexedSeq.of = (...values) => IndexedSeq(values);
 export class IndexedSeqImpl extends SeqImpl {
   toIndexedSeq() {
     return this;
@@ -136,9 +134,7 @@ export const SetSeq = (value) =>
     : IndexedSeq(value)
   ).toSetSeq();
 
-SetSeq.of = function (...values) {
-  return SetSeq(values);
-};
+SetSeq.of = (...values) => SetSeq(values);
 
 export class SetSeqImpl extends SeqImpl {
   toSetSeq() {
@@ -289,9 +285,14 @@ class CollectionSeq extends IndexedSeqImpl {
 }
 
 // # pragma Helper functions
-function emptySequence() {
-  return new ArraySeq([]);
-}
+const emptySequence = () => new ArraySeq([]);
+
+const maybeIndexedSeqFromValue = (value) =>
+  isArrayLike(value)
+    ? new ArraySeq(value)
+    : hasIterator(value)
+      ? new CollectionSeq(value)
+      : undefined;
 
 export function keyedSeqFromValue(value) {
   const seq = maybeIndexedSeqFromValue(value);
@@ -331,12 +332,4 @@ function seqFromValue(value) {
   throw new TypeError(
     `Expected Array or collection object of values, or keyed object: ${value}`
   );
-}
-
-function maybeIndexedSeqFromValue(value) {
-  return isArrayLike(value)
-    ? new ArraySeq(value)
-    : hasIterator(value)
-      ? new CollectionSeq(value)
-      : undefined;
 }

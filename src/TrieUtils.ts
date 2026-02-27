@@ -14,9 +14,7 @@ export const NOT_SET = {};
 type Ref = { value: boolean };
 
 // Boolean references, Rough equivalent of `bool &`.
-export function MakeRef(): Ref {
-  return { value: false };
-}
+export const MakeRef = (): Ref => ({ value: false });
 
 export function SetRef(ref: Ref): void {
   if (ref) {
@@ -58,38 +56,28 @@ export function wrapIndex(
   return index < 0 ? ensureSize(iter) + index : index;
 }
 
-export function returnTrue(): true {
-  return true;
-}
+export const returnTrue = (): true => true;
 
-export function wholeSlice(
+// Account for -0 which is negative, but not less than 0.
+const isNeg = (value: number): boolean => value < 0 || Object.is(value, -0);
+
+export const wholeSlice = (
   begin: number | undefined,
   end: number | undefined,
   size: number
-): boolean {
-  return (
-    ((begin === 0 && !isNeg(begin)) ||
-      (size !== undefined && (begin ?? 0) <= -size)) &&
-    (end === undefined || (size !== undefined && end >= size))
-  );
-}
+): boolean =>
+  ((begin === 0 && !isNeg(begin)) ||
+    (size !== undefined && (begin ?? 0) <= -size)) &&
+  (end === undefined || (size !== undefined && end >= size));
 
-export function resolveBegin(begin: number | undefined, size: number): number {
-  return resolveIndex(begin, size, 0);
-}
-
-export function resolveEnd(end: number | undefined, size: number): number {
-  return resolveIndex(end, size, size);
-}
-
-function resolveIndex(
+// Sanitize indices using this shorthand for ToInt32(argument)
+// http://www.ecma-international.org/ecma-262/6.0/#sec-toint32
+const resolveIndex = (
   index: number | undefined,
   size: number,
   defaultIndex: number
-): number {
-  // Sanitize indices using this shorthand for ToInt32(argument)
-  // http://www.ecma-international.org/ecma-262/6.0/#sec-toint32
-  return index === undefined
+): number =>
+  index === undefined
     ? defaultIndex
     : isNeg(index)
       ? size === Infinity
@@ -98,9 +86,9 @@ function resolveIndex(
       : size === undefined || size === index
         ? index
         : Math.min(size, index) | 0;
-}
 
-function isNeg(value: number): boolean {
-  // Account for -0 which is negative, but not less than 0.
-  return value < 0 || Object.is(value, -0);
-}
+export const resolveBegin = (begin: number | undefined, size: number): number =>
+  resolveIndex(begin, size, 0);
+
+export const resolveEnd = (end: number | undefined, size: number): number =>
+  resolveIndex(end, size, size);

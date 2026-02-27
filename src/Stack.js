@@ -16,9 +16,7 @@ export const Stack = (value) =>
       ? value
       : emptyStack().pushAll(value);
 
-Stack.of = function (...values) {
-  return Stack(values);
-};
+Stack.of = (...values) => Stack(values);
 
 export class StackImpl extends IndexedCollectionImpl {
   constructor(size, head, ownerID, hash) {
@@ -197,11 +195,8 @@ function returnStack(stack, newSize, head) {
   return makeStack(newSize, head);
 }
 
-function makeStack(size, head, ownerID, hash) {
-  return new StackImpl(size, head, ownerID, hash);
-}
+const makeStack = (size, head, ownerID, hash) =>
+  new StackImpl(size, head, ownerID, hash);
 
 let EMPTY_STACK;
-function emptyStack() {
-  return EMPTY_STACK || (EMPTY_STACK = makeStack(0));
-}
+const emptyStack = () => EMPTY_STACK || (EMPTY_STACK = makeStack(0));

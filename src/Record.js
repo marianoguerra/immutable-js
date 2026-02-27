@@ -190,6 +190,13 @@ export class RecordImpl {
 }
 
 Record.isRecord = isRecord;
+
+const recordName = (record) =>
+  record.constructor.displayName || record.constructor.name || 'Record';
+
+const recordSeq = (record) =>
+  keyedSeqFromValue(record._keys.map((k) => [k, record.get(k)]));
+
 Record.getDescriptiveName = recordName;
 const RecordPrototype = RecordImpl.prototype;
 RecordPrototype[IS_RECORD_SYMBOL] = true;
@@ -219,14 +226,6 @@ function makeRecord(likeRecord, values, ownerID) {
   record._values = values;
   record.__ownerID = ownerID;
   return record;
-}
-
-function recordName(record) {
-  return record.constructor.displayName || record.constructor.name || 'Record';
-}
-
-function recordSeq(record) {
-  return keyedSeqFromValue(record._keys.map((k) => [k, record.get(k)]));
 }
 
 function setProp(prototype, name) {

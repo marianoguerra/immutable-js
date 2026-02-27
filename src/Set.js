@@ -26,9 +26,7 @@ export const Set = (value) =>
           iter.forEach((v) => set.add(v));
         });
 
-Set.of = function (...values) {
-  return Set(values);
-};
+Set.of = (...values) => Set(values);
 
 Set.fromKeys = (value) => Set(KeyedCollection(value).keySeq());
 
@@ -177,6 +175,11 @@ SetPrototype.asImmutable = asImmutable;
 SetPrototype.asMutable = asMutable;
 SetPrototype[Symbol.toStringTag] = 'Immutable.Set';
 
+const makeSet = (map, ownerID) => new SetImpl(map, ownerID);
+
+let EMPTY_SET;
+const emptySet = () => EMPTY_SET || (EMPTY_SET = makeSet(emptyMap()));
+
 SetPrototype.__empty = emptySet;
 SetPrototype.__make = makeSet;
 
@@ -209,13 +212,4 @@ function updateSet(set, newMap) {
     : newMap.size === 0
       ? set.__empty()
       : set.__make(newMap);
-}
-
-function makeSet(map, ownerID) {
-  return new SetImpl(map, ownerID);
-}
-
-let EMPTY_SET;
-function emptySet() {
-  return EMPTY_SET || (EMPTY_SET = makeSet(emptyMap()));
 }

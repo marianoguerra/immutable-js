@@ -16,9 +16,7 @@ export const OrderedMap = (value) =>
           assertNotInfinite(iter.size);
           iter.forEach((v, k) => map.set(k, v));
         });
-OrderedMap.of = function (...values) {
-  return OrderedMap(values);
-};
+OrderedMap.of = (...values) => OrderedMap(values);
 export class OrderedMapImpl extends MapImpl {
   constructor(map, list, ownerID, hash) {
     super(map ? map.size : 0, undefined, ownerID, hash);
@@ -98,13 +96,10 @@ OrderedMapImpl.prototype[IS_ORDERED_SYMBOL] = true;
 OrderedMapImpl.prototype[DELETE] = OrderedMapImpl.prototype.remove;
 OrderedMapImpl.prototype[Symbol.toStringTag] = 'Immutable.OrderedMap';
 
-function makeOrderedMap(map, list, ownerID, hash) {
-  return new OrderedMapImpl(map, list, ownerID, hash);
-}
+const makeOrderedMap = (map, list, ownerID, hash) =>
+  new OrderedMapImpl(map, list, ownerID, hash);
 
-export function emptyOrderedMap() {
-  return makeOrderedMap(emptyMap(), emptyList());
-}
+export const emptyOrderedMap = () => makeOrderedMap(emptyMap(), emptyList());
 
 function updateOrderedMap(omap, k, v) {
   const { _map: map, _list: list } = omap;

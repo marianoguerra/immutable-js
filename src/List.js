@@ -49,9 +49,7 @@ export const List = (value) => {
   });
 };
 
-List.of = function (...values) {
-  return List(values);
-};
+List.of = (...values) => List(values);
 
 export class ListImpl extends IndexedCollectionImpl {
   constructor(origin, capacity, level, root, tail, ownerID, hash) {
@@ -389,13 +387,10 @@ function* iterateList(list, reverse) {
   }
 }
 
-function makeList(origin, capacity, level, root, tail, ownerID, hash) {
-  return new ListImpl(origin, capacity, level, root, tail, ownerID, hash);
-}
+const makeList = (origin, capacity, level, root, tail, ownerID, hash) =>
+  new ListImpl(origin, capacity, level, root, tail, ownerID, hash);
 
-export function emptyList() {
-  return makeList(0, 0, SHIFT);
-}
+export const emptyList = () => makeList(0, 0, SHIFT);
 
 function updateList(list, index, value) {
   index = wrapIndex(list, index);
@@ -655,6 +650,5 @@ function setListBounds(list, begin, end) {
   return makeList(newOrigin, newCapacity, newLevel, newRoot, newTail);
 }
 
-function getTailOffset(size) {
-  return size < SIZE ? 0 : ((size - 1) >>> SHIFT) << SHIFT;
-}
+const getTailOffset = (size) =>
+  size < SIZE ? 0 : ((size - 1) >>> SHIFT) << SHIFT;

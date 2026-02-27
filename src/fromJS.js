@@ -47,7 +47,6 @@ function fromJSWith(stack, converter, value, key, keyPath, parentValue) {
   return value;
 }
 
-function defaultConverter(k, v) {
-  // Effectively the opposite of "Collection.toSeq()"
-  return isIndexed(v) ? v.toList() : isKeyed(v) ? v.toMap() : v.toSet();
-}
+// Effectively the opposite of "Collection.toSeq()"
+const defaultConverter = (k, v) =>
+  isIndexed(v) ? v.toList() : isKeyed(v) ? v.toMap() : v.toSet();

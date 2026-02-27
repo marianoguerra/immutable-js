@@ -541,14 +541,11 @@ function* mapIteratorGenerator(node, type, reverse) {
   }
 }
 
-function makeMap(size, root, ownerID, hash) {
-  return new MapImpl(size, root, ownerID, hash);
-}
+const makeMap = (size, root, ownerID, hash) =>
+  new MapImpl(size, root, ownerID, hash);
 
 let EMPTY_MAP;
-export function emptyMap() {
-  return EMPTY_MAP || (EMPTY_MAP = makeMap(0));
-}
+export const emptyMap = () => EMPTY_MAP || (EMPTY_MAP = makeMap(0));
 
 function updateMap(map, k, v) {
   let newRoot;
@@ -616,11 +613,8 @@ function updateNode(
   );
 }
 
-function isLeafNode(node) {
-  return (
-    node.constructor === ValueNode || node.constructor === HashCollisionNode
-  );
-}
+const isLeafNode = (node) =>
+  node.constructor === ValueNode || node.constructor === HashCollisionNode;
 
 function mergeIntoNode(node, ownerID, shift, keyHash, entry) {
   if (node.keyHash === keyHash) {

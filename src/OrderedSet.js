@@ -17,13 +17,9 @@ export const OrderedSet = (value) =>
           iter.forEach((v) => set.add(v));
         });
 
-OrderedSet.of = function (...values) {
-  return OrderedSet(values);
-};
+OrderedSet.of = (...values) => OrderedSet(values);
 
-OrderedSet.fromKeys = function (value) {
-  return OrderedSet(KeyedCollection(value).keySeq());
-};
+OrderedSet.fromKeys = (value) => OrderedSet(KeyedCollection(value).keySeq());
 export class OrderedSetImpl extends SetImpl {
   create(value) {
     return OrderedSet(value);
@@ -43,13 +39,9 @@ OrderedSetPrototype.zip = IndexedCollectionPrototype.zip;
 OrderedSetPrototype.zipWith = IndexedCollectionPrototype.zipWith;
 OrderedSetPrototype.zipAll = IndexedCollectionPrototype.zipAll;
 
+const makeOrderedSet = (map, ownerID) => new OrderedSetImpl(map, ownerID);
+
+const emptyOrderedSet = () => makeOrderedSet(emptyOrderedMap());
+
 OrderedSetPrototype.__empty = emptyOrderedSet;
 OrderedSetPrototype.__make = makeOrderedSet;
-
-function makeOrderedSet(map, ownerID) {
-  return new OrderedSetImpl(map, ownerID);
-}
-
-function emptyOrderedSet() {
-  return makeOrderedSet(emptyOrderedMap());
-}

@@ -763,16 +763,15 @@ function validateEntry(entry) {
   }
 }
 
-function collectionClass(collection) {
-  return isKeyed(collection)
+const collectionClass = (collection) =>
+  isKeyed(collection)
     ? KeyedCollection
     : isIndexed(collection)
       ? IndexedCollection
       : SetCollection;
-}
 
-function makeSequence(collection) {
-  return Object.create(
+const makeSequence = (collection) =>
+  Object.create(
     (isKeyed(collection)
       ? KeyedSeqImpl
       : isIndexed(collection)
@@ -780,7 +779,6 @@ function makeSequence(collection) {
         : SetSeqImpl
     ).prototype
   );
-}
 
 function cacheResultThrough() {
   if (this._iter.cacheResult) {

@@ -21,13 +21,9 @@ export function reduce(
   return reduction;
 }
 
-export function keyMapper<K, V>(v: V, k: K): K {
-  return k;
-}
+export const keyMapper = <K, V>(v: V, k: K): K => k;
 
-export function entryMapper<K, V>(v: V, k: K): [K, V] {
-  return [k, v];
-}
+export const entryMapper = <K, V>(v: V, k: K): [K, V] => [k, v];
 
 export function not(predicate: (...args: unknown[]) => boolean) {
   return function (this: unknown, ...args: unknown[]): boolean {
@@ -41,9 +37,7 @@ export function neg(predicate: (...args: unknown[]) => number) {
   };
 }
 
-export function defaultNegComparator(
+export const defaultNegComparator = (
   a: number | string,
   b: number | string
-): number {
-  return a < b ? 1 : a > b ? -1 : 0;
-}
+): number => (a < b ? 1 : a > b ? -1 : 0);

@@ -49,9 +49,8 @@ export function hash(o: unknown): number {
   }
 }
 
-function hashNullish(nullish: null | undefined): number {
-  return nullish === null ? 0x42108422 : /* undefined */ 0x42108423;
-}
+const hashNullish = (nullish: null | undefined): number =>
+  nullish === null ? 0x42108422 : /* undefined */ 0x42108423;
 
 // Compress arbitrarily large numbers into smi hashes.
 function hashNumber(n: number): number {
@@ -125,9 +124,8 @@ function hashJSObj(obj: object | Function): number {
   return hashed;
 }
 
-function valueOf(obj: object): unknown {
-  return obj.valueOf !== Object.prototype.valueOf ? obj.valueOf() : obj;
-}
+const valueOf = (obj: object): unknown =>
+  obj.valueOf !== Object.prototype.valueOf ? obj.valueOf() : obj;
 
 function nextHash(): number {
   const nextHash = ++_objHashUID;
