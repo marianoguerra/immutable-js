@@ -48,7 +48,8 @@ import { setIn } from './functional/setIn';
 import { update } from './functional/update';
 import { updateIn } from './functional/updateIn';
 
-import { version } from '../package.json';
+import pkg from '../package.json' with { type: 'json' };
+const { version } = pkg;
 
 export {
   version,

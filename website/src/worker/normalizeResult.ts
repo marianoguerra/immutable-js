@@ -1,9 +1,5 @@
-import {
-  Element,
-  JsonMLElementList,
-  explodeElement,
-  isElement,
-} from './jsonml-types';
+import type { Element, JsonMLElementList } from './jsonml-types';
+import { explodeElement, isElement } from './jsonml-types';
 
 export interface DevToolsFormatter {
   header: (obj: unknown) => JsonMLElementList | null;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import { Element, explodeElement } from './jsonml-types';
+import type { Element } from './jsonml-types';
+import { explodeElement } from './jsonml-types';
 
 describe('explodeElement', () => {
   it('should explode an element', () => {

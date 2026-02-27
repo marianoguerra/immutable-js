@@ -1,7 +1,7 @@
 import { List, Map, Range, Seq, Set, fromJS } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
 import fc from 'fast-check';
-import { create as createSeed } from 'random-seed';
+import randomSeed from 'random-seed';
 import invariant from '../src/utils/invariant';
 
 function arrayOfSize(s: number) {
@@ -1030,7 +1030,7 @@ describe('List', () => {
       expect(list.shuffle().sort()).toStrictEqual(list);
     });
     it('should work with a pseudo random number generator', () => {
-      const seed = createSeed('lorem ipsum');
+      const seed = randomSeed.create('lorem ipsum');
       const random = () => seed.random();
 
       expect(list.shuffle(random)).toStrictEqual(

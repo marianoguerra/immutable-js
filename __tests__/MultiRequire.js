@@ -3,7 +3,7 @@ import * as Immutable1 from '../src/Immutable';
 
 jest.resetModules();
 
-const Immutable2 = jest.requireActual('../src/Immutable');
+const Immutable2 = await import('../src/Immutable');
 
 describe('MultiRequire', () => {
   it('might require two different instances of Immutable', () => {
