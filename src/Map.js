@@ -14,21 +14,24 @@ import {
   SetRef,
 } from './TrieUtils';
 import { is } from './is';
-import { asImmutable } from './methods/asImmutable';
-import { asMutable } from './methods/asMutable';
-import { deleteIn } from './methods/deleteIn';
-import { merge, mergeWith } from './methods/merge';
-import { mergeDeep, mergeDeepWith } from './methods/mergeDeep';
-import { mergeDeepIn } from './methods/mergeDeepIn';
-import { mergeIn } from './methods/mergeIn';
-import { setIn } from './methods/setIn';
-import { update } from './methods/update';
-import { updateIn } from './methods/updateIn';
-import { wasAltered } from './methods/wasAltered';
-import { withMutations } from './methods/withMutations';
-import { IS_MAP_SYMBOL, isMap } from './predicates/isMap';
-import { isOrdered } from './predicates/isOrdered';
-import assertNotInfinite from './utils/assertNotInfinite';
+import {
+  asImmutable,
+  asMutable,
+  deleteIn,
+  merge,
+  mergeWith,
+  mergeDeep,
+  mergeDeepWith,
+  mergeDeepIn,
+  mergeIn,
+  setIn,
+  update,
+  updateIn,
+  wasAltered,
+  withMutations,
+} from './methods';
+import { IS_MAP_SYMBOL, isMap, isOrdered } from './predicates';
+import { assertNotInfinite } from './utils/assertions';
 
 export const Map = (value) =>
   value === undefined || value === null

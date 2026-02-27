@@ -1,7 +1,6 @@
 import type { CollectionImpl } from '../Collection';
 import { hash, smi } from '../Hash';
-import { isKeyed } from '../predicates/isKeyed';
-import { isOrdered } from '../predicates/isOrdered';
+import { isKeyed, isOrdered } from '../predicates';
 
 export function hashCollection<K, V>(collection: CollectionImpl<K, V>): number {
   if (collection.size === Infinity) {

@@ -13,24 +13,26 @@ import { Repeat } from './Repeat';
 import { is } from './is';
 import { fromJS } from './fromJS';
 
-import isPlainObject from './utils/isPlainObj';
+import { isPlainObject } from './utils/typeChecks';
 
 // Functional predicates
-import { isImmutable } from './predicates/isImmutable';
-import { isCollection } from './predicates/isCollection';
-import { isKeyed } from './predicates/isKeyed';
-import { isIndexed } from './predicates/isIndexed';
-import { isAssociative } from './predicates/isAssociative';
-import { isOrdered } from './predicates/isOrdered';
-import { isValueObject } from './predicates/isValueObject';
-import { isSeq } from './predicates/isSeq';
-import { isList } from './predicates/isList';
-import { isMap } from './predicates/isMap';
-import { isOrderedMap } from './predicates/isOrderedMap';
-import { isStack } from './predicates/isStack';
-import { isSet } from './predicates/isSet';
-import { isOrderedSet } from './predicates/isOrderedSet';
-import { isRecord } from './predicates/isRecord';
+import {
+  isImmutable,
+  isCollection,
+  isKeyed,
+  isIndexed,
+  isAssociative,
+  isOrdered,
+  isValueObject,
+  isSeq,
+  isList,
+  isMap,
+  isOrderedMap,
+  isStack,
+  isSet,
+  isOrderedSet,
+  isRecord,
+} from './predicates';
 
 import { Collection } from './CollectionImpl';
 import { hash } from './Hash';

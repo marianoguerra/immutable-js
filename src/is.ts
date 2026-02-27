@@ -1,4 +1,4 @@
-import { isValueObject } from './predicates/isValueObject';
+import { isValueObject } from './predicates';
 
 /**
  * An extension of the "same-value" algorithm as [described for use by ES6 Map

@@ -60,15 +60,17 @@ import {
   wrapIndex,
 } from './TrieUtils';
 import { is } from './is';
-import { getIn } from './methods/getIn';
-import { hasIn } from './methods/hasIn';
-import { toObject } from './methods/toObject';
-import { IS_COLLECTION_SYMBOL } from './predicates/isCollection';
-import { isIndexed, IS_INDEXED_SYMBOL } from './predicates/isIndexed';
-import { isKeyed, IS_KEYED_SYMBOL } from './predicates/isKeyed';
-import { IS_ORDERED_SYMBOL } from './predicates/isOrdered';
+import { getIn, hasIn, toObject } from './methods';
+import {
+  IS_COLLECTION_SYMBOL,
+  IS_INDEXED_SYMBOL,
+  IS_KEYED_SYMBOL,
+  IS_ORDERED_SYMBOL,
+  isIndexed,
+  isKeyed,
+} from './predicates';
 import { toJS } from './toJS';
-import assertNotInfinite from './utils/assertNotInfinite';
+import { assertNotInfinite } from './utils/assertions';
 import mixin from './utils/mixin';
 import quoteString from './utils/quoteString';
 

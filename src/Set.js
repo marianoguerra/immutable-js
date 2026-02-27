@@ -8,12 +8,9 @@ import { emptyMap } from './Map';
 import { sortFactory } from './Operations';
 import { OrderedSet } from './OrderedSet';
 import { DELETE } from './TrieUtils';
-import { asImmutable } from './methods/asImmutable';
-import { asMutable } from './methods/asMutable';
-import { withMutations } from './methods/withMutations';
-import { isOrdered } from './predicates/isOrdered';
-import { IS_SET_SYMBOL, isSet } from './predicates/isSet';
-import assertNotInfinite from './utils/assertNotInfinite';
+import { asImmutable, asMutable, withMutations } from './methods';
+import { IS_SET_SYMBOL, isOrdered, isSet } from './predicates';
+import { assertNotInfinite } from './utils/assertions';
 
 export const Set = (value) =>
   value === undefined || value === null

@@ -13,18 +13,20 @@ import {
   resolveBegin,
   resolveEnd,
 } from './TrieUtils';
-import { asImmutable } from './methods/asImmutable';
-import { asMutable } from './methods/asMutable';
-import { deleteIn } from './methods/deleteIn';
-import { mergeDeepIn } from './methods/mergeDeepIn';
-import { mergeIn } from './methods/mergeIn';
-import { setIn } from './methods/setIn';
-import { update } from './methods/update';
-import { updateIn } from './methods/updateIn';
-import { wasAltered } from './methods/wasAltered';
-import { withMutations } from './methods/withMutations';
-import { IS_LIST_SYMBOL, isList } from './predicates/isList';
-import assertNotInfinite from './utils/assertNotInfinite';
+import {
+  asImmutable,
+  asMutable,
+  deleteIn,
+  mergeDeepIn,
+  mergeIn,
+  setIn,
+  update,
+  updateIn,
+  wasAltered,
+  withMutations,
+} from './methods';
+import { IS_LIST_SYMBOL, isList } from './predicates';
+import { assertNotInfinite } from './utils/assertions';
 
 export const List = (value) => {
   const empty = emptyList();

@@ -34,11 +34,16 @@ import {
   resolveBegin,
   resolveEnd,
 } from './TrieUtils';
-import { isCollection } from './predicates/isCollection';
-import { IS_INDEXED_SYMBOL, isIndexed } from './predicates/isIndexed';
-import { IS_KEYED_SYMBOL, isKeyed } from './predicates/isKeyed';
-import { isOrdered, IS_ORDERED_SYMBOL } from './predicates/isOrdered';
-import { isSeq } from './predicates/isSeq';
+import {
+  IS_INDEXED_SYMBOL,
+  IS_KEYED_SYMBOL,
+  IS_ORDERED_SYMBOL,
+  isCollection,
+  isIndexed,
+  isKeyed,
+  isOrdered,
+  isSeq,
+} from './predicates';
 
 export class ToKeyedSequence extends KeyedSeqImpl {
   constructor(indexed, useKeys) {

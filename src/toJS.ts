@@ -1,9 +1,8 @@
 import type { CollectionImpl } from './Collection';
 import type { RecordImpl } from './Record';
 import { Seq } from './Seq';
-import { isCollection } from './predicates/isCollection';
-import { isKeyed } from './predicates/isKeyed';
-import isDataStructure from './utils/isDataStructure';
+import { isCollection, isKeyed } from './predicates';
+import { isDataStructure } from './utils/typeChecks';
 
 export function toJS(
   value: CollectionImpl<unknown, unknown> | RecordImpl

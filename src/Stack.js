@@ -2,12 +2,9 @@ import { IndexedCollection, IndexedCollectionImpl } from './Collection';
 import { getValueFromType } from './Iterator';
 import { ArraySeq } from './Seq';
 import { wholeSlice, resolveBegin, resolveEnd, wrapIndex } from './TrieUtils';
-import { asImmutable } from './methods/asImmutable';
-import { asMutable } from './methods/asMutable';
-import { wasAltered } from './methods/wasAltered';
-import { withMutations } from './methods/withMutations';
-import { IS_STACK_SYMBOL, isStack } from './predicates/isStack';
-import assertNotInfinite from './utils/assertNotInfinite';
+import { asImmutable, asMutable, wasAltered, withMutations } from './methods';
+import { IS_STACK_SYMBOL, isStack } from './predicates';
+import { assertNotInfinite } from './utils/assertions';
 
 export const Stack = (value) =>
   value === undefined || value === null

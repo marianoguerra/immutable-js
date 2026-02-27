@@ -1,5 +1,5 @@
 import type { CollectionImpl } from './Collection';
-import assertNotInfinite from './utils/assertNotInfinite';
+import { assertNotInfinite } from './utils/assertions';
 
 export function reduce(
   collection: CollectionImpl<unknown, unknown>,

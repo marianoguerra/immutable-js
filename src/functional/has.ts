@@ -1,5 +1,5 @@
-import { isImmutable } from '../predicates/isImmutable';
-import isDataStructure from '../utils/isDataStructure';
+import { isImmutable } from '../predicates';
+import { isDataStructure } from '../utils/typeChecks';
 
 /**
  * Returns true if the key is defined in the provided collection.

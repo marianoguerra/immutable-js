@@ -1,11 +1,8 @@
 import { ITERATE_ENTRIES, type IteratorType } from './Iterator';
 import { IndexedSeq, KeyedSeq, Seq, SetSeq } from './Seq';
 import type ValueObject from './ValueObject';
-import { isAssociative } from './predicates/isAssociative';
-import { isCollection } from './predicates/isCollection';
-import { isIndexed } from './predicates/isIndexed';
-import { isKeyed } from './predicates/isKeyed';
-import assertNotInfinite from './utils/assertNotInfinite';
+import { isAssociative, isCollection, isIndexed, isKeyed } from './predicates';
+import { assertNotInfinite } from './utils/assertions';
 import deepEqual from './utils/deepEqual';
 import { hashCollection } from './utils/hashCollection';
 

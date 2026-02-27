@@ -2,9 +2,8 @@ import { KeyedCollection, SetCollection } from './Collection';
 import { IndexedCollectionPrototype } from './CollectionImpl';
 import { emptyOrderedMap } from './OrderedMap';
 import { SetImpl } from './Set';
-import { IS_ORDERED_SYMBOL } from './predicates/isOrdered';
-import { isOrderedSet } from './predicates/isOrderedSet';
-import assertNotInfinite from './utils/assertNotInfinite';
+import { IS_ORDERED_SYMBOL, isOrderedSet } from './predicates';
+import { assertNotInfinite } from './utils/assertions';
 
 export const OrderedSet = (value) =>
   value === undefined || value === null

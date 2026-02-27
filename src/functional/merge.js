@@ -1,10 +1,8 @@
 import { IndexedCollection, KeyedCollection } from '../Collection';
 import { Seq } from '../Seq';
-import { isImmutable } from '../predicates/isImmutable';
-import { isIndexed } from '../predicates/isIndexed';
-import { isKeyed } from '../predicates/isKeyed';
-import isDataStructure from '../utils/isDataStructure';
+import { isImmutable, isIndexed, isKeyed } from '../predicates';
 import shallowCopy from '../utils/shallowCopy';
+import { isDataStructure } from '../utils/typeChecks';
 
 export function merge(collection, ...sources) {
   return mergeWithSources(collection, sources);

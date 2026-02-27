@@ -2,9 +2,8 @@ import { KeyedCollection } from './Collection';
 import { emptyList } from './List';
 import { MapImpl, emptyMap } from './Map';
 import { DELETE, NOT_SET, SIZE } from './TrieUtils';
-import { IS_ORDERED_SYMBOL } from './predicates/isOrdered';
-import { isOrderedMap } from './predicates/isOrderedMap';
-import assertNotInfinite from './utils/assertNotInfinite';
+import { IS_ORDERED_SYMBOL, isOrderedMap } from './predicates';
+import { assertNotInfinite } from './utils/assertions';
 
 export const OrderedMap = (value) =>
   value === undefined || value === null

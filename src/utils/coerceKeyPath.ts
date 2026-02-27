@@ -1,6 +1,6 @@
 import type { KeyPath } from '../../type-definitions/immutable';
-import { isOrdered } from '../predicates/isOrdered';
-import isArrayLike from './isArrayLike';
+import { isOrdered } from '../predicates';
+import { isArrayLike } from './typeChecks';
 
 export default function coerceKeyPath<K>(keyPath: KeyPath<K>): ArrayLike<K> {
   if (isArrayLike(keyPath) && typeof keyPath !== 'string') {

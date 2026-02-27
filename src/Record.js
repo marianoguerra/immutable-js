@@ -4,23 +4,26 @@ import { ITERATE_ENTRIES } from './Iterator';
 import { List } from './List';
 import { keyedSeqFromValue } from './Seq';
 import { DELETE } from './TrieUtils';
-import { asImmutable } from './methods/asImmutable';
-import { asMutable } from './methods/asMutable';
-import { deleteIn } from './methods/deleteIn';
-import { getIn } from './methods/getIn';
-import { merge, mergeWith } from './methods/merge';
-import { mergeDeep, mergeDeepWith } from './methods/mergeDeep';
-import { mergeDeepIn } from './methods/mergeDeepIn';
-import { mergeIn } from './methods/mergeIn';
-import { setIn } from './methods/setIn';
-import { update } from './methods/update';
-import { updateIn } from './methods/updateIn';
-import { withMutations } from './methods/withMutations';
+import {
+  asImmutable,
+  asMutable,
+  deleteIn,
+  getIn,
+  merge,
+  mergeWith,
+  mergeDeep,
+  mergeDeepWith,
+  mergeDeepIn,
+  mergeIn,
+  setIn,
+  update,
+  updateIn,
+  withMutations,
+} from './methods';
 
-import { isImmutable } from './predicates/isImmutable';
-import { IS_RECORD_SYMBOL, isRecord } from './predicates/isRecord';
+import { IS_RECORD_SYMBOL, isImmutable, isRecord } from './predicates';
 import { toJS } from './toJS';
-import invariant from './utils/invariant';
+import invariant from './utils/assertions';
 import quoteString from './utils/quoteString';
 
 function throwOnInvalidDefaultValues(defaultValues) {

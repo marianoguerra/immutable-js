@@ -3,11 +3,13 @@ import type { RangeImpl as Range } from '../Range';
 import type { RepeatImpl as Repeat } from '../Repeat';
 import { NOT_SET } from '../TrieUtils';
 import { is } from '../is';
-import { isAssociative } from '../predicates/isAssociative';
-import { isCollection } from '../predicates/isCollection';
-import { isIndexed } from '../predicates/isIndexed';
-import { isKeyed } from '../predicates/isKeyed';
-import { isOrdered } from '../predicates/isOrdered';
+import {
+  isAssociative,
+  isCollection,
+  isIndexed,
+  isKeyed,
+  isOrdered,
+} from '../predicates';
 
 export default function deepEqual(
   a: Range | Repeat | CollectionImpl<unknown, unknown>,

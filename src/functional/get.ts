@@ -1,6 +1,6 @@
 import type { Record } from '../../type-definitions/immutable';
 import type { CollectionImpl } from '../Collection';
-import { isImmutable } from '../predicates/isImmutable';
+import { isImmutable } from '../predicates';
 import { has } from './has';
 
 /**

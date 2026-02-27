@@ -2,7 +2,7 @@ import { List, Map, Range, Seq, Set, fromJS } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
 import fc from 'fast-check';
 import randomSeed from 'random-seed';
-import invariant from '../src/utils/invariant';
+import invariant from '../src/utils/assertions';
 
 function arrayOfSize(s: number) {
   const a = new Array(s);

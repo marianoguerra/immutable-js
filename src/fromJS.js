@@ -1,10 +1,7 @@
 import { hasIterator } from './Iterator';
 import { Seq } from './Seq';
-import { isImmutable } from './predicates/isImmutable';
-import { isIndexed } from './predicates/isIndexed';
-import { isKeyed } from './predicates/isKeyed';
-import isArrayLike from './utils/isArrayLike';
-import isPlainObj from './utils/isPlainObj';
+import { isImmutable, isIndexed, isKeyed } from './predicates';
+import { isArrayLike, isPlainObject as isPlainObj } from './utils/typeChecks';
 
 export function fromJS(value, converter) {
   return fromJSWith(

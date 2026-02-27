@@ -2,8 +2,8 @@ import type { Seq } from '../type-definitions/immutable';
 import { getValueFromType, type IteratorType } from './Iterator';
 import { IndexedSeqImpl } from './Seq';
 import { wrapIndex, wholeSlice, resolveBegin, resolveEnd } from './TrieUtils';
+import invariant from './utils/assertions';
 import deepEqual from './utils/deepEqual';
-import invariant from './utils/invariant';
 
 /**
  * Returns a `Seq.Indexed` of numbers from `start` (inclusive) to `end`

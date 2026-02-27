@@ -1,8 +1,8 @@
 import type { Record } from '../../type-definitions/immutable';
 import type { CollectionImpl } from '../Collection';
-import { isImmutable } from '../predicates/isImmutable';
-import isDataStructure from '../utils/isDataStructure';
+import { isImmutable } from '../predicates';
 import shallowCopy from '../utils/shallowCopy';
+import { isDataStructure } from '../utils/typeChecks';
 
 /**
  * Returns a copy of the collection with the value at key removed.

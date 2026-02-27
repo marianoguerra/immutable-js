@@ -7,10 +7,10 @@ import type {
 import type { CollectionImpl } from '../Collection';
 import { emptyMap } from '../Map';
 import { NOT_SET } from '../TrieUtils';
-import { isImmutable } from '../predicates/isImmutable';
+import { isImmutable } from '../predicates';
 import coerceKeyPath from '../utils/coerceKeyPath';
-import isDataStructure from '../utils/isDataStructure';
 import quoteString from '../utils/quoteString';
+import { isDataStructure } from '../utils/typeChecks';
 import { get } from './get';
 import { remove } from './remove';
 import { set } from './set';

@@ -10,14 +10,17 @@ import {
   ITERATE_ENTRIES,
 } from './Iterator';
 import { wrapIndex } from './TrieUtils';
-import { isAssociative } from './predicates/isAssociative';
-import { isCollection } from './predicates/isCollection';
-import { isImmutable } from './predicates/isImmutable';
-import { isKeyed } from './predicates/isKeyed';
-import { IS_ORDERED_SYMBOL } from './predicates/isOrdered';
-import { isRecord } from './predicates/isRecord';
-import { IS_SEQ_SYMBOL, isSeq } from './predicates/isSeq';
-import isArrayLike from './utils/isArrayLike';
+import {
+  IS_ORDERED_SYMBOL,
+  IS_SEQ_SYMBOL,
+  isAssociative,
+  isCollection,
+  isImmutable,
+  isKeyed,
+  isRecord,
+  isSeq,
+} from './predicates';
+import { isArrayLike } from './utils/typeChecks';
 
 export const Seq = (value) =>
   value === undefined || value === null
