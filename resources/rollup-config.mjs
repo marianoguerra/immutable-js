@@ -10,6 +10,16 @@ const copyright =
 const SRC_DIR = path.resolve('src');
 const DIST_DIR = path.resolve('dist');
 
+/** Rollup plugin that collapses consecutive blank lines into one. */
+function collapseBlankLines() {
+  return {
+    name: 'collapse-blank-lines',
+    renderChunk(code) {
+      return code.replace(/\n\n/g, '\n');
+    },
+  };
+}
+
 export default [
   {
     input: path.join(SRC_DIR, 'Immutable.js'),
@@ -40,6 +50,7 @@ export default [
               indent_level: 2,
             },
           }),
+          collapseBlankLines(),
         ],
       },
       {
