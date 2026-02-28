@@ -7,7 +7,36 @@ import {
   not,
   reduce,
 } from './CollectionHelperMethods';
-import { ArraySeq, IndexedSeq, KeyedSeq, Seq, SetSeq } from './Seq';
+import {
+  concatFactory,
+  countByFactory,
+  filterFactory,
+  flatMapFactory,
+  flattenFactory,
+  flipFactory,
+  groupByFactory,
+  interposeFactory,
+  mapFactory,
+  maxFactory,
+  partitionFactory,
+  reverseFactory,
+  skipWhileFactory,
+  sliceFactory,
+  sortFactory,
+  takeWhileFactory,
+  zipWithFactory,
+} from './Operations';
+import {
+  ArraySeq,
+  FromEntriesSequence,
+  IndexedSeq,
+  KeyedSeq,
+  Seq,
+  SetSeq,
+  ToIndexedSequence,
+  ToKeyedSequence,
+  ToSetSequence,
+} from './Seq';
 import {
   ensureSize,
   NOT_SET,
@@ -16,6 +45,8 @@ import {
   wrapIndex,
 } from './TrieUtils';
 import type ValueObject from './ValueObject';
+import { getIn as functionalGetIn } from './functional/getIn';
+import { hasIn as functionalHasIn } from './functional/hasIn';
 import { is } from './is';
 import {
   IS_COLLECTION_SYMBOL,
@@ -34,9 +65,9 @@ import deepEqual from './utils/deepEqual';
 import { hashCollection } from './utils/hashCollection';
 import quoteString from './utils/quoteString';
 
-// Late-binding references for modules that create circular dependencies.
+// Late-binding references for concrete collection constructors that cannot be
+// directly imported due to circular class hierarchy dependencies.
 // Populated by Immutable.js after all modules have loaded.
-// This object is mutated (via Object.assign) from Immutable.js.
 export const _late: Record<string, any> = {};
 
 const reify = <K, V>(iter: CollectionImpl<K, V>, seq: any): any =>
@@ -54,7 +85,9 @@ const asValues = (collection: any): any =>
 const defaultZipper = (...values: unknown[]) => values;
 
 export const Collection = (value: unknown): CollectionImpl<unknown, unknown> =>
-  isCollection(value) ? value : Seq(value);
+  isCollection(value)
+    ? value
+    : (Seq(value) as CollectionImpl<unknown, unknown>);
 
 export class CollectionImpl<K, V> implements ValueObject {
   declare __hash: number | undefined;
@@ -97,7 +130,7 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   toIndexedSeq(): CollectionImpl<unknown, unknown> {
-    return new _late.ToIndexedSequence(this);
+    return new ToIndexedSequence(this);
   }
 
   toJS(): unknown {
@@ -105,7 +138,7 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   toKeyedSeq(): CollectionImpl<unknown, unknown> {
-    return new _late.ToKeyedSequence(this, true);
+    return new ToKeyedSequence(this, true);
   }
 
   toMap(): unknown {
@@ -113,7 +146,12 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   toObject(): Record<string, unknown> {
-    return _late.toObject.call(this);
+    assertNotInfinite(this.size);
+    const object: Record<string, unknown> = {};
+    this.__iterate((v: V, k: K) => {
+      (object as any)[k] = v;
+    });
+    return object;
   }
 
   toOrderedMap(): unknown {
@@ -129,7 +167,7 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   toSetSeq(): CollectionImpl<unknown, unknown> {
-    return new _late.ToSetSequence(this);
+    return new ToSetSequence(this);
   }
 
   toSeq(): CollectionImpl<unknown, unknown> {
@@ -164,7 +202,7 @@ export class CollectionImpl<K, V> implements ValueObject {
   // ### ES6 Collection methods (ES6 Array and Map)
 
   concat(...values: unknown[]) {
-    return reify(this, _late.concatFactory(this, values));
+    return reify(this, concatFactory(this, values));
   }
 
   includes(searchValue: V) {
@@ -196,17 +234,14 @@ export class CollectionImpl<K, V> implements ValueObject {
     predicate: (value: V, key: K, iter: this) => boolean,
     context?: unknown
   ) {
-    return reify(
-      this,
-      _late.filterFactory(this, predicate, context, isKeyed(this))
-    );
+    return reify(this, filterFactory(this, predicate, context, isKeyed(this)));
   }
 
   partition(
     predicate: (value: V, key: K, iter: this) => boolean,
     context?: unknown
   ) {
-    return _late.partitionFactory(this, predicate, context);
+    return partitionFactory(this, predicate, context);
   }
 
   find(
@@ -248,8 +283,8 @@ export class CollectionImpl<K, V> implements ValueObject {
     }
   }
 
-  map(mapper: (value: V, key: K, iter: this) => V, context?: unknown) {
-    return reify(this, _late.mapFactory(this, mapper, context));
+  map(mapper: (value: V, key: K, iter: this) => V, context?: unknown): any {
+    return reify(this, mapFactory(this, mapper, context));
   }
 
   reduce(
@@ -283,11 +318,11 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   reverse() {
-    return reify(this, _late.reverseFactory(this, isKeyed(this)));
+    return reify(this, reverseFactory(this, isKeyed(this)));
   }
 
   slice(begin?: number, end?: number) {
-    return reify(this, _late.sliceFactory(this, begin, end, isKeyed(this)));
+    return reify(this, sliceFactory(this, begin, end, isKeyed(this)));
   }
 
   some(
@@ -306,7 +341,7 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   sort(comparator?: (a: V, b: V) => number) {
-    return reify(this, _late.sortFactory(this, comparator));
+    return reify(this, sortFactory(this, comparator));
   }
 
   *values() {
@@ -338,7 +373,7 @@ export class CollectionImpl<K, V> implements ValueObject {
     grouper: (value: V, key: K, iter: this) => unknown,
     context?: unknown
   ) {
-    return _late.countByFactory(this, grouper, context);
+    return countByFactory(this, grouper, context, _late.Map);
   }
 
   entrySeq(): CollectionImpl<unknown, unknown> {
@@ -422,15 +457,15 @@ export class CollectionImpl<K, V> implements ValueObject {
     mapper: (value: V, key: K, iter: this) => unknown,
     context?: unknown
   ) {
-    return reify(this, _late.flatMapFactory(this, mapper, context));
+    return reify(this, flatMapFactory(this, mapper, context));
   }
 
   flatten(depth?: number | boolean) {
-    return reify(this, _late.flattenFactory(this, depth, isKeyed(this)));
+    return reify(this, flattenFactory(this, depth, isKeyed(this)));
   }
 
   fromEntrySeq() {
-    return new _late.FromEntriesSequence(this);
+    return new FromEntriesSequence(this);
   }
 
   get(searchKey: K, notSetValue?: V) {
@@ -442,14 +477,14 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   getIn(searchKeyPath: unknown, notSetValue?: unknown) {
-    return _late.getIn.call(this, searchKeyPath, notSetValue);
+    return functionalGetIn(this, searchKeyPath as any, notSetValue);
   }
 
   groupBy(
     grouper: (value: V, key: K, iter: this) => unknown,
     context?: unknown
   ) {
-    return _late.groupByFactory(this, grouper, context);
+    return groupByFactory(this, grouper, context, _late.Map, _late.OrderedMap);
   }
 
   has(searchKey: K) {
@@ -457,7 +492,7 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   hasIn(searchKeyPath: unknown) {
-    return _late.hasIn.call(this, searchKeyPath);
+    return functionalHasIn(this, searchKeyPath as any);
   }
 
   isSubset(iter: unknown) {
@@ -493,18 +528,18 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   max(comparator?: (a: V, b: V) => number) {
-    return _late.maxFactory(this, comparator);
+    return maxFactory(this, comparator);
   }
 
   maxBy(
     mapper: (value: V, key: K, iter: this) => unknown,
     comparator?: (a: unknown, b: unknown) => number
   ) {
-    return _late.maxFactory(this, comparator, mapper);
+    return maxFactory(this, comparator, mapper);
   }
 
   min(comparator?: (a: V, b: V) => number) {
-    return _late.maxFactory(
+    return maxFactory(
       this,
       comparator
         ? neg(comparator as (...args: unknown[]) => number)
@@ -516,7 +551,7 @@ export class CollectionImpl<K, V> implements ValueObject {
     mapper: (value: V, key: K, iter: this) => unknown,
     comparator?: (a: unknown, b: unknown) => number
   ) {
-    return _late.maxFactory(
+    return maxFactory(
       this,
       comparator
         ? neg(comparator as (...args: unknown[]) => number)
@@ -543,7 +578,7 @@ export class CollectionImpl<K, V> implements ValueObject {
   ) {
     return reify(
       this,
-      _late.skipWhileFactory(this, predicate, context, isKeyed(this))
+      skipWhileFactory(this, predicate, context, isKeyed(this))
     );
   }
 
@@ -564,8 +599,8 @@ export class CollectionImpl<K, V> implements ValueObject {
   sortBy(
     mapper: (value: V, key: K, iter: this) => unknown,
     comparator?: (a: unknown, b: unknown) => number
-  ) {
-    return reify(this, _late.sortFactory(this, comparator, mapper));
+  ): any {
+    return reify(this, sortFactory(this, comparator, mapper));
   }
 
   take(amount: number) {
@@ -580,7 +615,7 @@ export class CollectionImpl<K, V> implements ValueObject {
     predicate: (value: V, key: K, iter: this) => boolean,
     context?: unknown
   ) {
-    return reify(this, _late.takeWhileFactory(this, predicate, context));
+    return reify(this, takeWhileFactory(this, predicate, context));
   }
 
   takeUntil(
@@ -668,12 +703,17 @@ export class KeyedCollectionImpl<K, V> extends CollectionImpl<K, V> {
       Symbol.iterator
     ] = CollectionImpl.prototype.entries;
     this.prototype.toJSON = function () {
-      return _late.toObject.call(this);
+      assertNotInfinite(this.size);
+      const object: Record<string, unknown> = {};
+      this.__iterate((v: unknown, k: unknown) => {
+        (object as any)[k as string] = v;
+      });
+      return object;
     };
   }
 
   flip() {
-    return reify(this, _late.flipFactory(this));
+    return reify(this, flipFactory(this));
   }
 
   mapEntries(
@@ -734,7 +774,7 @@ export class IndexedCollectionImpl<T>
   declare [Symbol.iterator]: () => IterableIterator<T>;
 
   override toKeyedSeq() {
-    return new _late.ToKeyedSequence(this, false);
+    return new ToKeyedSequence(this, false);
   }
 
   findIndex(
@@ -806,12 +846,12 @@ export class IndexedCollectionImpl<T>
   }
 
   interpose(separator: T) {
-    return reify(this, _late.interposeFactory(this, separator));
+    return reify(this, interposeFactory(this, separator));
   }
 
   interleave(...collections: Array<Iterable<T>>) {
     const thisAndCollections = [this, ...collections];
-    const zipped = _late.zipWithFactory(
+    const zipped = zipWithFactory(
       this.toSeq(),
       IndexedSeq.of,
       thisAndCollections
@@ -823,7 +863,7 @@ export class IndexedCollectionImpl<T>
     return reify(this, interleaved);
   }
 
-  override keySeq() {
+  override keySeq(): any {
     return _late.Range(0, this.size);
   }
 
@@ -839,7 +879,7 @@ export class IndexedCollectionImpl<T>
     const thisAndCollections = [this, ...collections];
     return reify(
       this,
-      _late.zipWithFactory(this, defaultZipper, thisAndCollections, true)
+      zipWithFactory(this, defaultZipper, thisAndCollections, true)
     );
   }
 
@@ -848,7 +888,7 @@ export class IndexedCollectionImpl<T>
     ...collections: Array<Iterable<unknown>>
   ) {
     const thisAndCollections = [this, ...collections];
-    return reify(this, _late.zipWithFactory(this, zipper, thisAndCollections));
+    return reify(this, zipWithFactory(this, zipper, thisAndCollections));
   }
 }
 

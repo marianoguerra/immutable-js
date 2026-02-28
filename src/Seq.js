@@ -12,8 +12,11 @@ import {
   isEntriesIterable,
   isKeysIterable,
 } from './Iterator';
-import { wrapIndex } from './TrieUtils';
+import { reverseFactory, mapFactory } from './Operations';
+import { ensureSize, wrapIndex } from './TrieUtils';
 import {
+  IS_INDEXED_SYMBOL,
+  IS_KEYED_SYMBOL,
   IS_ORDERED_SYMBOL,
   IS_SEQ_SYMBOL,
   isAssociative,
@@ -333,4 +336,213 @@ function seqFromValue(value) {
   throw new TypeError(
     `Expected Array or collection object of values, or keyed object: ${value}`
   );
+}
+
+// Classes moved from Operations.js to break circular dependencies.
+// Top-level class definitions that extend Seq classes must live here
+// so they are defined before Operations.js evaluates.
+
+export class ConcatSeq extends SeqImpl {
+  constructor(iterables) {
+    super();
+
+    this._wrappedIterables = iterables.flatMap((iterable) => {
+      if (iterable._wrappedIterables) {
+        return iterable._wrappedIterables;
+      }
+      return [iterable];
+    });
+    this.size = this._wrappedIterables.reduce((sum, iterable) => {
+      if (sum !== undefined) {
+        const size = iterable.size;
+        if (size !== undefined) {
+          return sum + size;
+        }
+      }
+    }, 0);
+    const first = this._wrappedIterables[0];
+    if (first[IS_KEYED_SYMBOL]) {
+      this[IS_KEYED_SYMBOL] = true;
+    }
+    if (first[IS_INDEXED_SYMBOL]) {
+      this[IS_INDEXED_SYMBOL] = true;
+    }
+    if (first[IS_ORDERED_SYMBOL]) {
+      this[IS_ORDERED_SYMBOL] = true;
+    }
+  }
+
+  __iteratorUncached(reverse) {
+    if (this._wrappedIterables.length === 0) {
+      return emptyIterator();
+    }
+
+    if (reverse) {
+      return this.cacheResult().__iterator(reverse);
+    }
+
+    const wrappedIterables = this._wrappedIterables;
+    const reIndex = !isKeyed(this);
+    function* gen() {
+      let index = 0;
+      for (const iterable of wrappedIterables) {
+        if (reIndex) {
+          for (const [, value] of iterable.__iterator(reverse)) {
+            yield [index++, value];
+          }
+        } else {
+          yield* iterable.__iterator(reverse);
+        }
+      }
+    }
+    return gen();
+  }
+}
+
+export class ToKeyedSequence extends KeyedSeqImpl {
+  static {
+    this.prototype[IS_ORDERED_SYMBOL] = true;
+  }
+
+  constructor(indexed, useKeys) {
+    super();
+
+    this._iter = indexed;
+    this._useKeys = useKeys;
+    this.size = indexed.size;
+  }
+
+  cacheResult() {
+    return cacheResultThrough.call(this);
+  }
+
+  get(key, notSetValue) {
+    return this._iter.get(key, notSetValue);
+  }
+
+  has(key) {
+    return this._iter.has(key);
+  }
+
+  valueSeq() {
+    return this._iter.valueSeq();
+  }
+
+  reverse() {
+    const reversedSequence = reverseFactory(this, true);
+    if (!this._useKeys) {
+      reversedSequence.valueSeq = () => this._iter.toSeq().reverse();
+    }
+    return reversedSequence;
+  }
+
+  map(mapper, context) {
+    const mappedSequence = mapFactory(this, mapper, context);
+    if (!this._useKeys) {
+      mappedSequence.valueSeq = () => this._iter.toSeq().map(mapper, context);
+    }
+    return mappedSequence;
+  }
+
+  *__iteratorUncached(reverse) {
+    yield* this._iter.__iterator(reverse);
+  }
+}
+
+export class ToIndexedSequence extends IndexedSeqImpl {
+  constructor(iter) {
+    super();
+
+    this._iter = iter;
+    this.size = iter.size;
+  }
+
+  cacheResult() {
+    return cacheResultThrough.call(this);
+  }
+
+  includes(value) {
+    return this._iter.includes(value);
+  }
+
+  *__iteratorUncached(reverse) {
+    let i = 0;
+    if (reverse) {
+      ensureSize(this);
+    }
+    const size = this.size;
+    for (const [, value] of this._iter.__iterator(reverse)) {
+      yield [reverse ? size - ++i : i++, value];
+    }
+  }
+}
+
+export class ToSetSequence extends SetSeqImpl {
+  constructor(iter) {
+    super();
+
+    this._iter = iter;
+    this.size = iter.size;
+  }
+
+  cacheResult() {
+    return cacheResultThrough.call(this);
+  }
+
+  has(key) {
+    return this._iter.includes(key);
+  }
+
+  *__iteratorUncached(reverse) {
+    for (const [, value] of this._iter.__iterator(reverse)) {
+      yield [value, value];
+    }
+  }
+}
+
+export class FromEntriesSequence extends KeyedSeqImpl {
+  constructor(entries) {
+    super();
+
+    this._iter = entries;
+    this.size = entries.size;
+  }
+
+  cacheResult() {
+    return cacheResultThrough.call(this);
+  }
+
+  entrySeq() {
+    return this._iter.toSeq();
+  }
+
+  *__iteratorUncached(reverse) {
+    for (const [, entry] of this._iter.__iterator(reverse)) {
+      // Check if entry exists first so array access doesn't throw for holes
+      // in the parent iteration.
+      if (entry) {
+        validateEntry(entry);
+        const indexedCollection = isCollection(entry);
+        yield [
+          indexedCollection ? entry.get(0) : entry[0],
+          indexedCollection ? entry.get(1) : entry[1],
+        ];
+      }
+    }
+  }
+}
+
+export function cacheResultThrough() {
+  if (this._iter.cacheResult) {
+    this._iter.cacheResult();
+    this.size = this._iter.size;
+    return this;
+  }
+  return SeqImpl.prototype.cacheResult.call(this);
+}
+
+function validateEntry(entry) {
+  if (entry !== Object(entry)) {
+    throw new TypeError(`Expected [K, V] tuple: ${entry}`);
+  }
 }
