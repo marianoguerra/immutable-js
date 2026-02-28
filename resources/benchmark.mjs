@@ -292,23 +292,27 @@ async function main() {
 
   let modules;
   let labels;
+  let sources;
 
   if (baseline || compare) {
     // 3-way (or 2-way with explicit paths) mode
     const currentModule = await loadCurrentDist();
     modules = [currentModule];
     labels = ['current'];
+    sources = [distPath];
 
     if (baseline) {
       const baselineModule = await loadDistFromFile(baseline);
       modules.push(baselineModule);
       labels.push('baseline');
+      sources.push(baseline);
     }
 
     if (compare) {
       const compareModule = await loadDistFromFile(compare);
       modules.push(compareModule);
       labels.push('compare');
+      sources.push(compare);
     }
   } else {
     // Default 2-way: current vs main
@@ -320,11 +324,22 @@ async function main() {
     if (mainModule && currentModule !== mainModule) {
       modules = [currentModule, mainModule];
       labels = ['current', 'main'];
+      sources = [distPath, 'main:dist/immutable.js'];
     } else {
       modules = [currentModule];
       labels = ['current'];
+      sources = [distPath];
     }
   }
+
+  const maxLabel = Math.max(...labels.map((l) => l.length));
+  console.log(pc.bold('Benchmark sources:'));
+  for (let i = 0; i < labels.length; i++) {
+    console.log(
+      pc.gray('  ' + labels[i].padEnd(maxLabel) + '  ← ') + sources[i]
+    );
+  }
+  console.log();
 
   const tests = collectTests(modules, perfSources);
   await runBenchmarks(tests, labels);
