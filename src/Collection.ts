@@ -45,24 +45,22 @@ import quoteString from './utils/quoteString';
 // This object is mutated (via Object.assign) from Immutable.js.
 export const _late: Record<string, any> = {};
 
-function reify<K, V>(iter: CollectionImpl<K, V>, seq: any): any {
-  return iter === seq
+const reify = <K, V>(iter: CollectionImpl<K, V>, seq: any): any =>
+  iter === seq
     ? iter
     : isSeq(iter)
       ? seq
       : (iter as any).create
         ? (iter as any).create(seq)
         : (iter.constructor as any)(seq);
-}
 
 const asValues = (collection: any): any =>
   isKeyed(collection) ? collection.valueSeq() : collection;
 
 const defaultZipper = (...values: unknown[]) => values;
 
-export function Collection(value: unknown): CollectionImpl<unknown, unknown> {
-  return isCollection(value) ? value : Seq(value);
-}
+export const Collection = (value: unknown): CollectionImpl<unknown, unknown> =>
+  isCollection(value) ? value : Seq(value);
 
 export class CollectionImpl<K, V> implements ValueObject {
   declare __hash: number | undefined;
@@ -648,14 +646,13 @@ export class CollectionImpl<K, V> implements ValueObject {
  * Note: `Seq.Keyed` is a conversion function and not a class, and does not
  * use the `new` keyword during construction.
  */
-export function KeyedCollection(
+export const KeyedCollection = (
   value: unknown
-): KeyedCollectionImpl<unknown, unknown> {
-  return (isKeyed(value) ? value : KeyedSeq(value)) as KeyedCollectionImpl<
+): KeyedCollectionImpl<unknown, unknown> =>
+  (isKeyed(value) ? value : KeyedSeq(value)) as KeyedCollectionImpl<
     unknown,
     unknown
   >;
-}
 
 export class KeyedCollectionImpl<K, V> extends CollectionImpl<K, V> {
   static {
@@ -704,13 +701,10 @@ export class KeyedCollectionImpl<K, V> extends CollectionImpl<K, V> {
   }
 }
 
-export function IndexedCollection<T>(
+export const IndexedCollection = <T>(
   value: Iterable<T> | ArrayLike<T>
-): IndexedCollectionImpl<T> {
-  return (
-    isIndexed<T>(value) ? value : IndexedSeq(value)
-  ) as IndexedCollectionImpl<T>;
-}
+): IndexedCollectionImpl<T> =>
+  (isIndexed<T>(value) ? value : IndexedSeq(value)) as IndexedCollectionImpl<T>;
 
 /**
  * Interface representing all ordered collections.
@@ -856,13 +850,12 @@ export class IndexedCollectionImpl<T>
   }
 }
 
-export function SetCollection<T>(
+export const SetCollection = <T>(
   value: Iterable<T> | ArrayLike<T>
-): SetCollectionImpl<T> {
-  return (
-    isCollection(value) && !isAssociative(value) ? value : SetSeq(value)
-  ) as SetCollectionImpl<T>;
-}
+): SetCollectionImpl<T> =>
+  (isCollection(value) && !isAssociative(value)
+    ? value
+    : SetSeq(value)) as SetCollectionImpl<T>;
 
 export class SetCollectionImpl<T> extends CollectionImpl<T, T> {
   static {

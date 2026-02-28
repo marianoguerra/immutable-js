@@ -9,9 +9,7 @@ type GetInParameters = Parameters<typeof getIn>;
  * A functional alternative to `collection.hasIn(keypath)` which will also
  * work with plain Objects and Arrays.
  */
-export function hasIn(
+export const hasIn = (
   collection: GetInParameters[0],
   keyPath: GetInParameters[1]
-): boolean {
-  return getIn(collection, keyPath, NOT_SET) !== NOT_SET;
-}
+): boolean => getIn(collection, keyPath, NOT_SET) !== NOT_SET;

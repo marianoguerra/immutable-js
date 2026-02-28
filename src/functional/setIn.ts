@@ -9,11 +9,13 @@ import { type PossibleCollection, updateIn } from './updateIn';
  * A functional alternative to `collection.setIn(keypath)` which will also
  * work with plain Objects and Arrays.
  */
-export function setIn<
+export const setIn = <
   K extends PropertyKey,
   V,
   TProps extends object,
   C extends PossibleCollection<K, V, TProps>,
->(collection: C, keyPath: KeyPath<K>, value: unknown): C {
-  return updateIn(collection, keyPath, NOT_SET, () => value);
-}
+>(
+  collection: C,
+  keyPath: KeyPath<K>,
+  value: unknown
+): C => updateIn(collection, keyPath, NOT_SET, () => value);

@@ -25,17 +25,15 @@ export const keyMapper = <K, V>(v: V, k: K): K => k;
 
 export const entryMapper = <K, V>(v: V, k: K): [K, V] => [k, v];
 
-export function not(predicate: (...args: unknown[]) => boolean) {
-  return function (this: unknown, ...args: unknown[]): boolean {
+export const not = (predicate: (...args: unknown[]) => boolean) =>
+  function (this: unknown, ...args: unknown[]): boolean {
     return !predicate.apply(this, args);
   };
-}
 
-export function neg(predicate: (...args: unknown[]) => number) {
-  return function (this: unknown, ...args: unknown[]): number {
+export const neg = (predicate: (...args: unknown[]) => number) =>
+  function (this: unknown, ...args: unknown[]): number {
     return -predicate.apply(this, args);
   };
-}
 
 export const defaultNegComparator = (
   a: number | string,

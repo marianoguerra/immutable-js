@@ -8,10 +8,9 @@ import { isDataStructure } from '../utils/typeChecks';
  * plain Objects and Arrays as an alternative for
  * `collection.hasOwnProperty(key)`.
  */
-export function has(collection: object, key: unknown): boolean {
-  return isImmutable(collection)
+export const has = (collection: object, key: unknown): boolean =>
+  isImmutable(collection)
     ? // @ts-expect-error key might be a number or symbol, which is not handled be Record key type
       collection.has(key)
     : // @ts-expect-error key might be anything else than PropertyKey, and will return false in that case but runtime is OK
       isDataStructure(collection) && Object.hasOwn(collection, key);
-}

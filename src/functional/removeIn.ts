@@ -8,11 +8,12 @@ import { type PossibleCollection, updateIn } from './updateIn';
  * A functional alternative to `collection.removeIn(keypath)` which will also
  * work with plain Objects and Arrays.
  */
-export function removeIn<
+export const removeIn = <
   K extends PropertyKey,
   V,
   TProps extends object,
   C extends PossibleCollection<K, V, TProps>,
->(collection: C, keyPath: KeyPath<K>): C {
-  return updateIn(collection, keyPath, () => NOT_SET);
-}
+>(
+  collection: C,
+  keyPath: KeyPath<K>
+): C => updateIn(collection, keyPath, () => NOT_SET);

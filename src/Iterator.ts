@@ -48,15 +48,14 @@ export function hasIterator(
   return !!getIteratorFn(maybeIterable);
 }
 
-export function isIterator(
+export const isIterator = (
   maybeIterator: unknown
-): maybeIterator is globalThis.Iterator<unknown> {
-  return !!(
+): maybeIterator is globalThis.Iterator<unknown> =>
+  !!(
     maybeIterator &&
     // @ts-expect-error: maybeIterator is typed as `{}`
     typeof maybeIterator.next === 'function'
   );
-}
 
 export function getIterator(
   iterable: unknown

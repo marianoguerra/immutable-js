@@ -4,25 +4,20 @@ import { isImmutable, isIndexed, isKeyed } from '../predicates';
 import shallowCopy from '../utils/shallowCopy';
 import { isDataStructure } from '../utils/typeChecks';
 
-export function merge(collection, ...sources) {
-  return mergeWithSources(collection, sources);
-}
+export const merge = (collection, ...sources) =>
+  mergeWithSources(collection, sources);
 
-export function mergeWith(merger, collection, ...sources) {
-  return mergeWithSources(collection, sources, merger);
-}
+export const mergeWith = (merger, collection, ...sources) =>
+  mergeWithSources(collection, sources, merger);
 
-export function mergeDeep(collection, ...sources) {
-  return mergeDeepWithSources(collection, sources);
-}
+export const mergeDeepWithSources = (collection, sources, merger) =>
+  mergeWithSources(collection, sources, deepMergerWith(merger));
 
-export function mergeDeepWith(merger, collection, ...sources) {
-  return mergeDeepWithSources(collection, sources, merger);
-}
+export const mergeDeep = (collection, ...sources) =>
+  mergeDeepWithSources(collection, sources);
 
-export function mergeDeepWithSources(collection, sources, merger) {
-  return mergeWithSources(collection, sources, deepMergerWith(merger));
-}
+export const mergeDeepWith = (merger, collection, ...sources) =>
+  mergeDeepWithSources(collection, sources, merger);
 
 export function mergeWithSources(collection, sources, merger) {
   if (!isDataStructure(collection)) {

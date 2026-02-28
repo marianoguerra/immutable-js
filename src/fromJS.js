@@ -3,8 +3,8 @@ import { Seq } from './Seq';
 import { isImmutable, isIndexed, isKeyed } from './predicates';
 import { isArrayLike, isPlainObject as isPlainObj } from './utils/typeChecks';
 
-export function fromJS(value, converter) {
-  return fromJSWith(
+export const fromJS = (value, converter) =>
+  fromJSWith(
     [],
     converter ?? defaultConverter,
     value,
@@ -12,7 +12,6 @@ export function fromJS(value, converter) {
     converter?.length > 2 ? [] : undefined,
     { '': value }
   );
-}
 
 function fromJSWith(stack, converter, value, key, keyPath, parentValue) {
   if (

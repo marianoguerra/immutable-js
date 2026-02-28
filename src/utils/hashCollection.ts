@@ -31,6 +31,9 @@ export function hashCollection<K, V>(collection: CollectionImpl<K, V>): number {
   return murmurHashOfSize(collection.size, h);
 }
 
+const hashMerge = (a: number, b: number): number =>
+  (a ^ (b + 0x9e3779b9 + (a << 6) + (a >> 2))) | 0; // int
+
 function murmurHashOfSize(size: number, h: number): number {
   h = Math.imul(h, 0xcc9e2d51);
   h = Math.imul((h << 15) | (h >>> -15), 0x1b873593);
@@ -40,8 +43,4 @@ function murmurHashOfSize(size: number, h: number): number {
   h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
   h = smi(h ^ (h >>> 16));
   return h;
-}
-
-function hashMerge(a: number, b: number): number {
-  return (a ^ (b + 0x9e3779b9 + (a << 6) + (a >> 2))) | 0; // int
 }
