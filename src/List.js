@@ -1,5 +1,5 @@
 import { IndexedCollectionImpl, IndexedCollection } from './Collection';
-import { hasIterator } from './Iterator';
+import { DONE, hasIterator, makeEntryIterator, makeIterator } from './Iterator';
 import {
   DELETE,
   SHIFT,
@@ -229,12 +229,15 @@ export class ListImpl extends IndexedCollectionImpl {
   __iterator(reverse) {
     let index = reverse ? this.size : 0;
     const iter = iterateList(this, reverse);
-    function* gen() {
-      for (const value of iter) {
-        yield [reverse ? --index : index++, value];
+    return makeEntryIterator((entry) => {
+      const step = iter.next();
+      if (step.done) {
+        return false;
       }
-    }
-    return gen();
+      entry[0] = reverse ? --index : index++;
+      entry[1] = step.value;
+      return true;
+    });
   }
 
   // methods.js wrappers
@@ -366,49 +369,68 @@ class VNode {
   }
 }
 
-function* iterateList(list, reverse) {
+function iterateList(list, reverse) {
   const left = list._origin;
   const right = list._capacity;
   const tailPos = getTailOffset(right);
   const tail = list._tail;
 
-  yield* iterateNodeOrLeaf(list._root, list._level, 0);
+  // Explicit stack replaces recursive yield*.
+  // Each frame: { array, from, to, level, offset, isLeaf }
+  const stack = [];
 
-  function* iterateNodeOrLeaf(node, level, offset) {
+  // Push the root frame
+  pushFrame(list._root, list._level, 0);
+
+  const result = { done: false, value: undefined };
+  return makeIterator(() => {
+    while (stack.length > 0) {
+      const frame = stack[stack.length - 1];
+
+      if (frame.from === frame.to) {
+        stack.pop();
+        continue;
+      }
+
+      const idx = reverse ? --frame.to : frame.from++;
+
+      if (frame.isLeaf) {
+        result.value = frame.array?.[idx];
+        return result;
+      }
+
+      // Internal node: push child frame
+      const childNode = frame.array?.[idx];
+      const childLevel = frame.level - SHIFT;
+      const childOffset = frame.offset + (idx << frame.level);
+      pushFrame(childNode, childLevel, childOffset);
+    }
+    return DONE;
+  });
+
+  function pushFrame(node, level, offset) {
     if (level === 0) {
-      yield* iterateLeaf(node, offset);
+      // Leaf frame
+      const array = offset === tailPos ? tail?.array : node?.array;
+      let from = offset > left ? 0 : left - offset;
+      let to = right - offset;
+      if (to > SIZE) {
+        to = SIZE;
+      }
+      if (from !== to) {
+        stack.push({ array, from, to, isLeaf: true });
+      }
     } else {
-      yield* iterateNode(node, level, offset);
-    }
-  }
-
-  function* iterateLeaf(node, offset) {
-    const array = offset === tailPos ? tail?.array : node?.array;
-    let from = offset > left ? 0 : left - offset;
-    let to = right - offset;
-    if (to > SIZE) {
-      to = SIZE;
-    }
-    while (from !== to) {
-      const idx = reverse ? --to : from++;
-      yield array?.[idx];
-    }
-  }
-
-  function* iterateNode(node, level, offset) {
-    const array = node?.array;
-    let from = offset > left ? 0 : (left - offset) >> level;
-    let to = ((right - offset) >> level) + 1;
-    if (to > SIZE) {
-      to = SIZE;
-    }
-    while (from !== to) {
-      const idx = reverse ? --to : from++;
-      yield* iterateNodeOrLeaf(
-        array?.[idx],
-        level - SHIFT,
-        offset + (idx << level)
-      );
+      // Internal node frame
+      const array = node?.array;
+      let from = offset > left ? 0 : (left - offset) >> level;
+      let to = ((right - offset) >> level) + 1;
+      if (to > SIZE) {
+        to = SIZE;
+      }
+      if (from !== to) {
+        stack.push({ array, from, to, level, offset, isLeaf: false });
+      }
     }
   }
 }

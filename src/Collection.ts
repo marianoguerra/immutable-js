@@ -7,6 +7,7 @@ import {
   not,
   reduce,
 } from './CollectionHelperMethods';
+import { DONE, makeEntryIterator, makeIterator } from './Iterator';
 import {
   flipFactory,
   mapFactory,
@@ -297,14 +298,21 @@ export class CollectionImpl<K, V> implements ValueObject {
     filterSequence.__iteratorUncached = function (reverse: boolean) {
       const iterator = collection.__iterator(reverse);
       let iterations = 0;
-      function* gen() {
-        for (const [key, value] of iterator) {
-          if (predicate.call(context, value, key, collection)) {
-            yield [useKeys ? key : iterations++, value];
+      return makeEntryIterator((entry: any) => {
+        while (true) {
+          const step = iterator.next();
+          if (step.done) {
+            return false;
+          }
+          const k = step.value[0];
+          const v = step.value[1];
+          if (predicate.call(context, v, k, collection)) {
+            entry[0] = useKeys ? k : iterations++;
+            entry[1] = v;
+            return true;
           }
         }
-      }
-      return gen();
+      });
     };
     return reify(this, filterSequence);
   }
@@ -356,10 +364,17 @@ export class CollectionImpl<K, V> implements ValueObject {
     return joined;
   }
 
-  *keys() {
-    for (const [k] of this.__iterator()) {
-      yield k;
-    }
+  keys() {
+    const iterator = this.__iterator();
+    const result: IteratorResult<any> = { done: false, value: undefined };
+    return makeIterator(() => {
+      const step = iterator.next();
+      if (step.done) {
+        return DONE;
+      }
+      result.value = step.value[0];
+      return result;
+    });
   }
 
   map(mapper: (value: V, key: K, iter: this) => V, context?: unknown): any {
@@ -423,10 +438,17 @@ export class CollectionImpl<K, V> implements ValueObject {
     return reify(this, sortFactory(this, comparator));
   }
 
-  *values() {
-    for (const [, v] of this.__iterator()) {
-      yield v;
-    }
+  values() {
+    const iterator = this.__iterator();
+    const result: IteratorResult<any> = { done: false, value: undefined };
+    return makeIterator(() => {
+      const step = iterator.next();
+      if (step.done) {
+        return DONE;
+      }
+      result.value = step.value[1];
+      return result;
+    });
   }
 
   // ### More sequential methods
@@ -588,16 +610,32 @@ export class CollectionImpl<K, V> implements ValueObject {
         return this.cacheResult().__iterator(reverse);
       }
       let iterations = 0;
-      function* flatGen(iter: any, currentDepth: number): any {
-        for (const [k, v] of iter.__iterator(reverse)) {
-          if ((!depth || currentDepth < (depth as number)) && isCollection(v)) {
-            yield* flatGen(v, currentDepth + 1);
-          } else {
-            yield useKeys ? [k, v] : [iterations++, v];
+      // Explicit stack of (iterator, depth) frames replaces recursive yield*
+      const stack: Array<{ iterator: IterableIterator<any>; depth: number }> = [
+        { iterator: collection.__iterator(reverse), depth: 0 },
+      ];
+      return makeEntryIterator((entry: any) => {
+        while (stack.length > 0) {
+          const frame = stack[stack.length - 1]!;
+          const step = frame.iterator.next();
+          if (step.done) {
+            stack.pop();
+            continue;
           }
+          const v = step.value[1];
+          if ((!depth || frame.depth < (depth as number)) && isCollection(v)) {
+            stack.push({
+              iterator: v.__iterator(reverse),
+              depth: frame.depth + 1,
+            });
+            continue;
+          }
+          entry[0] = useKeys ? step.value[0] : iterations++;
+          entry[1] = v;
+          return true;
         }
-      }
-      return flatGen(collection, 0);
+        return false;
+      });
     };
     return reify(this, flatSequence);
   }
@@ -756,17 +794,24 @@ export class CollectionImpl<K, V> implements ValueObject {
       let iterations = 0;
       // eslint-disable-next-line @typescript-eslint/no-this-alias
       const seq = this;
-      function* gen() {
-        let skipping = true;
-        for (const [k, v] of iterator) {
+      let skipping = true;
+      return makeEntryIterator((entry: any) => {
+        while (true) {
+          const step = iterator.next();
+          if (step.done) {
+            return false;
+          }
+          const k = step.value[0];
+          const v = step.value[1];
           if (skipping && predicate.call(context, v, k, seq)) {
             continue;
           }
           skipping = false;
-          yield useKeys ? [k, v] : [iterations++, v];
+          entry[0] = useKeys ? k : iterations++;
+          entry[1] = v;
+          return true;
         }
-      }
-      return gen();
+      });
     };
     return reify(this, skipSequence);
   }
@@ -828,15 +873,21 @@ export class CollectionImpl<K, V> implements ValueObject {
       const iterator = collection.__iterator(reverse);
       // eslint-disable-next-line @typescript-eslint/no-this-alias
       const seq = this;
-      function* gen() {
-        for (const [k, v] of iterator) {
-          if (!predicate.call(context, v, k, seq)) {
-            return;
-          }
-          yield [k, v];
+      let finished = false;
+      return makeIterator(() => {
+        if (finished) {
+          return DONE;
         }
-      }
-      return gen();
+        const step = iterator.next();
+        if (step.done) {
+          return step;
+        }
+        if (!predicate.call(context, step.value[1], step.value[0], seq)) {
+          finished = true;
+          return DONE;
+        }
+        return step;
+      });
     };
     return reify(this, takeSequence);
   }
@@ -880,10 +931,12 @@ export class CollectionImpl<K, V> implements ValueObject {
     fn: (value: V, index: K, iter: this) => boolean | void,
     reverse: boolean = false
   ): number {
+    const iterator = this.__iterator(reverse);
     let iterations = 0;
-    for (const [key, value] of this.__iterator(reverse)) {
+    let step;
+    while (!(step = iterator.next()).done) {
       iterations++;
-      if (fn(value, key, this) === false) {
+      if (fn(step.value[1], step.value[0], this) === false) {
         break;
       }
     }
@@ -1093,17 +1146,33 @@ export class IndexedCollectionImpl<T>
     interposedSequence.__iteratorUncached = function (reverse: boolean) {
       const iterator = collection.__iterator(reverse);
       let iterations = 0;
-      function* gen() {
-        let isFirst = true;
-        for (const [, value] of iterator) {
-          if (!isFirst) {
-            yield [iterations++, separator];
-          }
-          isFirst = false;
-          yield [iterations++, value];
+      let isFirst = true;
+      let pendingValue: T | undefined;
+      let hasPending = false;
+      return makeEntryIterator((entry: any) => {
+        if (hasPending) {
+          hasPending = false;
+          entry[0] = iterations++;
+          entry[1] = pendingValue;
+          return true;
         }
-      }
-      return gen();
+        const step = iterator.next();
+        if (step.done) {
+          return false;
+        }
+        const value = step.value[1];
+        if (!isFirst) {
+          pendingValue = value;
+          hasPending = true;
+          entry[0] = iterations++;
+          entry[1] = separator;
+          return true;
+        }
+        isFirst = false;
+        entry[0] = iterations++;
+        entry[1] = value;
+        return true;
+      });
     };
     return reify(this, interposedSequence);
   }

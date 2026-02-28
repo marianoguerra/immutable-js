@@ -1,3 +1,4 @@
+import { makeEntryIterator } from './Iterator';
 import { IndexedSeqImpl } from './Seq';
 import { wholeSlice, resolveBegin, resolveEnd } from './TrieUtils';
 import { is } from './is';
@@ -63,12 +64,29 @@ export class RepeatImpl extends IndexedSeqImpl {
     return -1;
   }
 
-  *__iteratorUncached(reverse) {
+  __iterateUncached(fn, reverse) {
     const size = this.size;
     let i = 0;
     while (i !== size) {
-      yield [reverse ? size - ++i : i++, this._value];
+      if (fn(this._value, reverse ? size - ++i : i++, this) === false) {
+        break;
+      }
     }
+    return i;
+  }
+
+  __iteratorUncached(reverse) {
+    const size = this.size;
+    const val = this._value;
+    let i = 0;
+    return makeEntryIterator((entry) => {
+      if (i === size) {
+        return false;
+      }
+      entry[0] = reverse ? size - ++i : i++;
+      entry[1] = val;
+      return true;
+    });
   }
 
   equals(other) {

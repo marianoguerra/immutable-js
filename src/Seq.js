@@ -5,7 +5,10 @@ import {
   SetCollectionImpl,
 } from './Collection';
 import {
+  DONE,
   emptyIterator,
+  makeEntryIterator,
+  makeIterator,
   hasIterator,
   isIterator,
   getIterator,
@@ -68,10 +71,12 @@ export class SeqImpl extends CollectionImpl {
   }
 
   __iterateUncached(fn, reverse) {
+    const iterator = this.__iteratorUncached(reverse);
     let iterations = 0;
-    for (const [key, value] of this.__iteratorUncached(reverse)) {
+    let step;
+    while (!(step = iterator.next()).done) {
       iterations++;
-      if (fn(value, key, this) === false) {
+      if (fn(step.value[1], step.value[0], this) === false) {
         break;
       }
     }
@@ -84,8 +89,8 @@ export class SeqImpl extends CollectionImpl {
       const size = cache.length;
       let i = 0;
       while (i !== size) {
-        const [key, value] = cache[reverse ? size - ++i : i++];
-        if (fn(value, key, this) === false) {
+        const entry = cache[reverse ? size - ++i : i++];
+        if (fn(entry[1], entry[0], this) === false) {
           break;
         }
       }
@@ -101,12 +106,14 @@ export class SeqImpl extends CollectionImpl {
     if (cache) {
       const size = cache.length;
       let i = 0;
-      function* gen() {
-        while (i !== size) {
-          yield cache[reverse ? size - ++i : i++];
+      const result = { done: false, value: undefined };
+      return makeIterator(() => {
+        if (i === size) {
+          return DONE;
         }
-      }
-      return gen();
+        result.value = cache[reverse ? size - ++i : i++];
+        return result;
+      });
     }
     return this.__iteratorUncached(reverse);
   }
@@ -234,14 +241,19 @@ export class ArraySeq extends IndexedSeqImpl {
     return i;
   }
 
-  *__iteratorUncached(reverse) {
+  __iteratorUncached(reverse) {
     const array = this._array;
     const size = array.length;
     let i = 0;
-    while (i !== size) {
+    return makeEntryIterator((entry) => {
+      if (i === size) {
+        return false;
+      }
       const ii = reverse ? size - ++i : i++;
-      yield [ii, array[ii]];
-    }
+      entry[0] = ii;
+      entry[1] = array[ii];
+      return true;
+    });
   }
 }
 
@@ -286,15 +298,20 @@ class ObjectSeq extends KeyedSeqImpl {
     return i;
   }
 
-  *__iteratorUncached(reverse) {
+  __iteratorUncached(reverse) {
     const object = this._object;
     const keys = this._keys;
     const size = keys.length;
     let i = 0;
-    while (i !== size) {
+    return makeEntryIterator((entry) => {
+      if (i === size) {
+        return false;
+      }
       const key = keys[reverse ? size - ++i : i++];
-      yield [key, object[key]];
-    }
+      entry[0] = key;
+      entry[1] = object[key];
+      return true;
+    });
   }
 }
 
@@ -303,6 +320,20 @@ class CollectionSeq extends IndexedSeqImpl {
     super();
     this._collection = collection;
     this.size = collection.length || collection.size;
+  }
+
+  __iterateUncached(fn, reverse) {
+    if (reverse) {
+      return this.cacheResult().__iterate(fn, reverse);
+    }
+    let iterations = 0;
+    for (const value of this._collection) {
+      if (fn(value, iterations, this) === false) {
+        break;
+      }
+      iterations++;
+    }
+    return iterations;
   }
 
   __iteratorUncached(reverse) {
@@ -315,12 +346,15 @@ class CollectionSeq extends IndexedSeqImpl {
       return emptyIterator();
     }
     let iterations = 0;
-    function* gen() {
-      for (const value of iterator) {
-        yield [iterations++, value];
+    return makeEntryIterator((entry) => {
+      const step = iterator.next();
+      if (step.done) {
+        return false;
       }
-    }
-    return gen();
+      entry[0] = iterations++;
+      entry[1] = step.value;
+      return true;
+    });
   }
 }
 
@@ -408,6 +442,33 @@ export class ConcatSeq extends SeqImpl {
     }
   }
 
+  __iterateUncached(fn, reverse) {
+    if (this._wrappedIterables.length === 0) {
+      return 0;
+    }
+
+    if (reverse) {
+      return this.cacheResult().__iterate(fn, reverse);
+    }
+
+    const wrappedIterables = this._wrappedIterables;
+    const reIndex = !isKeyed(this);
+    let index = 0;
+    let stopped = false;
+    for (const iterable of wrappedIterables) {
+      iterable.__iterate((v, k) => {
+        if (fn(v, reIndex ? index++ : k, this) === false) {
+          stopped = true;
+          return false;
+        }
+      }, reverse);
+      if (stopped) {
+        break;
+      }
+    }
+    return index;
+  }
+
   __iteratorUncached(reverse) {
     if (this._wrappedIterables.length === 0) {
       return emptyIterator();
@@ -419,19 +480,39 @@ export class ConcatSeq extends SeqImpl {
 
     const wrappedIterables = this._wrappedIterables;
     const reIndex = !isKeyed(this);
-    function* gen() {
-      let index = 0;
-      for (const iterable of wrappedIterables) {
-        if (reIndex) {
-          for (const [, value] of iterable.__iterator(reverse)) {
-            yield [index++, value];
+    let iterableIdx = 0;
+    let currentIterator = wrappedIterables[0].__iterator(reverse);
+    let index = 0;
+    if (reIndex) {
+      return makeEntryIterator((entry) => {
+        while (iterableIdx < wrappedIterables.length) {
+          const step = currentIterator.next();
+          if (!step.done) {
+            entry[0] = index++;
+            entry[1] = step.value[1];
+            return true;
           }
-        } else {
-          yield* iterable.__iterator(reverse);
+          iterableIdx++;
+          if (iterableIdx < wrappedIterables.length) {
+            currentIterator = wrappedIterables[iterableIdx].__iterator(reverse);
+          }
+        }
+        return false;
+      });
+    }
+    return makeIterator(() => {
+      while (iterableIdx < wrappedIterables.length) {
+        const step = currentIterator.next();
+        if (!step.done) {
+          return step;
+        }
+        iterableIdx++;
+        if (iterableIdx < wrappedIterables.length) {
+          currentIterator = wrappedIterables[iterableIdx].__iterator(reverse);
         }
       }
-    }
-    return gen();
+      return DONE;
+    });
   }
 }
 
@@ -480,8 +561,12 @@ export class ToKeyedSequence extends KeyedSeqImpl {
     return mappedSequence;
   }
 
-  *__iteratorUncached(reverse) {
-    yield* this._iter.__iterator(reverse);
+  __iterateUncached(fn, reverse) {
+    return this._iter.__iterate(fn, reverse);
+  }
+
+  __iteratorUncached(reverse) {
+    return this._iter.__iterator(reverse);
   }
 }
 
@@ -501,15 +586,35 @@ export class ToIndexedSequence extends IndexedSeqImpl {
     return this._iter.includes(value);
   }
 
-  *__iteratorUncached(reverse) {
+  __iterateUncached(fn, reverse) {
     let i = 0;
     if (reverse) {
       ensureSize(this);
     }
     const size = this.size;
-    for (const [, value] of this._iter.__iterator(reverse)) {
-      yield [reverse ? size - ++i : i++, value];
+    this._iter.__iterate((v) => {
+      const ii = reverse ? size - ++i : i++;
+      return fn(v, ii, this);
+    }, reverse);
+    return i;
+  }
+
+  __iteratorUncached(reverse) {
+    let i = 0;
+    if (reverse) {
+      ensureSize(this);
     }
+    const size = this.size;
+    const iterator = this._iter.__iterator(reverse);
+    return makeEntryIterator((entry) => {
+      const step = iterator.next();
+      if (step.done) {
+        return false;
+      }
+      entry[0] = reverse ? size - ++i : i++;
+      entry[1] = step.value[1];
+      return true;
+    });
   }
 }
 
@@ -529,10 +634,22 @@ export class ToSetSequence extends SetSeqImpl {
     return this._iter.includes(key);
   }
 
-  *__iteratorUncached(reverse) {
-    for (const [, value] of this._iter.__iterator(reverse)) {
-      yield [value, value];
-    }
+  __iterateUncached(fn, reverse) {
+    return this._iter.__iterate((v) => fn(v, v, this), reverse);
+  }
+
+  __iteratorUncached(reverse) {
+    const iterator = this._iter.__iterator(reverse);
+    return makeEntryIterator((entry) => {
+      const step = iterator.next();
+      if (step.done) {
+        return false;
+      }
+      const v = step.value[1];
+      entry[0] = v;
+      entry[1] = v;
+      return true;
+    });
   }
 }
 
@@ -552,19 +669,41 @@ export class FromEntriesSequence extends KeyedSeqImpl {
     return this._iter.toSeq();
   }
 
-  *__iteratorUncached(reverse) {
-    for (const [, entry] of this._iter.__iterator(reverse)) {
-      // Check if entry exists first so array access doesn't throw for holes
-      // in the parent iteration.
+  __iterateUncached(fn, reverse) {
+    let iterations = 0;
+    this._iter.__iterate((entry) => {
       if (entry) {
         validateEntry(entry);
+        iterations++;
         const indexedCollection = isCollection(entry);
-        yield [
-          indexedCollection ? entry.get(0) : entry[0],
+        return fn(
           indexedCollection ? entry.get(1) : entry[1],
-        ];
+          indexedCollection ? entry.get(0) : entry[0],
+          this
+        );
       }
-    }
+    }, reverse);
+    return iterations;
+  }
+
+  __iteratorUncached(reverse) {
+    const iterator = this._iter.__iterator(reverse);
+    return makeEntryIterator((out) => {
+      while (true) {
+        const step = iterator.next();
+        if (step.done) {
+          return false;
+        }
+        const entry = step.value[1];
+        if (entry) {
+          validateEntry(entry);
+          const indexedCollection = isCollection(entry);
+          out[0] = indexedCollection ? entry.get(0) : entry[0];
+          out[1] = indexedCollection ? entry.get(1) : entry[1];
+          return true;
+        }
+      }
+    });
   }
 }
 

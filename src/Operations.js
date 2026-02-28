@@ -1,6 +1,12 @@
 import { Collection } from './Collection';
 import { defaultComparator } from './CollectionHelperMethods';
-import { getIterator, emptyIterator } from './Iterator';
+import {
+  DONE,
+  getIterator,
+  emptyIterator,
+  makeEntryIterator,
+  makeIterator,
+} from './Iterator';
 import {
   KeyedSeq,
   SetSeq,
@@ -37,12 +43,15 @@ export function flipFactory(collection) {
   };
   flipSequence.__iteratorUncached = function (reverse) {
     const iterator = collection.__iterator(reverse);
-    function* gen() {
-      for (const [k, v] of iterator) {
-        yield [v, k];
+    return makeEntryIterator((entry) => {
+      const step = iterator.next();
+      if (step.done) {
+        return false;
       }
-    }
-    return gen();
+      entry[0] = step.value[1];
+      entry[1] = step.value[0];
+      return true;
+    });
   };
   return flipSequence;
 }
@@ -65,12 +74,16 @@ export function mapFactory(collection, mapper, context) {
   };
   mappedSequence.__iteratorUncached = function (reverse) {
     const iterator = collection.__iterator(reverse);
-    function* gen() {
-      for (const [key, value] of iterator) {
-        yield [key, mapper.call(context, value, key, collection)];
+    return makeEntryIterator((entry) => {
+      const step = iterator.next();
+      if (step.done) {
+        return false;
       }
-    }
-    return gen();
+      const k = step.value[0];
+      entry[0] = k;
+      entry[1] = mapper.call(context, step.value[1], k, collection);
+      return true;
+    });
   };
   return mappedSequence;
 }
@@ -109,12 +122,15 @@ export function reverseFactory(collection, useKeys) {
     }
     const iterator = collection.__iterator(!reverse);
     const size = this.size;
-    function* gen() {
-      for (const [key, value] of iterator) {
-        yield [useKeys ? key : reverse ? size - ++i : i++, value];
+    return makeEntryIterator((entry) => {
+      const step = iterator.next();
+      if (step.done) {
+        return false;
       }
-    }
-    return gen();
+      entry[0] = useKeys ? step.value[0] : reverse ? size - ++i : i++;
+      entry[1] = step.value[1];
+      return true;
+    });
   };
   return reversedSequence;
 }
@@ -162,6 +178,31 @@ export function sliceFactory(collection, begin, end, useKeys) {
     };
   }
 
+  sliceSeq.__iterateUncached = function (fn, reverse) {
+    if (sliceSize !== 0 && reverse) {
+      return this.cacheResult().__iterate(fn, reverse);
+    }
+    if (sliceSize === 0) {
+      return 0;
+    }
+    let skipped = 0;
+    let iterations = 0;
+    collection.__iterate((v, k) => {
+      if (skipped < resolvedBegin) {
+        skipped++;
+        return;
+      }
+      if (sliceSize !== undefined && iterations >= sliceSize) {
+        return false;
+      }
+      iterations++;
+      if (fn(v, useKeys ? k : iterations - 1, this) === false) {
+        return false;
+      }
+    }, reverse);
+    return iterations;
+  };
+
   sliceSeq.__iteratorUncached = function (reverse) {
     if (sliceSize !== 0 && reverse) {
       return this.cacheResult().__iterator(reverse);
@@ -171,29 +212,42 @@ export function sliceFactory(collection, begin, end, useKeys) {
       return emptyIterator();
     }
     const iterator = collection.__iterator(reverse);
-    function* gen() {
-      // Phase 1: skip
-      for (let i = 0; i < resolvedBegin; i++) {
-        iterator.next();
-      }
-      // Phase 2: yield up to sliceSize items (all remaining if sliceSize is undefined)
-      for (
-        let iterations = 0;
-        sliceSize === undefined || iterations < sliceSize;
-        iterations++
-      ) {
+    let skipped = 0;
+    let iterations = 0;
+    if (useKeys) {
+      return makeIterator(() => {
+        while (skipped < resolvedBegin) {
+          skipped++;
+          iterator.next();
+        }
+        if (sliceSize !== undefined && iterations >= sliceSize) {
+          return DONE;
+        }
         const step = iterator.next();
         if (step.done) {
-          return;
+          return step;
         }
-        if (useKeys) {
-          yield step.value;
-        } else {
-          yield [iterations, step.value[1]];
-        }
-      }
+        iterations++;
+        return step;
+      });
     }
-    return gen();
+    return makeEntryIterator((entry) => {
+      while (skipped < resolvedBegin) {
+        skipped++;
+        iterator.next();
+      }
+      if (sliceSize !== undefined && iterations >= sliceSize) {
+        return false;
+      }
+      const step = iterator.next();
+      if (step.done) {
+        return false;
+      }
+      iterations++;
+      entry[0] = iterations - 1;
+      entry[1] = step.value[1];
+      return true;
+    });
   };
 
   return sliceSeq;
@@ -261,9 +315,11 @@ export function zipWithFactory(keyIter, zipper, iters, zipAll) {
   // Note: this a generic base implementation of __iterate in terms of
   // __iterator which may be more generically useful in the future.
   zipSequence.__iterate = function (fn, reverse) {
+    const iterator = this.__iterator(reverse);
     let iterations = 0;
-    for (const [, value] of this.__iterator(reverse)) {
-      if (fn(value, iterations++, this) === false) {
+    let step;
+    while (!(step = iterator.next()).done) {
+      if (fn(step.value[1], iterations++, this) === false) {
         break;
       }
     }
@@ -275,19 +331,18 @@ export function zipWithFactory(keyIter, zipper, iters, zipAll) {
       return getIterator(reverse ? col.reverse() : col);
     });
     let iterations = 0;
-    function* gen() {
-      while (true) {
-        const steps = iterators.map((i) => i.next());
-        const isDone = zipAll
-          ? steps.every((s) => s.done)
-          : steps.some((s) => s.done);
-        if (isDone) {
-          return;
-        }
-        yield [iterations++, zipper(...steps.map((s) => s.value))];
+    return makeEntryIterator((entry) => {
+      const steps = iterators.map((i) => i.next());
+      const isDone = zipAll
+        ? steps.every((s) => s.done)
+        : steps.some((s) => s.done);
+      if (isDone) {
+        return false;
       }
-    }
-    return gen();
+      entry[0] = iterations++;
+      entry[1] = zipper(...steps.map((s) => s.value));
+      return true;
+    });
   };
   return zipSequence;
 }

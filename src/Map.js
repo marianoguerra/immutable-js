@@ -1,6 +1,6 @@
 import { Collection, KeyedCollection, KeyedCollectionImpl } from './Collection';
 import { hash } from './Hash';
-import { emptyIterator } from './Iterator';
+import { DONE, emptyIterator, makeIterator } from './Iterator';
 import { sortFactory } from './Operations';
 import { OrderedMap } from './OrderedMap';
 import {
@@ -574,21 +574,67 @@ function iterateNodeArray(nodes, fn, reverse) {
   }
 }
 
-function* mapIteratorGenerator(node, reverse) {
-  if (node.entry) {
-    yield node.entry;
-  } else if (node.entries) {
-    const len = node.entries.length;
-    for (let i = 0; i < len; i++) {
-      yield node.entries[reverse ? len - 1 - i : i];
-    }
-  } else if (node.nodes) {
-    const len = node.nodes.length;
-    for (let i = 0; i < len; i++) {
-      const subNode = node.nodes[reverse ? len - 1 - i : i];
-      if (subNode) {
-        yield* mapIteratorGenerator(subNode, reverse);
+// Numeric constants for HAMT iterator frame types (faster than string comparison)
+const ITER_ENTRY = 0;
+const ITER_ENTRIES = 1;
+const ITER_NODES = 2;
+
+function mapIteratorGenerator(node, reverse) {
+  // Explicit stack replaces recursive yield*.
+  // Each frame: { type, data, index, len }
+  const stack = [];
+  pushNode(node);
+
+  const result = { done: false, value: undefined };
+  return makeIterator(() => {
+    while (stack.length > 0) {
+      const frame = stack[stack.length - 1];
+
+      if (frame.type === ITER_ENTRY) {
+        stack.pop();
+        result.value = frame.data;
+        return result;
       }
+
+      if (frame.index >= frame.len) {
+        stack.pop();
+        continue;
+      }
+
+      const idx = reverse ? frame.len - 1 - frame.index : frame.index;
+      frame.index++;
+
+      if (frame.type === ITER_ENTRIES) {
+        result.value = frame.data[idx];
+        return result;
+      }
+
+      // ITER_NODES
+      const subNode = frame.data[idx];
+      if (subNode) {
+        pushNode(subNode);
+      }
+    }
+    return DONE;
+  });
+
+  function pushNode(n) {
+    if (n.entry) {
+      stack.push({ type: ITER_ENTRY, data: n.entry, index: 0, len: 0 });
+    } else if (n.entries) {
+      stack.push({
+        type: ITER_ENTRIES,
+        data: n.entries,
+        index: 0,
+        len: n.entries.length,
+      });
+    } else if (n.nodes) {
+      stack.push({
+        type: ITER_NODES,
+        data: n.nodes,
+        index: 0,
+        len: n.nodes.length,
+      });
     }
   }
 }

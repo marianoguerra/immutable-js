@@ -1,5 +1,6 @@
 import type { Seq } from '../type-definitions/immutable';
 import type { CollectionImpl } from './Collection';
+import { makeEntryIterator } from './Iterator';
 import { IndexedSeqImpl } from './Seq';
 import { wrapIndex, wholeSlice, resolveBegin, resolveEnd } from './TrieUtils';
 import invariant from './utils/assertions';
@@ -132,18 +133,23 @@ export class RangeImpl extends IndexedSeqImpl implements Seq.Indexed<number> {
     return i;
   }
 
-  *__iteratorUncached(
+  __iteratorUncached(
     reverse: boolean = false
   ): IterableIterator<[number, number]> {
     const size = this.size;
     const step = this._step;
     let value = reverse ? this._start + (size - 1) * step : this._start;
     let i = 0;
-    while (i !== size) {
+    return makeEntryIterator<number, number>((entry) => {
+      if (i === size) {
+        return false;
+      }
       const v = value;
       value += reverse ? -step : step;
-      yield [reverse ? size - ++i : i++, v] as [number, number];
-    }
+      entry[0] = reverse ? size - ++i : i++;
+      entry[1] = v;
+      return true;
+    });
   }
 
   override equals(other: unknown): boolean {

@@ -1,4 +1,44 @@
-export function* emptyIterator(): Generator<never, undefined> {}
+export const DONE: IteratorResult<never> = {
+  done: true,
+  value: undefined as never,
+};
+
+export function makeIterator<T>(
+  next: () => IteratorResult<T>
+): IterableIterator<T> {
+  return {
+    next,
+    [Symbol.iterator]() {
+      return this;
+    },
+  };
+}
+
+/**
+ * Creates an entry-yielding iterator with reduced allocations.
+ * The `next` callback receives a reusable [key, value] tuple to populate;
+ * return true to yield a *copy* of it, or false when done.
+ * Reuses the {done, value} result wrapper object across calls.
+ */
+export function makeEntryIterator<K, V>(
+  next: (entry: [K, V]) => boolean
+): IterableIterator<[K, V]> {
+  const entry = [undefined, undefined] as unknown as [K, V];
+  const result: IteratorResult<[K, V]> = {
+    done: false,
+    value: undefined as unknown as [K, V],
+  };
+  return makeIterator(() => {
+    if (next(entry)) {
+      result.value = [entry[0], entry[1]];
+      return result;
+    }
+    return DONE as IteratorResult<[K, V]>;
+  });
+}
+
+export const emptyIterator = (): IterableIterator<never> =>
+  makeIterator(() => DONE) as IterableIterator<never>;
 
 export function hasIterator(
   maybeIterable: unknown
