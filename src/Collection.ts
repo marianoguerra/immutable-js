@@ -21,12 +21,10 @@ import {
   ConcatSeq,
   FromEntriesSequence,
   IndexedSeq,
-  IndexedSeqImpl,
   KeyedSeq,
-  KeyedSeqImpl,
   Seq,
   SetSeq,
-  SetSeqImpl,
+  makeSequence,
   ToIndexedSequence,
   ToKeyedSequence,
   ToSetSequence,
@@ -76,22 +74,15 @@ const reify = <K, V>(iter: CollectionImpl<K, V>, seq: any): any =>
         ? (iter as any).create(seq)
         : (iter.constructor as any)(seq);
 
-const makeSequence = (collection: any): any =>
-  Object.create(
+const reifyValues = (collection: any, arr: any): any =>
+  reify(
+    collection,
     (isKeyed(collection)
-      ? KeyedSeqImpl
+      ? KeyedCollection
       : isIndexed(collection)
-        ? IndexedSeqImpl
-        : SetSeqImpl
-    ).prototype
+        ? IndexedCollection
+        : SetCollection)(arr)
   );
-
-const collectionClass = (collection: any): any =>
-  isKeyed(collection)
-    ? KeyedCollection
-    : isIndexed(collection)
-      ? IndexedCollection
-      : SetCollection;
 
 const asValues = (collection: any): any =>
   isKeyed(collection) ? collection.valueSeq() : collection;
@@ -319,8 +310,7 @@ export class CollectionImpl<K, V> implements ValueObject {
         isKeyedIter ? [k, v] : v
       );
     });
-    const coerce = collectionClass(this);
-    return groups.map((arr) => reify(this, coerce(arr)));
+    return groups.map((arr) => reifyValues(this, arr));
   }
 
   find(
@@ -540,11 +530,16 @@ export class CollectionImpl<K, V> implements ValueObject {
     mapper: (value: V, key: K, iter: this) => unknown,
     context?: unknown
   ) {
-    const coerce = collectionClass(this);
     return reify(
       this,
       this.toSeq()
-        .map((v: any, k: any) => coerce(mapper.call(context, v, k, this)))
+        .map((v: any, k: any) =>
+          (isKeyed(this)
+            ? KeyedCollection
+            : isIndexed(this)
+              ? IndexedCollection
+              : SetCollection)(mapper.call(context, v, k, this) as any)
+        )
         .flatten(true)
     );
   }
@@ -607,8 +602,7 @@ export class CollectionImpl<K, V> implements ValueObject {
         }
       );
     });
-    const coerce = collectionClass(this);
-    return groups.map((arr: any) => reify(this, coerce(arr))).asImmutable();
+    return groups.map((arr: any) => reifyValues(this, arr)).asImmutable();
   }
 
   has(searchKey: K) {

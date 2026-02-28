@@ -1,14 +1,13 @@
 import { Collection } from './Collection';
+import { defaultComparator } from './CollectionHelperMethods';
 import { getIterator, emptyIterator } from './Iterator';
 import {
   KeyedSeq,
   SetSeq,
   IndexedSeq,
   ArraySeq,
-  KeyedSeqImpl,
-  IndexedSeqImpl,
-  SetSeqImpl,
   cacheResultThrough,
+  makeSequence,
 } from './Seq';
 import {
   NOT_SET,
@@ -282,30 +281,4 @@ export function zipWithFactory(keyIter, zipper, iters, zipAll) {
     return gen();
   };
   return zipSequence;
-}
-
-const makeSequence = (collection) =>
-  Object.create(
-    (isKeyed(collection)
-      ? KeyedSeqImpl
-      : isIndexed(collection)
-        ? IndexedSeqImpl
-        : SetSeqImpl
-    ).prototype
-  );
-
-function defaultComparator(a, b) {
-  if (a === undefined && b === undefined) {
-    return 0;
-  }
-
-  if (a === undefined) {
-    return 1;
-  }
-
-  if (b === undefined) {
-    return -1;
-  }
-
-  return a > b ? 1 : a < b ? -1 : 0;
 }

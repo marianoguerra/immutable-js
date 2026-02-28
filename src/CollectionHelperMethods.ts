@@ -35,6 +35,26 @@ export const neg = (predicate: (...args: unknown[]) => number) =>
     return -predicate.apply(this, args);
   };
 
+export function defaultComparator(a: unknown, b: unknown): number {
+  if (a === undefined && b === undefined) {
+    return 0;
+  }
+
+  if (a === undefined) {
+    return 1;
+  }
+
+  if (b === undefined) {
+    return -1;
+  }
+
+  return (a as number) > (b as number)
+    ? 1
+    : (a as number) < (b as number)
+      ? -1
+      : 0;
+}
+
 export const defaultNegComparator = (
   a: number | string,
   b: number | string

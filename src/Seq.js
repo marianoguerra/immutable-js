@@ -22,6 +22,7 @@ import {
   isAssociative,
   isCollection,
   isImmutable,
+  isIndexed,
   isKeyed,
   isRecord,
   isSeq,
@@ -35,8 +36,16 @@ export const Seq = (value) =>
       ? value.toSeq()
       : seqFromValue(value);
 
-// SeqImpl is retained as the base for internal operation sequences (ConcatSeq
-// in Operations.js) and for makeSequence()'s Object.create() pattern.
+export const makeSequence = (collection) =>
+  Object.create(
+    (isKeyed(collection)
+      ? KeyedSeqImpl
+      : isIndexed(collection)
+        ? IndexedSeqImpl
+        : SetSeqImpl
+    ).prototype
+  );
+
 export class SeqImpl extends CollectionImpl {
   static {
     this.prototype[IS_SEQ_SYMBOL] = true;
