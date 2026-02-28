@@ -113,38 +113,18 @@ export class RangeImpl extends IndexedSeqImpl implements Seq.Indexed<number> {
     return this.indexOf(searchValue);
   }
 
-  override __iterate(
-    fn: (value: number, index: number, iter: this) => boolean | void,
-    reverse: boolean = false
-  ): number {
-    const size = this.size;
-    const step = this._step;
-    let value = reverse ? this._start + (size - 1) * step : this._start;
-    let i = 0;
-    while (i !== size) {
-      if (fn(value, reverse ? size - ++i : i++, this) === false) {
-        break;
-      }
-      value += reverse ? -step : step;
-    }
-    return i;
-  }
-
-  override __iterator(
+  *__iteratorUncached(
     reverse: boolean = false
   ): IterableIterator<[number, number]> {
     const size = this.size;
     const step = this._step;
     let value = reverse ? this._start + (size - 1) * step : this._start;
     let i = 0;
-    function* gen() {
-      while (i !== size) {
-        const v = value;
-        value += reverse ? -step : step;
-        yield [reverse ? size - ++i : i++, v] as [number, number];
-      }
+    while (i !== size) {
+      const v = value;
+      value += reverse ? -step : step;
+      yield [reverse ? size - ++i : i++, v] as [number, number];
     }
-    return gen();
   }
 
   override equals(other: unknown): boolean {

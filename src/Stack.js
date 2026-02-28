@@ -140,24 +140,6 @@ export class StackImpl extends IndexedCollectionImpl {
     return makeStack(this.size, this._head, ownerID, this.__hash);
   }
 
-  __iterate(fn, reverse) {
-    if (reverse) {
-      return new ArraySeq(this.toArray()).__iterate(
-        (v, k) => fn(v, k, this),
-        reverse
-      );
-    }
-    let iterations = 0;
-    let node = this._head;
-    while (node) {
-      if (fn(node.value, iterations++, this) === false) {
-        break;
-      }
-      node = node.next;
-    }
-    return iterations;
-  }
-
   // methods.js wrappers
   withMutations(fn) {
     return withMutations.call(this, fn);

@@ -230,12 +230,12 @@ export class RecordImpl {
     return toObject.call(this);
   }
 
-  __iterator(reverse) {
-    return recordSeq(this).__iterator(reverse);
-  }
-
   __iterate(fn, reverse) {
     return recordSeq(this).__iterate(fn, reverse);
+  }
+
+  __iterator(reverse) {
+    return recordSeq(this).__iterator(reverse);
   }
 
   __ensureOwner(ownerID) {

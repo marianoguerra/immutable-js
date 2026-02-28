@@ -83,12 +83,8 @@ export class ToKeyedSequence extends KeyedSeqImpl {
     return mappedSequence;
   }
 
-  __iterate(fn, reverse) {
-    return this._iter.__iterate((v, k) => fn(v, k, this), reverse);
-  }
-
-  __iterator(reverse) {
-    return this._iter.__iterator(reverse);
+  *__iteratorUncached(reverse) {
+    yield* this._iter.__iterator(reverse);
   }
 }
 
@@ -108,30 +104,15 @@ export class ToIndexedSequence extends IndexedSeqImpl {
     return this._iter.includes(value);
   }
 
-  __iterate(fn, reverse) {
-    let i = 0;
-    if (reverse) {
-      ensureSize(this);
-    }
-    return this._iter.__iterate(
-      (v) => fn(v, reverse ? this.size - ++i : i++, this),
-      reverse
-    );
-  }
-
-  __iterator(reverse) {
-    const iterator = this._iter.__iterator(reverse);
+  *__iteratorUncached(reverse) {
     let i = 0;
     if (reverse) {
       ensureSize(this);
     }
     const size = this.size;
-    function* gen() {
-      for (const [, value] of iterator) {
-        yield [reverse ? size - ++i : i++, value];
-      }
+    for (const [, value] of this._iter.__iterator(reverse)) {
+      yield [reverse ? size - ++i : i++, value];
     }
-    return gen();
   }
 }
 
@@ -151,18 +132,10 @@ export class ToSetSequence extends SetSeqImpl {
     return this._iter.includes(key);
   }
 
-  __iterate(fn, reverse) {
-    return this._iter.__iterate((v) => fn(v, v, this), reverse);
-  }
-
-  __iterator(reverse) {
-    const iterator = this._iter.__iterator(reverse);
-    function* gen() {
-      for (const [, value] of iterator) {
-        yield [value, value];
-      }
+  *__iteratorUncached(reverse) {
+    for (const [, value] of this._iter.__iterator(reverse)) {
+      yield [value, value];
     }
-    return gen();
   }
 }
 
@@ -182,39 +155,19 @@ export class FromEntriesSequence extends KeyedSeqImpl {
     return this._iter.toSeq();
   }
 
-  __iterate(fn, reverse) {
-    return this._iter.__iterate((entry) => {
+  *__iteratorUncached(reverse) {
+    for (const [, entry] of this._iter.__iterator(reverse)) {
       // Check if entry exists first so array access doesn't throw for holes
       // in the parent iteration.
       if (entry) {
         validateEntry(entry);
         const indexedCollection = isCollection(entry);
-        return fn(
-          indexedCollection ? entry.get(1) : entry[1],
+        yield [
           indexedCollection ? entry.get(0) : entry[0],
-          this
-        );
-      }
-    }, reverse);
-  }
-
-  __iterator(reverse) {
-    const iterator = this._iter.__iterator(reverse);
-    function* gen() {
-      for (const [, entry] of iterator) {
-        // Check if entry exists first so array access doesn't throw for holes
-        // in the parent iteration.
-        if (entry) {
-          validateEntry(entry);
-          const indexedCollection = isCollection(entry);
-          yield [
-            indexedCollection ? entry.get(0) : entry[0],
-            indexedCollection ? entry.get(1) : entry[1],
-          ];
-        }
+          indexedCollection ? entry.get(1) : entry[1],
+        ];
       }
     }
-    return gen();
   }
 }
 

@@ -63,27 +63,12 @@ export class RepeatImpl extends IndexedSeqImpl {
     return -1;
   }
 
-  __iterate(fn, reverse) {
+  *__iteratorUncached(reverse) {
     const size = this.size;
     let i = 0;
     while (i !== size) {
-      if (fn(this._value, reverse ? size - ++i : i++, this) === false) {
-        break;
-      }
+      yield [reverse ? size - ++i : i++, this._value];
     }
-    return i;
-  }
-
-  __iterator(reverse) {
-    const size = this.size;
-    let i = 0;
-    const value = this._value;
-    function* gen() {
-      while (i !== size) {
-        yield [reverse ? size - ++i : i++, value];
-      }
-    }
-    return gen();
   }
 
   equals(other) {

@@ -227,16 +227,6 @@ export class ListImpl extends IndexedCollectionImpl {
     return gen();
   }
 
-  __iterate(fn, reverse) {
-    let index = reverse ? this.size : 0;
-    for (const value of iterateList(this, reverse)) {
-      if (fn(value, reverse ? --index : index++, this) === false) {
-        break;
-      }
-    }
-    return index;
-  }
-
   // methods.js wrappers
   setIn(keyPath, v) {
     return setIn.call(this, keyPath, v);

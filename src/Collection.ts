@@ -620,11 +620,16 @@ export class CollectionImpl<K, V> implements ValueObject {
   ): void;
   __iterate(
     fn: (value: V, index: K, iter: this) => boolean | void,
-    _reverse: boolean = false
-  ): number | void {
-    throw new Error(
-      'CollectionImpl does not implement __iterate. Use a subclass instead.'
-    );
+    reverse: boolean = false
+  ): number {
+    let iterations = 0;
+    for (const [key, value] of this.__iterator(reverse)) {
+      iterations++;
+      if (fn(value, key, this) === false) {
+        break;
+      }
+    }
+    return iterations;
   }
 
   // Always yields [K, V] entries. Subclasses override in .js files where

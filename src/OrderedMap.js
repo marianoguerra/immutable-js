@@ -1,4 +1,4 @@
-import { KeyedCollection } from './Collection';
+import { CollectionImpl, KeyedCollection } from './Collection';
 import { emptyList } from './List';
 import { MapImpl, emptyMap } from './Map';
 import { DELETE, NOT_SET, SIZE } from './TrieUtils';
@@ -64,15 +64,17 @@ export class OrderedMapImpl extends MapImpl {
     return updateOrderedMap(this, k, NOT_SET);
   }
 
+  // Override MapImpl's trie-based __iterate since OrderedMap uses _list, not the trie.
   __iterate(fn, reverse) {
-    return this._list.__iterate(
-      (entry) => entry && fn(entry[1], entry[0], this),
-      reverse
-    );
+    return CollectionImpl.prototype.__iterate.call(this, fn, reverse);
   }
 
-  __iterator(reverse) {
-    return this._list.fromEntrySeq().__iterator(reverse);
+  *__iterator(reverse) {
+    for (const [, entry] of this._list.__iterator(reverse)) {
+      if (entry) {
+        yield [entry[0], entry[1]];
+      }
+    }
   }
 
   __ensureOwner(ownerID) {
