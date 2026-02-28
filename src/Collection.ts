@@ -8,34 +8,30 @@ import {
   reduce,
 } from './CollectionHelperMethods';
 import {
-  concatFactory,
-  countByFactory,
-  filterFactory,
-  flatMapFactory,
-  flattenFactory,
   flipFactory,
-  groupByFactory,
-  interposeFactory,
   mapFactory,
   maxFactory,
-  partitionFactory,
   reverseFactory,
-  skipWhileFactory,
   sliceFactory,
   sortFactory,
-  takeWhileFactory,
   zipWithFactory,
 } from './Operations';
 import {
   ArraySeq,
+  ConcatSeq,
   FromEntriesSequence,
   IndexedSeq,
+  IndexedSeqImpl,
   KeyedSeq,
+  KeyedSeqImpl,
   Seq,
   SetSeq,
+  SetSeqImpl,
   ToIndexedSequence,
   ToKeyedSequence,
   ToSetSequence,
+  indexedSeqFromValue,
+  keyedSeqFromValue,
 } from './Seq';
 import {
   ensureSize,
@@ -57,6 +53,7 @@ import {
   isCollection,
   isIndexed,
   isKeyed,
+  isOrdered,
   isSeq,
 } from './predicates';
 import { toJS } from './toJS';
@@ -78,6 +75,23 @@ const reify = <K, V>(iter: CollectionImpl<K, V>, seq: any): any =>
       : (iter as any).create
         ? (iter as any).create(seq)
         : (iter.constructor as any)(seq);
+
+const makeSequence = (collection: any): any =>
+  Object.create(
+    (isKeyed(collection)
+      ? KeyedSeqImpl
+      : isIndexed(collection)
+        ? IndexedSeqImpl
+        : SetSeqImpl
+    ).prototype
+  );
+
+const collectionClass = (collection: any): any =>
+  isKeyed(collection)
+    ? KeyedCollection
+    : isIndexed(collection)
+      ? IndexedCollection
+      : SetCollection;
 
 const asValues = (collection: any): any =>
   isKeyed(collection) ? collection.valueSeq() : collection;
@@ -202,7 +216,36 @@ export class CollectionImpl<K, V> implements ValueObject {
   // ### ES6 Collection methods (ES6 Array and Map)
 
   concat(...values: unknown[]) {
-    return reify(this, concatFactory(this, values));
+    const isKeyedCollection = isKeyed(this);
+    const iters = [this as any, ...values]
+      .map((v) => {
+        if (!isCollection(v)) {
+          v = isKeyedCollection
+            ? keyedSeqFromValue(v)
+            : indexedSeqFromValue(Array.isArray(v) ? v : [v]);
+        } else if (isKeyedCollection) {
+          v = KeyedCollection(v);
+        }
+        return v;
+      })
+      .filter((v: any) => v.size !== 0);
+
+    if (iters.length === 0) {
+      return this;
+    }
+
+    if (iters.length === 1) {
+      const singleton = iters[0];
+      if (
+        singleton === this ||
+        (isKeyedCollection && isKeyed(singleton)) ||
+        (isIndexed(this) && isIndexed(singleton))
+      ) {
+        return singleton;
+      }
+    }
+
+    return reify(this, new ConcatSeq(iters));
   }
 
   includes(searchValue: V) {
@@ -234,14 +277,50 @@ export class CollectionImpl<K, V> implements ValueObject {
     predicate: (value: V, key: K, iter: this) => boolean,
     context?: unknown
   ) {
-    return reify(this, filterFactory(this, predicate, context, isKeyed(this)));
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- captured for nested function expressions on the sequence object
+    const collection = this;
+    const useKeys = isKeyed(this);
+    const filterSequence = makeSequence(collection);
+    if (useKeys) {
+      filterSequence.has = (key: K) => {
+        const v = collection.get(key, NOT_SET as V);
+        return v !== NOT_SET && !!predicate.call(context, v, key, collection);
+      };
+      filterSequence.get = (key: K, notSetValue?: V) => {
+        const v = collection.get(key, NOT_SET as V);
+        return v !== NOT_SET && predicate.call(context, v, key, collection)
+          ? v
+          : notSetValue;
+      };
+    }
+    filterSequence.__iteratorUncached = function (reverse: boolean) {
+      const iterator = collection.__iterator(reverse);
+      let iterations = 0;
+      function* gen() {
+        for (const [key, value] of iterator) {
+          if (predicate.call(context, value, key, collection)) {
+            yield [useKeys ? key : iterations++, value];
+          }
+        }
+      }
+      return gen();
+    };
+    return reify(this, filterSequence);
   }
 
   partition(
     predicate: (value: V, key: K, iter: this) => boolean,
     context?: unknown
   ) {
-    return partitionFactory(this, predicate, context);
+    const isKeyedIter = isKeyed(this);
+    const groups: any[][] = [[], []];
+    this.__iterate((v: V, k: K) => {
+      groups[predicate.call(context, v, k, this) ? 1 : 0]!.push(
+        isKeyedIter ? [k, v] : v
+      );
+    });
+    const coerce = collectionClass(this);
+    return groups.map((arr) => reify(this, coerce(arr)));
   }
 
   find(
@@ -340,7 +419,7 @@ export class CollectionImpl<K, V> implements ValueObject {
     return returnValue;
   }
 
-  sort(comparator?: (a: V, b: V) => number) {
+  sort(comparator?: (a: V, b: V) => number): any {
     return reify(this, sortFactory(this, comparator));
   }
 
@@ -373,7 +452,11 @@ export class CollectionImpl<K, V> implements ValueObject {
     grouper: (value: V, key: K, iter: this) => unknown,
     context?: unknown
   ) {
-    return countByFactory(this, grouper, context, _late.Map);
+    const groups = _late.Map().asMutable();
+    this.__iterate((v: V, k: K) => {
+      groups.update(grouper.call(context, v, k, this), 0, (a: number) => a + 1);
+    });
+    return groups.asImmutable();
   }
 
   entrySeq(): CollectionImpl<unknown, unknown> {
@@ -457,11 +540,37 @@ export class CollectionImpl<K, V> implements ValueObject {
     mapper: (value: V, key: K, iter: this) => unknown,
     context?: unknown
   ) {
-    return reify(this, flatMapFactory(this, mapper, context));
+    const coerce = collectionClass(this);
+    return reify(
+      this,
+      this.toSeq()
+        .map((v: any, k: any) => coerce(mapper.call(context, v, k, this)))
+        .flatten(true)
+    );
   }
 
   flatten(depth?: number | boolean) {
-    return reify(this, flattenFactory(this, depth, isKeyed(this)));
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- captured for nested function expressions on the sequence object
+    const collection = this;
+    const useKeys = isKeyed(this);
+    const flatSequence = makeSequence(collection);
+    flatSequence.__iteratorUncached = function (reverse: boolean) {
+      if (reverse) {
+        return this.cacheResult().__iterator(reverse);
+      }
+      let iterations = 0;
+      function* flatGen(iter: any, currentDepth: number): any {
+        for (const [k, v] of iter.__iterator(reverse)) {
+          if ((!depth || currentDepth < (depth as number)) && isCollection(v)) {
+            yield* flatGen(v, currentDepth + 1);
+          } else {
+            yield useKeys ? [k, v] : [iterations++, v];
+          }
+        }
+      }
+      return flatGen(collection, 0);
+    };
+    return reify(this, flatSequence);
   }
 
   fromEntrySeq() {
@@ -484,7 +593,22 @@ export class CollectionImpl<K, V> implements ValueObject {
     grouper: (value: V, key: K, iter: this) => unknown,
     context?: unknown
   ) {
-    return groupByFactory(this, grouper, context, _late.Map, _late.OrderedMap);
+    const isKeyedIter = isKeyed(this);
+    const groups = (
+      isOrdered(this) ? _late.OrderedMap() : _late.Map()
+    ).asMutable();
+    this.__iterate((v: V, k: K) => {
+      groups.update(
+        grouper.call(context, v, k, this),
+        (a: any[] | undefined) => {
+          a ??= [];
+          a.push(isKeyedIter ? [k, v] : v);
+          return a;
+        }
+      );
+    });
+    const coerce = collectionClass(this);
+    return groups.map((arr: any) => reify(this, coerce(arr))).asImmutable();
   }
 
   has(searchKey: K) {
@@ -576,10 +700,31 @@ export class CollectionImpl<K, V> implements ValueObject {
     predicate: (value: V, key: K, iter: this) => boolean,
     context?: unknown
   ) {
-    return reify(
-      this,
-      skipWhileFactory(this, predicate, context, isKeyed(this))
-    );
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- captured for nested function expressions on the sequence object
+    const collection = this;
+    const useKeys = isKeyed(this);
+    const skipSequence = makeSequence(collection);
+    skipSequence.__iteratorUncached = function (reverse: boolean) {
+      if (reverse) {
+        return this.cacheResult().__iterator(reverse);
+      }
+      const iterator = collection.__iterator(reverse);
+      let iterations = 0;
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
+      const seq = this;
+      function* gen() {
+        let skipping = true;
+        for (const [k, v] of iterator) {
+          if (skipping && predicate.call(context, v, k, seq)) {
+            continue;
+          }
+          skipping = false;
+          yield useKeys ? [k, v] : [iterations++, v];
+        }
+      }
+      return gen();
+    };
+    return reify(this, skipSequence);
   }
 
   skipUntil(
@@ -615,7 +760,27 @@ export class CollectionImpl<K, V> implements ValueObject {
     predicate: (value: V, key: K, iter: this) => boolean,
     context?: unknown
   ) {
-    return reify(this, takeWhileFactory(this, predicate, context));
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- captured for nested function expressions on the sequence object
+    const collection = this;
+    const takeSequence = makeSequence(collection);
+    takeSequence.__iteratorUncached = function (reverse: boolean) {
+      if (reverse) {
+        return this.cacheResult().__iterator(reverse);
+      }
+      const iterator = collection.__iterator(reverse);
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
+      const seq = this;
+      function* gen() {
+        for (const [k, v] of iterator) {
+          if (!predicate.call(context, v, k, seq)) {
+            return;
+          }
+          yield [k, v];
+        }
+      }
+      return gen();
+    };
+    return reify(this, takeSequence);
   }
 
   takeUntil(
@@ -846,7 +1011,26 @@ export class IndexedCollectionImpl<T>
   }
 
   interpose(separator: T) {
-    return reify(this, interposeFactory(this, separator));
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- captured for nested function expressions on the sequence object
+    const collection = this;
+    const interposedSequence = makeSequence(collection);
+    interposedSequence.size = collection.size && collection.size * 2 - 1;
+    interposedSequence.__iteratorUncached = function (reverse: boolean) {
+      const iterator = collection.__iterator(reverse);
+      let iterations = 0;
+      function* gen() {
+        let isFirst = true;
+        for (const [, value] of iterator) {
+          if (!isFirst) {
+            yield [iterations++, separator];
+          }
+          isFirst = false;
+          yield [iterations++, value];
+        }
+      }
+      return gen();
+    };
+    return reify(this, interposedSequence);
   }
 
   interleave(...collections: Array<Iterable<T>>) {

@@ -1,21 +1,13 @@
-import {
-  Collection,
-  KeyedCollection,
-  SetCollection,
-  IndexedCollection,
-} from './Collection';
+import { Collection } from './Collection';
 import { getIterator, emptyIterator } from './Iterator';
 import {
   KeyedSeq,
   SetSeq,
   IndexedSeq,
-  keyedSeqFromValue,
-  indexedSeqFromValue,
   ArraySeq,
   KeyedSeqImpl,
   IndexedSeqImpl,
   SetSeqImpl,
-  ConcatSeq,
   cacheResultThrough,
 } from './Seq';
 import {
@@ -26,13 +18,7 @@ import {
   resolveBegin,
   resolveEnd,
 } from './TrieUtils';
-import {
-  isCollection,
-  isIndexed,
-  isKeyed,
-  isOrdered,
-  isSeq,
-} from './predicates';
+import { isIndexed, isKeyed, isSeq } from './predicates';
 
 export function flipFactory(collection) {
   const flipSequence = makeSequence(collection);
@@ -125,77 +111,6 @@ export function reverseFactory(collection, useKeys) {
   return reversedSequence;
 }
 
-export function filterFactory(collection, predicate, context, useKeys) {
-  const filterSequence = makeSequence(collection);
-  if (useKeys) {
-    filterSequence.has = (key) => {
-      const v = collection.get(key, NOT_SET);
-      return v !== NOT_SET && !!predicate.call(context, v, key, collection);
-    };
-    filterSequence.get = (key, notSetValue) => {
-      const v = collection.get(key, NOT_SET);
-      return v !== NOT_SET && predicate.call(context, v, key, collection)
-        ? v
-        : notSetValue;
-    };
-  }
-  filterSequence.__iteratorUncached = function (reverse) {
-    const iterator = collection.__iterator(reverse);
-    let iterations = 0;
-    function* gen() {
-      for (const [key, value] of iterator) {
-        if (predicate.call(context, value, key, collection)) {
-          yield [useKeys ? key : iterations++, value];
-        }
-      }
-    }
-    return gen();
-  };
-  return filterSequence;
-}
-
-export function countByFactory(collection, grouper, context, MapConstructor) {
-  const groups = MapConstructor().asMutable();
-  collection.__iterate((v, k) => {
-    groups.update(grouper.call(context, v, k, collection), 0, (a) => a + 1);
-  });
-  return groups.asImmutable();
-}
-
-export function groupByFactory(
-  collection,
-  grouper,
-  context,
-  MapConstructor,
-  OrderedMapConstructor
-) {
-  const isKeyedIter = isKeyed(collection);
-  const groups = (
-    isOrdered(collection) ? OrderedMapConstructor() : MapConstructor()
-  ).asMutable();
-  collection.__iterate((v, k) => {
-    groups.update(grouper.call(context, v, k, collection), (a) => {
-      a ??= [];
-      a.push(isKeyedIter ? [k, v] : v);
-      return a;
-    });
-  });
-  const coerce = collectionClass(collection);
-  return groups.map((arr) => reify(collection, coerce(arr))).asImmutable();
-}
-
-export function partitionFactory(collection, predicate, context) {
-  const isKeyedIter = isKeyed(collection);
-  const groups = [[], []];
-  collection.__iterate((v, k) => {
-    groups[predicate.call(context, v, k, collection) ? 1 : 0].push(
-      isKeyedIter ? [k, v] : v
-    );
-  });
-  const coerce = collectionClass(collection);
-  return groups.map((arr) => reify(collection, coerce(arr)));
-}
-
 export function sliceFactory(collection, begin, end, useKeys) {
   const originalSize = collection.size;
 
@@ -274,137 +189,6 @@ export function sliceFactory(collection, begin, end, useKeys) {
   };
 
   return sliceSeq;
-}
-
-export function takeWhileFactory(collection, predicate, context) {
-  const takeSequence = makeSequence(collection);
-  takeSequence.__iteratorUncached = function (reverse) {
-    if (reverse) {
-      return this.cacheResult().__iterator(reverse);
-    }
-    const iterator = collection.__iterator(reverse);
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const seq = this;
-    function* gen() {
-      for (const [k, v] of iterator) {
-        if (!predicate.call(context, v, k, seq)) {
-          return;
-        }
-        yield [k, v];
-      }
-    }
-    return gen();
-  };
-  return takeSequence;
-}
-
-export function skipWhileFactory(collection, predicate, context, useKeys) {
-  const skipSequence = makeSequence(collection);
-  skipSequence.__iteratorUncached = function (reverse) {
-    if (reverse) {
-      return this.cacheResult().__iterator(reverse);
-    }
-    const iterator = collection.__iterator(reverse);
-    let iterations = 0;
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const seq = this;
-    function* gen() {
-      // Phase 1: skip while predicate holds
-      let skipping = true;
-      for (const [k, v] of iterator) {
-        if (skipping && predicate.call(context, v, k, seq)) {
-          continue;
-        }
-        skipping = false;
-        yield useKeys ? [k, v] : [iterations++, v];
-      }
-    }
-    return gen();
-  };
-  return skipSequence;
-}
-
-export function concatFactory(collection, values) {
-  const isKeyedCollection = isKeyed(collection);
-  const iters = [collection, ...values]
-    .map((v) => {
-      if (!isCollection(v)) {
-        v = isKeyedCollection
-          ? keyedSeqFromValue(v)
-          : indexedSeqFromValue(Array.isArray(v) ? v : [v]);
-      } else if (isKeyedCollection) {
-        v = KeyedCollection(v);
-      }
-      return v;
-    })
-    .filter((v) => v.size !== 0);
-
-  if (iters.length === 0) {
-    return collection;
-  }
-
-  if (iters.length === 1) {
-    const singleton = iters[0];
-    if (
-      singleton === collection ||
-      (isKeyedCollection && isKeyed(singleton)) ||
-      (isIndexed(collection) && isIndexed(singleton))
-    ) {
-      return singleton;
-    }
-  }
-
-  return new ConcatSeq(iters);
-}
-
-export function flattenFactory(collection, depth, useKeys) {
-  const flatSequence = makeSequence(collection);
-  flatSequence.__iteratorUncached = function (reverse) {
-    if (reverse) {
-      return this.cacheResult().__iterator(reverse);
-    }
-    let iterations = 0;
-    function* flatGen(iter, currentDepth) {
-      for (const [k, v] of iter.__iterator(reverse)) {
-        if ((!depth || currentDepth < depth) && isCollection(v)) {
-          yield* flatGen(v, currentDepth + 1);
-        } else {
-          yield useKeys ? [k, v] : [iterations++, v];
-        }
-      }
-    }
-    return flatGen(collection, 0);
-  };
-  return flatSequence;
-}
-
-export function flatMapFactory(collection, mapper, context) {
-  const coerce = collectionClass(collection);
-  return collection
-    .toSeq()
-    .map((v, k) => coerce(mapper.call(context, v, k, collection)))
-    .flatten(true);
-}
-
-export function interposeFactory(collection, separator) {
-  const interposedSequence = makeSequence(collection);
-  interposedSequence.size = collection.size && collection.size * 2 - 1;
-  interposedSequence.__iteratorUncached = function (reverse) {
-    const iterator = collection.__iterator(reverse);
-    let iterations = 0;
-    function* gen() {
-      let isFirst = true;
-      for (const [, value] of iterator) {
-        if (!isFirst) {
-          yield [iterations++, separator];
-        }
-        isFirst = false;
-        yield [iterations++, value];
-      }
-    }
-    return gen();
-  };
-  return interposedSequence;
 }
 
 export function sortFactory(collection, comparator, mapper) {
@@ -499,23 +283,6 @@ export function zipWithFactory(keyIter, zipper, iters, zipAll) {
   };
   return zipSequence;
 }
-
-export function reify(iter, seq) {
-  return iter === seq
-    ? iter
-    : isSeq(iter)
-      ? seq
-      : iter.create
-        ? iter.create(seq)
-        : iter.constructor(seq);
-}
-
-const collectionClass = (collection) =>
-  isKeyed(collection)
-    ? KeyedCollection
-    : isIndexed(collection)
-      ? IndexedCollection
-      : SetCollection;
 
 const makeSequence = (collection) =>
   Object.create(
