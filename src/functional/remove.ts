@@ -46,14 +46,16 @@ export function remove<K>(
     );
   }
   if (isImmutable(collection)) {
-    // @ts-expect-error weird "remove" here,
-    if (!collection.remove) {
+    if (
+      !(collection as unknown as { remove?: (key: unknown) => unknown }).remove
+    ) {
       throw new TypeError(
         `Cannot update immutable value without .remove() method: ${collection}`
       );
     }
-    // @ts-expect-error weird "remove" here,
-    return collection.remove(key);
+    return (
+      collection as unknown as { remove: (key: unknown) => unknown }
+    ).remove(key);
   }
   // @ts-expect-error assert that key is a string, a number or a symbol here
   if (!Object.hasOwn(collection, key)) {

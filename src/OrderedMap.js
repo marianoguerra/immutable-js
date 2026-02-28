@@ -17,6 +17,12 @@ export const OrderedMap = (value) =>
         });
 OrderedMap.of = (...values) => OrderedMap(values);
 export class OrderedMapImpl extends MapImpl {
+  static {
+    this.prototype[IS_ORDERED_SYMBOL] = true;
+    this.prototype[DELETE] = this.prototype.remove;
+    this.prototype[Symbol.toStringTag] = 'Immutable.OrderedMap';
+  }
+
   constructor(map, list, ownerID, hash) {
     super(map ? map.size : 0, undefined, ownerID, hash);
     this._map = map;
@@ -90,10 +96,6 @@ export class OrderedMapImpl extends MapImpl {
 }
 
 OrderedMap.isOrderedMap = isOrderedMap;
-
-OrderedMapImpl.prototype[IS_ORDERED_SYMBOL] = true;
-OrderedMapImpl.prototype[DELETE] = OrderedMapImpl.prototype.remove;
-OrderedMapImpl.prototype[Symbol.toStringTag] = 'Immutable.OrderedMap';
 
 const makeOrderedMap = (map, list, ownerID, hash) =>
   new OrderedMapImpl(map, list, ownerID, hash);

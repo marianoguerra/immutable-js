@@ -1,4 +1,9 @@
-import { CollectionImpl } from './Collection';
+import {
+  CollectionImpl,
+  KeyedCollectionImpl,
+  IndexedCollectionImpl,
+  SetCollectionImpl,
+} from './Collection';
 import {
   emptyIterator,
   getValueFromType,
@@ -28,7 +33,14 @@ export const Seq = (value) =>
     : isImmutable(value)
       ? value.toSeq()
       : seqFromValue(value);
+
+// SeqImpl is retained as the base for internal operation sequences (ConcatSeq
+// in Operations.js) and for makeSequence()'s Object.create() pattern.
 export class SeqImpl extends CollectionImpl {
+  static {
+    this.prototype[IS_SEQ_SYMBOL] = true;
+  }
+
   toSeq() {
     return this;
   }
@@ -104,9 +116,72 @@ export const KeyedSeq = (value) =>
       : isRecord(value)
         ? value.toSeq()
         : keyedSeqFromValue(value);
-export class KeyedSeqImpl extends SeqImpl {
+export class KeyedSeqImpl extends KeyedCollectionImpl {
+  static {
+    this.prototype[IS_SEQ_SYMBOL] = true;
+  }
+
+  toSeq() {
+    return this;
+  }
+
   toKeyedSeq() {
     return this;
+  }
+
+  // Seq caching behavior
+  cacheResult() {
+    if (!this._cache && this.__iterateUncached) {
+      this._cache = this.entrySeq().toArray();
+      this.size = this._cache.length;
+    }
+    return this;
+  }
+
+  __iterateUncached(fn, reverse) {
+    let iterations = 0;
+    for (const [key, value] of this.__iteratorUncached(
+      ITERATE_ENTRIES,
+      reverse
+    )) {
+      iterations++;
+      if (fn(value, key, this) === false) {
+        break;
+      }
+    }
+    return iterations;
+  }
+
+  __iterate(fn, reverse) {
+    const cache = this._cache;
+    if (cache) {
+      const size = cache.length;
+      let i = 0;
+      while (i !== size) {
+        const [key, value] = cache[reverse ? size - ++i : i++];
+        if (fn(value, key, this) === false) {
+          break;
+        }
+      }
+      return i;
+    }
+    return this.__iterateUncached(fn, reverse);
+  }
+
+  __iterator(type, reverse) {
+    const cache = this._cache;
+    if (cache) {
+      const size = cache.length;
+      let i = 0;
+      function* gen() {
+        while (i !== size) {
+          const [key, value] = cache[reverse ? size - ++i : i++];
+          yield getValueFromType(type, key, value);
+        }
+      }
+      return gen();
+    }
+    return this.__iteratorUncached(type, reverse);
   }
 }
 
@@ -122,13 +197,76 @@ export const IndexedSeq = (value) =>
         : indexedSeqFromValue(value);
 
 IndexedSeq.of = (...values) => IndexedSeq(values);
-export class IndexedSeqImpl extends SeqImpl {
+export class IndexedSeqImpl extends IndexedCollectionImpl {
+  static {
+    this.prototype[IS_SEQ_SYMBOL] = true;
+  }
+
+  toSeq() {
+    return this;
+  }
+
   toIndexedSeq() {
     return this;
   }
 
   toString() {
     return this.__toString('Seq [', ']');
+  }
+
+  // Seq caching behavior
+  cacheResult() {
+    if (!this._cache && this.__iterateUncached) {
+      this._cache = this.entrySeq().toArray();
+      this.size = this._cache.length;
+    }
+    return this;
+  }
+
+  __iterateUncached(fn, reverse) {
+    let iterations = 0;
+    for (const [key, value] of this.__iteratorUncached(
+      ITERATE_ENTRIES,
+      reverse
+    )) {
+      iterations++;
+      if (fn(value, key, this) === false) {
+        break;
+      }
+    }
+    return iterations;
+  }
+
+  __iterate(fn, reverse) {
+    const cache = this._cache;
+    if (cache) {
+      const size = cache.length;
+      let i = 0;
+      while (i !== size) {
+        const [key, value] = cache[reverse ? size - ++i : i++];
+        if (fn(value, key, this) === false) {
+          break;
+        }
+      }
+      return i;
+    }
+    return this.__iterateUncached(fn, reverse);
+  }
+
+  __iterator(type, reverse) {
+    const cache = this._cache;
+    if (cache) {
+      const size = cache.length;
+      let i = 0;
+      function* gen() {
+        while (i !== size) {
+          const [key, value] = cache[reverse ? size - ++i : i++];
+          yield getValueFromType(type, key, value);
+        }
+      }
+      return gen();
+    }
+    return this.__iteratorUncached(type, reverse);
   }
 }
 export const SetSeq = (value) =>
@@ -139,9 +277,72 @@ export const SetSeq = (value) =>
 
 SetSeq.of = (...values) => SetSeq(values);
 
-export class SetSeqImpl extends SeqImpl {
+export class SetSeqImpl extends SetCollectionImpl {
+  static {
+    this.prototype[IS_SEQ_SYMBOL] = true;
+  }
+
+  toSeq() {
+    return this;
+  }
+
   toSetSeq() {
     return this;
+  }
+
+  // Seq caching behavior
+  cacheResult() {
+    if (!this._cache && this.__iterateUncached) {
+      this._cache = this.entrySeq().toArray();
+      this.size = this._cache.length;
+    }
+    return this;
+  }
+
+  __iterateUncached(fn, reverse) {
+    let iterations = 0;
+    for (const [key, value] of this.__iteratorUncached(
+      ITERATE_ENTRIES,
+      reverse
+    )) {
+      iterations++;
+      if (fn(value, key, this) === false) {
+        break;
+      }
+    }
+    return iterations;
+  }
+
+  __iterate(fn, reverse) {
+    const cache = this._cache;
+    if (cache) {
+      const size = cache.length;
+      let i = 0;
+      while (i !== size) {
+        const [key, value] = cache[reverse ? size - ++i : i++];
+        if (fn(value, key, this) === false) {
+          break;
+        }
+      }
+      return i;
+    }
+    return this.__iterateUncached(fn, reverse);
+  }
+
+  __iterator(type, reverse) {
+    const cache = this._cache;
+    if (cache) {
+      const size = cache.length;
+      let i = 0;
+      function* gen() {
+        while (i !== size) {
+          const [key, value] = cache[reverse ? size - ++i : i++];
+          yield getValueFromType(type, key, value);
+        }
+      }
+      return gen();
+    }
+    return this.__iteratorUncached(type, reverse);
   }
 }
 
@@ -149,8 +350,6 @@ Seq.isSeq = isSeq;
 Seq.Keyed = KeyedSeq;
 Seq.Set = SetSeq;
 Seq.Indexed = IndexedSeq;
-
-SeqImpl.prototype[IS_SEQ_SYMBOL] = true;
 
 export class ArraySeq extends IndexedSeqImpl {
   constructor(array) {
@@ -191,6 +390,10 @@ export class ArraySeq extends IndexedSeqImpl {
 }
 
 class ObjectSeq extends KeyedSeqImpl {
+  static {
+    this.prototype[IS_ORDERED_SYMBOL] = true;
+  }
+
   constructor(object) {
     super();
     const keys = [
@@ -241,7 +444,6 @@ class ObjectSeq extends KeyedSeqImpl {
     return gen();
   }
 }
-ObjectSeq.prototype[IS_ORDERED_SYMBOL] = true;
 
 class CollectionSeq extends IndexedSeqImpl {
   constructor(collection) {

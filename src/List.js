@@ -54,6 +54,14 @@ export const List = (value) => {
 List.of = (...values) => List(values);
 
 export class ListImpl extends IndexedCollectionImpl {
+  static {
+    this.prototype[IS_LIST_SYMBOL] = true;
+    this.prototype[DELETE] = this.prototype.remove;
+    this.prototype.merge = this.prototype.concat;
+    this.prototype.removeIn = this.prototype.deleteIn;
+    this.prototype[Symbol.toStringTag] = 'Immutable.List';
+  }
+
   constructor(origin, capacity, level, root, tail, ownerID, hash) {
     super();
     this.size = capacity - origin;
@@ -229,6 +237,38 @@ export class ListImpl extends IndexedCollectionImpl {
     return index;
   }
 
+  // methods.js wrappers
+  setIn(keyPath, v) {
+    return setIn.call(this, keyPath, v);
+  }
+  deleteIn(keyPath) {
+    return deleteIn.call(this, keyPath);
+  }
+  update(key, notSetValue, updater) {
+    return update.call(this, key, notSetValue, updater);
+  }
+  updateIn(keyPath, notSetValue, updater) {
+    return updateIn.call(this, keyPath, notSetValue, updater);
+  }
+  mergeIn(keyPath, ...iters) {
+    return mergeIn.call(this, keyPath, ...iters);
+  }
+  mergeDeepIn(keyPath, ...iters) {
+    return mergeDeepIn.call(this, keyPath, ...iters);
+  }
+  withMutations(fn) {
+    return withMutations.call(this, fn);
+  }
+  wasAltered() {
+    return wasAltered.call(this);
+  }
+  asImmutable() {
+    return asImmutable.call(this);
+  }
+  asMutable() {
+    return asMutable.call(this);
+  }
+
   __ensureOwner(ownerID) {
     if (ownerID === this.__ownerID) {
       return this;
@@ -254,22 +294,6 @@ export class ListImpl extends IndexedCollectionImpl {
 }
 
 List.isList = isList;
-
-const ListPrototype = ListImpl.prototype;
-ListPrototype[IS_LIST_SYMBOL] = true;
-ListPrototype[DELETE] = ListPrototype.remove;
-ListPrototype.merge = ListPrototype.concat;
-ListPrototype.setIn = setIn;
-ListPrototype.deleteIn = ListPrototype.removeIn = deleteIn;
-ListPrototype.update = update;
-ListPrototype.updateIn = updateIn;
-ListPrototype.mergeIn = mergeIn;
-ListPrototype.mergeDeepIn = mergeDeepIn;
-ListPrototype.withMutations = withMutations;
-ListPrototype.wasAltered = wasAltered;
-ListPrototype.asImmutable = asImmutable;
-ListPrototype.asMutable = asMutable;
-ListPrototype[Symbol.toStringTag] = 'Immutable.List';
 
 class VNode {
   constructor(array, ownerID) {

@@ -46,12 +46,20 @@ import {
 } from './predicates';
 
 export class ToKeyedSequence extends KeyedSeqImpl {
+  static {
+    this.prototype[IS_ORDERED_SYMBOL] = true;
+  }
+
   constructor(indexed, useKeys) {
     super();
 
     this._iter = indexed;
     this._useKeys = useKeys;
     this.size = indexed.size;
+  }
+
+  cacheResult() {
+    return cacheResultThrough.call(this);
   }
 
   get(key, notSetValue) {
@@ -90,7 +98,6 @@ export class ToKeyedSequence extends KeyedSeqImpl {
     return this._iter.__iterator(type, reverse);
   }
 }
-ToKeyedSequence.prototype[IS_ORDERED_SYMBOL] = true;
 
 export class ToIndexedSequence extends IndexedSeqImpl {
   constructor(iter) {
@@ -98,6 +105,10 @@ export class ToIndexedSequence extends IndexedSeqImpl {
 
     this._iter = iter;
     this.size = iter.size;
+  }
+
+  cacheResult() {
+    return cacheResultThrough.call(this);
   }
 
   includes(value) {
@@ -139,6 +150,10 @@ export class ToSetSequence extends SetSeqImpl {
     this.size = iter.size;
   }
 
+  cacheResult() {
+    return cacheResultThrough.call(this);
+  }
+
   has(key) {
     return this._iter.includes(key);
   }
@@ -164,6 +179,10 @@ export class FromEntriesSequence extends KeyedSeqImpl {
 
     this._iter = entries;
     this.size = entries.size;
+  }
+
+  cacheResult() {
+    return cacheResultThrough.call(this);
   }
 
   entrySeq() {
@@ -206,12 +225,6 @@ export class FromEntriesSequence extends KeyedSeqImpl {
     return gen();
   }
 }
-
-ToIndexedSequence.prototype.cacheResult =
-  ToKeyedSequence.prototype.cacheResult =
-  ToSetSequence.prototype.cacheResult =
-  FromEntriesSequence.prototype.cacheResult =
-    cacheResultThrough;
 
 export function flipFactory(collection) {
   const flipSequence = makeSequence(collection);

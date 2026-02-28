@@ -22,12 +22,9 @@ export default function deepEqual(
   if (
     !isCollection(b) ||
     (a.size !== undefined && b.size !== undefined && a.size !== b.size) ||
-    // @ts-expect-error __hash exists on Collection
     (a.__hash !== undefined &&
-      // @ts-expect-error __hash exists on Collection
-      b.__hash !== undefined &&
-      // @ts-expect-error __hash exists on Collection
-      a.__hash !== b.__hash) ||
+      (b as CollectionImpl<unknown, unknown>).__hash !== undefined &&
+      a.__hash !== (b as CollectionImpl<unknown, unknown>).__hash) ||
     isKeyed(a) !== isKeyed(b) ||
     isIndexed(a) !== isIndexed(b) ||
     isOrdered(a) !== isOrdered(b)
@@ -53,39 +50,36 @@ export default function deepEqual(
 
   let flipped = false;
 
-  if (a.size === undefined) {
-    if (b.size === undefined) {
-      // @ts-expect-error cacheResult might be implemented on some collections
-      if (typeof a.cacheResult === 'function') {
-        // @ts-expect-error cacheResult might be implemented on some collections
-        a.cacheResult();
+  type Sized = { size?: number; cacheResult?: () => void };
+  if ((a as unknown as Sized).size === undefined) {
+    if ((b as unknown as Sized).size === undefined) {
+      if (typeof (a as unknown as Sized).cacheResult === 'function') {
+        (a as unknown as Sized).cacheResult!();
       }
     } else {
       flipped = true;
       const _ = a;
-      a = b;
+      a = b as CollectionImpl<unknown, unknown>;
       b = _;
     }
   }
 
   let allEqual = true;
-  const bSize: number =
-    // @ts-expect-error b is Range | Repeat | Collection<unknown, unknown> as it may have been flipped, and __iterate is valid
-    b.__iterate((v, k) => {
+  const bSize: number = (b as CollectionImpl<unknown, unknown>).__iterate(
+    (v: unknown, k: unknown): boolean => {
       if (
         notAssociative
-          ? // @ts-expect-error has exists on Collection
-            !a.has(v)
+          ? !a.has(v as never)
           : flipped
-            ? // @ts-expect-error type of `get` does not "catch" the version with `notSetValue`
-              !is(v, a.get(k, NOT_SET))
-            : // @ts-expect-error type of `get` does not "catch" the version with `notSetValue`
-              !is(a.get(k, NOT_SET), v)
+            ? !is(v, a.get(k as never, NOT_SET as never))
+            : !is(a.get(k as never, NOT_SET as never), v)
       ) {
         allEqual = false;
         return false;
       }
-    });
+      return true;
+    }
+  );
 
   return allEqual && a.size === bSize;
 }

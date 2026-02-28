@@ -16,6 +16,14 @@ export const Stack = (value) =>
 Stack.of = (...values) => Stack(values);
 
 export class StackImpl extends IndexedCollectionImpl {
+  static {
+    this.prototype[IS_STACK_SYMBOL] = true;
+    this.prototype.shift = this.prototype.pop;
+    this.prototype.unshift = this.prototype.push;
+    this.prototype.unshiftAll = this.prototype.pushAll;
+    this.prototype[Symbol.toStringTag] = 'Immutable.Stack';
+  }
+
   constructor(size, head, ownerID, hash) {
     super();
     this.size = size;
@@ -151,6 +159,20 @@ export class StackImpl extends IndexedCollectionImpl {
     return iterations;
   }
 
+  // methods.js wrappers
+  withMutations(fn) {
+    return withMutations.call(this, fn);
+  }
+  wasAltered() {
+    return wasAltered.call(this);
+  }
+  asImmutable() {
+    return asImmutable.call(this);
+  }
+  asMutable() {
+    return asMutable.call(this);
+  }
+
   __iterator(type, reverse) {
     if (reverse) {
       return new ArraySeq(this.toArray()).__iterator(type, reverse);
@@ -169,17 +191,6 @@ export class StackImpl extends IndexedCollectionImpl {
 }
 
 Stack.isStack = isStack;
-
-const StackPrototype = StackImpl.prototype;
-StackPrototype[IS_STACK_SYMBOL] = true;
-StackPrototype.shift = StackPrototype.pop;
-StackPrototype.unshift = StackPrototype.push;
-StackPrototype.unshiftAll = StackPrototype.pushAll;
-StackPrototype.withMutations = withMutations;
-StackPrototype.wasAltered = wasAltered;
-StackPrototype.asImmutable = asImmutable;
-StackPrototype.asMutable = asMutable;
-StackPrototype[Symbol.toStringTag] = 'Immutable.Stack';
 
 function returnStack(stack, newSize, head) {
   if (stack.__ownerID) {

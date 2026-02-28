@@ -38,6 +38,13 @@ Set.union = (sets) => {
 };
 
 export class SetImpl extends SetCollectionImpl {
+  static {
+    this.prototype[IS_SET_SYMBOL] = true;
+    this.prototype[DELETE] = this.prototype.remove;
+    this.prototype.merge = this.prototype.concat = this.prototype.union;
+    this.prototype[Symbol.toStringTag] = 'Immutable.Set';
+  }
+
   constructor(map, ownerID) {
     super();
     this.size = map ? map.size : 0;
@@ -144,6 +151,24 @@ export class SetImpl extends SetCollectionImpl {
     return this._map.__iterator(type, reverse);
   }
 
+  // methods.js wrappers
+  withMutations(fn) {
+    return withMutations.call(this, fn);
+  }
+  asImmutable() {
+    return asImmutable.call(this);
+  }
+  asMutable() {
+    return asMutable.call(this);
+  }
+
+  __empty() {
+    return emptySet();
+  }
+  __make(map, ownerID) {
+    return makeSet(map, ownerID);
+  }
+
   __ensureOwner(ownerID) {
     if (ownerID === this.__ownerID) {
       return this;
@@ -163,22 +188,10 @@ export class SetImpl extends SetCollectionImpl {
 
 Set.isSet = isSet;
 
-const SetPrototype = SetImpl.prototype;
-SetPrototype[IS_SET_SYMBOL] = true;
-SetPrototype[DELETE] = SetPrototype.remove;
-SetPrototype.merge = SetPrototype.concat = SetPrototype.union;
-SetPrototype.withMutations = withMutations;
-SetPrototype.asImmutable = asImmutable;
-SetPrototype.asMutable = asMutable;
-SetPrototype[Symbol.toStringTag] = 'Immutable.Set';
-
 const makeSet = (map, ownerID) => new SetImpl(map, ownerID);
 
 let EMPTY_SET;
 const emptySet = () => EMPTY_SET || (EMPTY_SET = makeSet(emptyMap()));
-
-SetPrototype.__empty = emptySet;
-SetPrototype.__make = makeSet;
 
 function filterByIters(set, iters, shouldRemove) {
   if (iters.length === 0) {

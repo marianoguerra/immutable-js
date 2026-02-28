@@ -34,8 +34,71 @@ import {
   isRecord,
 } from './predicates';
 
-import { Collection } from './CollectionImpl';
+import { Collection, _late } from './Collection';
+import {
+  concatFactory,
+  countByFactory,
+  filterFactory,
+  flatMapFactory,
+  flattenFactory,
+  flipFactory,
+  FromEntriesSequence,
+  groupByFactory,
+  interposeFactory,
+  mapFactory,
+  maxFactory,
+  partitionFactory,
+  reverseFactory,
+  skipWhileFactory,
+  sliceFactory,
+  sortFactory,
+  takeWhileFactory,
+  ToIndexedSequence,
+  ToKeyedSequence,
+  ToSetSequence,
+  zipWithFactory,
+} from './Operations';
+import {
+  getIn as methodGetIn,
+  hasIn as methodHasIn,
+  toObject,
+} from './methods';
 import { hash } from './Hash';
+
+// Populate late-binding references now that all modules are loaded.
+Object.assign(_late, {
+  concatFactory,
+  countByFactory,
+  filterFactory,
+  flatMapFactory,
+  flattenFactory,
+  flipFactory,
+  FromEntriesSequence,
+  groupByFactory,
+  interposeFactory,
+  mapFactory,
+  maxFactory,
+  partitionFactory,
+  reverseFactory,
+  skipWhileFactory,
+  sliceFactory,
+  sortFactory,
+  takeWhileFactory,
+  ToIndexedSequence,
+  ToKeyedSequence,
+  ToSetSequence,
+  zipWithFactory,
+  getIn: methodGetIn,
+  hasIn: methodHasIn,
+  toObject,
+  Map,
+  List,
+  Set,
+  Stack,
+  OrderedMap,
+  OrderedSet,
+  Range,
+});
 
 // Functional read/write API
 import { get } from './functional/get';

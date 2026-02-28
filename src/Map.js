@@ -45,6 +45,15 @@ export const Map = (value) =>
         });
 
 export class MapImpl extends KeyedCollectionImpl {
+  static {
+    this.prototype[IS_MAP_SYMBOL] = true;
+    this.prototype[DELETE] = this.prototype.remove;
+    this.prototype.removeAll = this.prototype.deleteAll;
+    this.prototype.removeIn = this.prototype.deleteIn;
+    this.prototype.concat = this.prototype.merge;
+    this.prototype[Symbol.toStringTag] = 'Immutable.Map';
+  }
+
   constructor(size, root, ownerID, hash) {
     super();
     this.size = size;
@@ -120,6 +129,50 @@ export class MapImpl extends KeyedCollectionImpl {
     });
   }
 
+  // methods.js wrappers
+  setIn(keyPath, v) {
+    return setIn.call(this, keyPath, v);
+  }
+  deleteIn(keyPath) {
+    return deleteIn.call(this, keyPath);
+  }
+  update(key, notSetValue, updater) {
+    return update.call(this, key, notSetValue, updater);
+  }
+  updateIn(keyPath, notSetValue, updater) {
+    return updateIn.call(this, keyPath, notSetValue, updater);
+  }
+  merge(...iters) {
+    return merge.call(this, ...iters);
+  }
+  mergeWith(merger, ...iters) {
+    return mergeWith.call(this, merger, ...iters);
+  }
+  mergeDeep(...iters) {
+    return mergeDeep.call(this, ...iters);
+  }
+  mergeDeepWith(merger, ...iters) {
+    return mergeDeepWith.call(this, merger, ...iters);
+  }
+  mergeIn(keyPath, ...iters) {
+    return mergeIn.call(this, keyPath, ...iters);
+  }
+  mergeDeepIn(keyPath, ...iters) {
+    return mergeDeepIn.call(this, keyPath, ...iters);
+  }
+  withMutations(fn) {
+    return withMutations.call(this, fn);
+  }
+  wasAltered() {
+    return wasAltered.call(this);
+  }
+  asImmutable() {
+    return asImmutable.call(this);
+  }
+  asMutable() {
+    return asMutable.call(this);
+  }
+
   __iterator(type, reverse) {
     if (!this._root) {
       return emptyIterator();
@@ -156,40 +209,18 @@ export class MapImpl extends KeyedCollectionImpl {
 
 Map.isMap = isMap;
 
-const MapPrototype = MapImpl.prototype;
-MapPrototype[IS_MAP_SYMBOL] = true;
-MapPrototype[DELETE] = MapPrototype.remove;
-MapPrototype.removeAll = MapPrototype.deleteAll;
-MapPrototype.setIn = setIn;
-MapPrototype.removeIn = MapPrototype.deleteIn = deleteIn;
-MapPrototype.update = update;
-MapPrototype.updateIn = updateIn;
-MapPrototype.merge = MapPrototype.concat = merge;
-MapPrototype.mergeWith = mergeWith;
-MapPrototype.mergeDeep = mergeDeep;
-MapPrototype.mergeDeepWith = mergeDeepWith;
-MapPrototype.mergeIn = mergeIn;
-MapPrototype.mergeDeepIn = mergeDeepIn;
-MapPrototype.withMutations = withMutations;
-MapPrototype.wasAltered = wasAltered;
-MapPrototype.asImmutable = asImmutable;
-MapPrototype.asMutable = asMutable;
-MapPrototype[Symbol.toStringTag] = 'Immutable.Map';
-
-function linearGet(shift, keyHash, key, notSetValue) {
-  const entries = this.entries;
-  for (let ii = 0, len = entries.length; ii < len; ii++) {
-    if (is(key, entries[ii][0])) {
-      return entries[ii][1];
-    }
-  }
-  return notSetValue;
-}
-
 class ArrayMapNode {
   constructor(ownerID, entries) {
     this.ownerID = ownerID;
     this.entries = entries;
+  }
+
+  get(shift, keyHash, key, notSetValue) {
+    return linearGet(this.entries, key, notSetValue);
+  }
+
+  iterate(fn, reverse) {
+    return iterateLinearEntries(this.entries, fn, reverse);
   }
 
   update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
@@ -252,6 +283,10 @@ class BitmapIndexedNode {
     this.ownerID = ownerID;
     this.bitmap = bitmap;
     this.nodes = nodes;
+  }
+
+  iterate(fn, reverse) {
+    return iterateNodeArray(this.nodes, fn, reverse);
   }
 
   get(shift, keyHash, key, notSetValue) {
@@ -337,6 +372,10 @@ class HashArrayMapNode {
     this.nodes = nodes;
   }
 
+  iterate(fn, reverse) {
+    return iterateNodeArray(this.nodes, fn, reverse);
+  }
+
   get(shift, keyHash, key, notSetValue) {
     const idx = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
     const node = this.nodes[idx];
@@ -397,6 +436,14 @@ class HashCollisionNode {
     this.ownerID = ownerID;
     this.keyHash = keyHash;
     this.entries = entries;
+  }
+
+  get(shift, keyHash, key, notSetValue) {
+    return linearGet(this.entries, key, notSetValue);
+  }
+
+  iterate(fn, reverse) {
+    return iterateLinearEntries(this.entries, fn, reverse);
   }
 
   update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
@@ -466,6 +513,10 @@ class ValueNode {
     this.entry = entry;
   }
 
+  iterate(fn, _reverse) {
+    return fn(this.entry);
+  }
+
   get(shift, keyHash, key, notSetValue) {
     return is(key, this.entry[0]) ? this.entry[1] : notSetValue;
   }
@@ -497,32 +548,31 @@ class ValueNode {
   }
 }
 
-ArrayMapNode.prototype.get = HashCollisionNode.prototype.get = linearGet;
-
-ArrayMapNode.prototype.iterate = HashCollisionNode.prototype.iterate =
-  function (fn, reverse) {
-    const entries = this.entries;
-    for (let ii = 0, maxIndex = entries.length - 1; ii <= maxIndex; ii++) {
-      if (fn(entries[reverse ? maxIndex - ii : ii]) === false) {
-        return false;
-      }
+function linearGet(entries, key, notSetValue) {
+  for (let ii = 0, len = entries.length; ii < len; ii++) {
+    if (is(key, entries[ii][0])) {
+      return entries[ii][1];
     }
-  };
+  }
+  return notSetValue;
+}
 
-BitmapIndexedNode.prototype.iterate = HashArrayMapNode.prototype.iterate =
-  function (fn, reverse) {
-    const nodes = this.nodes;
-    for (let ii = 0, maxIndex = nodes.length - 1; ii <= maxIndex; ii++) {
-      const node = nodes[reverse ? maxIndex - ii : ii];
-      if (node?.iterate(fn, reverse) === false) {
-        return false;
-      }
+function iterateLinearEntries(entries, fn, reverse) {
+  for (let ii = 0, maxIndex = entries.length - 1; ii <= maxIndex; ii++) {
+    if (fn(entries[reverse ? maxIndex - ii : ii]) === false) {
+      return false;
     }
-  };
+  }
+}
 
-ValueNode.prototype.iterate = function (fn, _reverse) {
-  return fn(this.entry);
-};
+function iterateNodeArray(nodes, fn, reverse) {
+  for (let ii = 0, maxIndex = nodes.length - 1; ii <= maxIndex; ii++) {
+    const node = nodes[reverse ? maxIndex - ii : ii];
+    if (node?.iterate(fn, reverse) === false) {
+      return false;
+    }
+  }
+}
 
 function* mapIteratorGenerator(node, type, reverse) {
   if (node.entry) {

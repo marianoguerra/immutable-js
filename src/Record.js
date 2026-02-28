@@ -1,5 +1,4 @@
 import { KeyedCollection } from './Collection';
-import { CollectionPrototype } from './CollectionImpl';
 import { ITERATE_ENTRIES } from './Iterator';
 import { List } from './List';
 import { keyedSeqFromValue } from './Seq';
@@ -9,6 +8,7 @@ import {
   asMutable,
   deleteIn,
   getIn,
+  hasIn,
   merge,
   mergeWith,
   mergeDeep,
@@ -16,6 +16,7 @@ import {
   mergeDeepIn,
   mergeIn,
   setIn,
+  toObject,
   update,
   updateIn,
   withMutations,
@@ -100,6 +101,15 @@ export const Record = (defaultValues, name) => {
 };
 
 export class RecordImpl {
+  static {
+    this.prototype[IS_RECORD_SYMBOL] = true;
+    this.prototype[DELETE] = this.prototype.remove;
+    this.prototype.removeIn = this.prototype.deleteIn;
+    this.prototype[Symbol.iterator] = this.prototype.entries;
+    this.prototype[Symbol.toStringTag] = 'Immutable.Record';
+    this.prototype.toJSON = this.prototype.toObject;
+  }
+
   toString() {
     const body = this._keys
       .map((k) => `${k}: ${quoteString(this.get(k))}`)
@@ -170,6 +180,56 @@ export class RecordImpl {
     return this.__iterator(ITERATE_ENTRIES);
   }
 
+  // methods.js wrappers
+  deleteIn(keyPath) {
+    return deleteIn.call(this, keyPath);
+  }
+  getIn(searchKeyPath, notSetValue) {
+    return getIn.call(this, searchKeyPath, notSetValue);
+  }
+  hasIn(searchKeyPath) {
+    return hasIn.call(this, searchKeyPath);
+  }
+  merge(...iters) {
+    return merge.call(this, ...iters);
+  }
+  mergeWith(merger, ...iters) {
+    return mergeWith.call(this, merger, ...iters);
+  }
+  mergeIn(keyPath, ...iters) {
+    return mergeIn.call(this, keyPath, ...iters);
+  }
+  mergeDeep(...iters) {
+    return mergeDeep.call(this, ...iters);
+  }
+  mergeDeepWith(merger, ...iters) {
+    return mergeDeepWith.call(this, merger, ...iters);
+  }
+  mergeDeepIn(keyPath, ...iters) {
+    return mergeDeepIn.call(this, keyPath, ...iters);
+  }
+  setIn(keyPath, v) {
+    return setIn.call(this, keyPath, v);
+  }
+  update(key, notSetValue, updater) {
+    return update.call(this, key, notSetValue, updater);
+  }
+  updateIn(keyPath, notSetValue, updater) {
+    return updateIn.call(this, keyPath, notSetValue, updater);
+  }
+  withMutations(fn) {
+    return withMutations.call(this, fn);
+  }
+  asMutable() {
+    return asMutable.call(this);
+  }
+  asImmutable() {
+    return asImmutable.call(this);
+  }
+  toObject() {
+    return toObject.call(this);
+  }
+
   __iterator(type, reverse) {
     return recordSeq(this).__iterator(type, reverse);
   }
@@ -202,27 +262,6 @@ const recordSeq = (record) =>
 
 Record.getDescriptiveName = recordName;
 const RecordPrototype = RecordImpl.prototype;
-RecordPrototype[IS_RECORD_SYMBOL] = true;
-RecordPrototype[DELETE] = RecordPrototype.remove;
-RecordPrototype.deleteIn = RecordPrototype.removeIn = deleteIn;
-RecordPrototype.getIn = getIn;
-RecordPrototype.hasIn = CollectionPrototype.hasIn;
-RecordPrototype.merge = merge;
-RecordPrototype.mergeWith = mergeWith;
-RecordPrototype.mergeIn = mergeIn;
-RecordPrototype.mergeDeep = mergeDeep;
-RecordPrototype.mergeDeepWith = mergeDeepWith;
-RecordPrototype.mergeDeepIn = mergeDeepIn;
-RecordPrototype.setIn = setIn;
-RecordPrototype.update = update;
-RecordPrototype.updateIn = updateIn;
-RecordPrototype.withMutations = withMutations;
-RecordPrototype.asMutable = asMutable;
-RecordPrototype.asImmutable = asImmutable;
-RecordPrototype[Symbol.iterator] = RecordPrototype.entries;
-RecordPrototype[Symbol.toStringTag] = 'Immutable.Record';
-RecordPrototype.toJSON = RecordPrototype.toObject =
-  CollectionPrototype.toObject;
 
 function makeRecord(likeRecord, values, ownerID) {
   const record = Object.create(Object.getPrototypeOf(likeRecord));

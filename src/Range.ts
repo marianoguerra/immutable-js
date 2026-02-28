@@ -1,4 +1,5 @@
 import type { Seq } from '../type-definitions/immutable';
+import type { CollectionImpl } from './Collection';
 import { getValueFromType, type IteratorType } from './Iterator';
 import { IndexedSeqImpl } from './Seq';
 import { wrapIndex, wholeSlice, resolveBegin, resolveEnd } from './TrieUtils';
@@ -53,16 +54,23 @@ export class RangeImpl extends IndexedSeqImpl implements Seq.Indexed<number> {
       : `Range [ ${this._start}...${this._end}${this._step !== 1 ? ` by ${this._step}` : ''} ]`;
   }
 
-  get<NSV>(index: number, notSetValue: NSV): number | NSV;
-  get(index: number): number | undefined;
-  get<NSV>(index: number, notSetValue?: NSV): number | NSV | undefined {
-    // @ts-expect-error Issue with the mixin not understood by TypeScript
+  override get<NSV>(index: number, notSetValue: NSV): number | NSV;
+  override get(index: number): number | undefined;
+  override get<NSV>(
+    index: number,
+    notSetValue?: NSV
+  ): number | NSV | undefined {
     return this.has(index)
-      ? this._start + wrapIndex(this, index) * this._step
+      ? this._start +
+          wrapIndex(
+            this as unknown as CollectionImpl<unknown, unknown>,
+            index
+          ) *
+            this._step
       : notSetValue;
   }
 
-  includes(searchValue: number): boolean {
+  override includes(searchValue: number): boolean {
     const possibleIndex = (searchValue - this._start) / this._step;
     return (
       possibleIndex >= 0 &&
@@ -71,8 +79,11 @@ export class RangeImpl extends IndexedSeqImpl implements Seq.Indexed<number> {
     );
   }
 
-  // @ts-expect-error TypeScript does not understand the mixin
-  slice(begin?: number | undefined, end?: number | undefined): RangeImpl {
+  // @ts-expect-error: Range.slice returns RangeImpl, not polymorphic this
+  override slice(
+    begin?: number | undefined,
+    end?: number | undefined
+  ): RangeImpl {
     if (wholeSlice(begin, end, this.size)) {
       return this;
     }
@@ -88,7 +99,7 @@ export class RangeImpl extends IndexedSeqImpl implements Seq.Indexed<number> {
     );
   }
 
-  indexOf(searchValue: number): number {
+  override indexOf(searchValue: number): number {
     const offsetValue = searchValue - this._start;
     if (offsetValue % this._step === 0) {
       const index = offsetValue / this._step;
@@ -99,7 +110,7 @@ export class RangeImpl extends IndexedSeqImpl implements Seq.Indexed<number> {
     return -1;
   }
 
-  lastIndexOf(searchValue: number): number {
+  override lastIndexOf(searchValue: number): number {
     return this.indexOf(searchValue);
   }
 
