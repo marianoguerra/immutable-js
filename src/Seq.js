@@ -221,6 +221,19 @@ export class ArraySeq extends IndexedSeqImpl {
     return this.has(index) ? this._array[wrapIndex(this, index)] : notSetValue;
   }
 
+  __iterateUncached(fn, reverse) {
+    const array = this._array;
+    const size = array.length;
+    let i = 0;
+    while (i !== size) {
+      const ii = reverse ? size - ++i : i++;
+      if (fn(array[ii], ii, this) === false) {
+        break;
+      }
+    }
+    return i;
+  }
+
   *__iteratorUncached(reverse) {
     const array = this._array;
     const size = array.length;
@@ -257,6 +270,20 @@ class ObjectSeq extends KeyedSeqImpl {
 
   has(key) {
     return Object.hasOwn(this._object, key);
+  }
+
+  __iterateUncached(fn, reverse) {
+    const object = this._object;
+    const keys = this._keys;
+    const size = keys.length;
+    let i = 0;
+    while (i !== size) {
+      const key = keys[reverse ? size - ++i : i++];
+      if (fn(object[key], key, this) === false) {
+        break;
+      }
+    }
+    return i;
   }
 
   *__iteratorUncached(reverse) {

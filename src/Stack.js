@@ -154,6 +154,21 @@ export class StackImpl extends IndexedCollectionImpl {
     return asMutable.call(this);
   }
 
+  __iterate(fn, reverse) {
+    if (reverse) {
+      return new ArraySeq(this.toArray()).__iterate(fn, reverse);
+    }
+    let iterations = 0;
+    let node = this._head;
+    while (node) {
+      if (fn(node.value, iterations++, this) === false) {
+        break;
+      }
+      node = node.next;
+    }
+    return iterations;
+  }
+
   __iterator(reverse) {
     if (reverse) {
       return new ArraySeq(this.toArray()).__iterator(reverse);

@@ -284,6 +284,16 @@ export class CollectionImpl<K, V> implements ValueObject {
           : notSetValue;
       };
     }
+    filterSequence.__iterateUncached = function (fn: any, reverse: boolean) {
+      let iterations = 0;
+      collection.__iterate((v: any, k: any) => {
+        if (predicate.call(context, v, k, collection)) {
+          iterations++;
+          return fn(v, useKeys ? k : iterations - 1, this);
+        }
+      }, reverse);
+      return iterations;
+    };
     filterSequence.__iteratorUncached = function (reverse: boolean) {
       const iterator = collection.__iterator(reverse);
       let iterations = 0;
@@ -549,6 +559,30 @@ export class CollectionImpl<K, V> implements ValueObject {
     const collection = this;
     const useKeys = isKeyed(this);
     const flatSequence = makeSequence(collection);
+    flatSequence.__iterateUncached = function (fn: any, reverse: boolean) {
+      if (reverse) {
+        return this.cacheResult().__iterate(fn, reverse);
+      }
+      let iterations = 0;
+      let stopped = false;
+      function flatDeep(iter: any, currentDepth: number) {
+        iter.__iterate((v: any, k: any) => {
+          if ((!depth || currentDepth < (depth as number)) && isCollection(v)) {
+            flatDeep(v, currentDepth + 1);
+          } else {
+            iterations++;
+            if (fn(v, useKeys ? k : iterations - 1, flatSequence) === false) {
+              stopped = true;
+            }
+          }
+          if (stopped) {
+            return false;
+          }
+        }, reverse);
+      }
+      flatDeep(collection, 0);
+      return iterations;
+    };
     flatSequence.__iteratorUncached = function (reverse: boolean) {
       if (reverse) {
         return this.cacheResult().__iterator(reverse);
@@ -698,6 +732,22 @@ export class CollectionImpl<K, V> implements ValueObject {
     const collection = this;
     const useKeys = isKeyed(this);
     const skipSequence = makeSequence(collection);
+    skipSequence.__iterateUncached = function (fn: any, reverse: boolean) {
+      if (reverse) {
+        return this.cacheResult().__iterate(fn, reverse);
+      }
+      let skipping = true;
+      let iterations = 0;
+      collection.__iterate((v: any, k: any) => {
+        if (skipping && predicate.call(context, v, k, this)) {
+          return;
+        }
+        skipping = false;
+        iterations++;
+        return fn(v, useKeys ? k : iterations - 1, this);
+      }, reverse);
+      return iterations;
+    };
     skipSequence.__iteratorUncached = function (reverse: boolean) {
       if (reverse) {
         return this.cacheResult().__iterator(reverse);
@@ -757,6 +807,20 @@ export class CollectionImpl<K, V> implements ValueObject {
     // eslint-disable-next-line @typescript-eslint/no-this-alias -- captured for nested function expressions on the sequence object
     const collection = this;
     const takeSequence = makeSequence(collection);
+    takeSequence.__iterateUncached = function (fn: any, reverse: boolean) {
+      if (reverse) {
+        return this.cacheResult().__iterate(fn, reverse);
+      }
+      let iterations = 0;
+      collection.__iterate((v: any, k: any) => {
+        if (!predicate.call(context, v, k, this)) {
+          return false;
+        }
+        iterations++;
+        return fn(v, k, this);
+      }, reverse);
+      return iterations;
+    };
     takeSequence.__iteratorUncached = function (reverse: boolean) {
       if (reverse) {
         return this.cacheResult().__iterator(reverse);
@@ -1009,6 +1073,23 @@ export class IndexedCollectionImpl<T>
     const collection = this;
     const interposedSequence = makeSequence(collection);
     interposedSequence.size = collection.size && collection.size * 2 - 1;
+    interposedSequence.__iterateUncached = function (
+      fn: any,
+      reverse: boolean
+    ) {
+      let iterations = 0;
+      let isFirst = true;
+      collection.__iterate((v: any) => {
+        if (!isFirst) {
+          if (fn(separator, iterations++, this) === false) {
+            return false;
+          }
+        }
+        isFirst = false;
+        return fn(v, iterations++, this);
+      }, reverse);
+      return iterations;
+    };
     interposedSequence.__iteratorUncached = function (reverse: boolean) {
       const iterator = collection.__iterator(reverse);
       let iterations = 0;

@@ -113,6 +113,25 @@ export class RangeImpl extends IndexedSeqImpl implements Seq.Indexed<number> {
     return this.indexOf(searchValue);
   }
 
+  __iterateUncached(
+    fn: (value: number, key: number, iter: this) => boolean | void,
+    reverse: boolean = false
+  ): number {
+    const size = this.size;
+    const step = this._step;
+    let value = reverse ? this._start + (size - 1) * step : this._start;
+    let i = 0;
+    while (i !== size) {
+      const v = value;
+      value += reverse ? -step : step;
+      const ii = reverse ? size - ++i : i++;
+      if (fn(v, ii, this) === false) {
+        break;
+      }
+    }
+    return i;
+  }
+
   *__iteratorUncached(
     reverse: boolean = false
   ): IterableIterator<[number, number]> {

@@ -32,6 +32,9 @@ export function flipFactory(collection) {
   flipSequence.has = (key) => collection.includes(key);
   flipSequence.includes = (key) => collection.has(key);
   flipSequence.cacheResult = cacheResultThrough;
+  flipSequence.__iterate = function (fn, reverse) {
+    return collection.__iterate((v, k) => fn(k, v, this), reverse);
+  };
   flipSequence.__iteratorUncached = function (reverse) {
     const iterator = collection.__iterator(reverse);
     function* gen() {
@@ -53,6 +56,12 @@ export function mapFactory(collection, mapper, context) {
     return v === NOT_SET
       ? notSetValue
       : mapper.call(context, v, key, collection);
+  };
+  mappedSequence.__iterate = function (fn, reverse) {
+    return collection.__iterate(
+      (v, k) => fn(mapper.call(context, v, k, collection), k, this),
+      reverse
+    );
   };
   mappedSequence.__iteratorUncached = function (reverse) {
     const iterator = collection.__iterator(reverse);

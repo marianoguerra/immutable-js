@@ -216,6 +216,16 @@ export class ListImpl extends IndexedCollectionImpl {
     );
   }
 
+  __iterate(fn, reverse) {
+    let index = reverse ? this.size : 0;
+    iterateListCallback(
+      this,
+      (value) => fn(value, reverse ? --index : index++, this),
+      reverse
+    );
+    return reverse ? this.size - index : index;
+  }
+
   __iterator(reverse) {
     let index = reverse ? this.size : 0;
     const iter = iterateList(this, reverse);
@@ -399,6 +409,57 @@ function* iterateList(list, reverse) {
         level - SHIFT,
         offset + (idx << level)
       );
+    }
+  }
+}
+
+function iterateListCallback(list, fn, reverse) {
+  const left = list._origin;
+  const right = list._capacity;
+  const tailPos = getTailOffset(right);
+  const tail = list._tail;
+
+  return iterateNodeOrLeaf(list._root, list._level, 0);
+
+  function iterateNodeOrLeaf(node, level, offset) {
+    return level === 0
+      ? iterateLeaf(node, offset)
+      : iterateNode(node, level, offset);
+  }
+
+  function iterateLeaf(node, offset) {
+    const array = offset === tailPos ? tail?.array : node?.array;
+    let from = offset > left ? 0 : left - offset;
+    let to = right - offset;
+    if (to > SIZE) {
+      to = SIZE;
+    }
+    while (from !== to) {
+      const idx = reverse ? --to : from++;
+      if (fn(array?.[idx]) === false) {
+        return false;
+      }
+    }
+  }
+
+  function iterateNode(node, level, offset) {
+    const array = node?.array;
+    let from = offset > left ? 0 : (left - offset) >> level;
+    let to = ((right - offset) >> level) + 1;
+    if (to > SIZE) {
+      to = SIZE;
+    }
+    while (from !== to) {
+      const idx = reverse ? --to : from++;
+      if (
+        iterateNodeOrLeaf(
+          array?.[idx],
+          level - SHIFT,
+          offset + (idx << level)
+        ) === false
+      ) {
+        return false;
+      }
     }
   }
 }
