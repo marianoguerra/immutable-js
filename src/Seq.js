@@ -6,13 +6,11 @@ import {
 } from './Collection';
 import {
   emptyIterator,
-  getValueFromType,
   hasIterator,
   isIterator,
   getIterator,
   isEntriesIterable,
   isKeysIterable,
-  ITERATE_ENTRIES,
 } from './Iterator';
 import { wrapIndex } from './TrieUtils';
 import {
@@ -59,10 +57,7 @@ export class SeqImpl extends CollectionImpl {
 
   __iterateUncached(fn, reverse) {
     let iterations = 0;
-    for (const [key, value] of this.__iteratorUncached(
-      ITERATE_ENTRIES,
-      reverse
-    )) {
+    for (const [key, value] of this.__iteratorUncached(reverse)) {
       iterations++;
       if (fn(value, key, this) === false) {
         break;
@@ -87,22 +82,21 @@ export class SeqImpl extends CollectionImpl {
     return this.__iterateUncached(fn, reverse);
   }
 
-  // abstract __iteratorUncached(type, reverse)
+  // abstract __iteratorUncached(reverse)
 
-  __iterator(type, reverse) {
+  __iterator(reverse) {
     const cache = this._cache;
     if (cache) {
       const size = cache.length;
       let i = 0;
       function* gen() {
         while (i !== size) {
-          const [key, value] = cache[reverse ? size - ++i : i++];
-          yield getValueFromType(type, key, value);
+          yield cache[reverse ? size - ++i : i++];
         }
       }
       return gen();
     }
-    return this.__iteratorUncached(type, reverse);
+    return this.__iteratorUncached(reverse);
   }
 }
 
@@ -140,10 +134,7 @@ export class KeyedSeqImpl extends KeyedCollectionImpl {
 
   __iterateUncached(fn, reverse) {
     let iterations = 0;
-    for (const [key, value] of this.__iteratorUncached(
-      ITERATE_ENTRIES,
-      reverse
-    )) {
+    for (const [key, value] of this.__iteratorUncached(reverse)) {
       iterations++;
       if (fn(value, key, this) === false) {
         break;
@@ -168,20 +159,19 @@ export class KeyedSeqImpl extends KeyedCollectionImpl {
     return this.__iterateUncached(fn, reverse);
   }
 
-  __iterator(type, reverse) {
+  __iterator(reverse) {
     const cache = this._cache;
     if (cache) {
       const size = cache.length;
       let i = 0;
       function* gen() {
         while (i !== size) {
-          const [key, value] = cache[reverse ? size - ++i : i++];
-          yield getValueFromType(type, key, value);
+          yield cache[reverse ? size - ++i : i++];
         }
       }
       return gen();
     }
-    return this.__iteratorUncached(type, reverse);
+    return this.__iteratorUncached(reverse);
   }
 }
 
@@ -225,10 +215,7 @@ export class IndexedSeqImpl extends IndexedCollectionImpl {
 
   __iterateUncached(fn, reverse) {
     let iterations = 0;
-    for (const [key, value] of this.__iteratorUncached(
-      ITERATE_ENTRIES,
-      reverse
-    )) {
+    for (const [key, value] of this.__iteratorUncached(reverse)) {
       iterations++;
       if (fn(value, key, this) === false) {
         break;
@@ -253,20 +240,19 @@ export class IndexedSeqImpl extends IndexedCollectionImpl {
     return this.__iterateUncached(fn, reverse);
   }
 
-  __iterator(type, reverse) {
+  __iterator(reverse) {
     const cache = this._cache;
     if (cache) {
       const size = cache.length;
       let i = 0;
       function* gen() {
         while (i !== size) {
-          const [key, value] = cache[reverse ? size - ++i : i++];
-          yield getValueFromType(type, key, value);
+          yield cache[reverse ? size - ++i : i++];
         }
       }
       return gen();
     }
-    return this.__iteratorUncached(type, reverse);
+    return this.__iteratorUncached(reverse);
   }
 }
 export const SetSeq = (value) =>
@@ -301,10 +287,7 @@ export class SetSeqImpl extends SetCollectionImpl {
 
   __iterateUncached(fn, reverse) {
     let iterations = 0;
-    for (const [key, value] of this.__iteratorUncached(
-      ITERATE_ENTRIES,
-      reverse
-    )) {
+    for (const [key, value] of this.__iteratorUncached(reverse)) {
       iterations++;
       if (fn(value, key, this) === false) {
         break;
@@ -329,20 +312,19 @@ export class SetSeqImpl extends SetCollectionImpl {
     return this.__iterateUncached(fn, reverse);
   }
 
-  __iterator(type, reverse) {
+  __iterator(reverse) {
     const cache = this._cache;
     if (cache) {
       const size = cache.length;
       let i = 0;
       function* gen() {
         while (i !== size) {
-          const [key, value] = cache[reverse ? size - ++i : i++];
-          yield getValueFromType(type, key, value);
+          yield cache[reverse ? size - ++i : i++];
         }
       }
       return gen();
     }
-    return this.__iteratorUncached(type, reverse);
+    return this.__iteratorUncached(reverse);
   }
 }
 
@@ -375,14 +357,14 @@ export class ArraySeq extends IndexedSeqImpl {
     return i;
   }
 
-  __iterator(type, reverse) {
+  __iterator(reverse) {
     const array = this._array;
     const size = array.length;
     let i = 0;
     function* gen() {
       while (i !== size) {
         const ii = reverse ? size - ++i : i++;
-        yield getValueFromType(type, ii, array[ii]);
+        yield [ii, array[ii]];
       }
     }
     return gen();
@@ -430,7 +412,7 @@ class ObjectSeq extends KeyedSeqImpl {
     return i;
   }
 
-  __iterator(type, reverse) {
+  __iterator(reverse) {
     const object = this._object;
     const keys = this._keys;
     const size = keys.length;
@@ -438,7 +420,7 @@ class ObjectSeq extends KeyedSeqImpl {
     function* gen() {
       while (i !== size) {
         const key = keys[reverse ? size - ++i : i++];
-        yield getValueFromType(type, key, object[key]);
+        yield [key, object[key]];
       }
     }
     return gen();
@@ -470,9 +452,9 @@ class CollectionSeq extends IndexedSeqImpl {
     return iterations;
   }
 
-  __iteratorUncached(type, reverse) {
+  __iteratorUncached(reverse) {
     if (reverse) {
-      return this.cacheResult().__iterator(type, reverse);
+      return this.cacheResult().__iterator(reverse);
     }
     const collection = this._collection;
     const iterator = getIterator(collection);
@@ -482,7 +464,7 @@ class CollectionSeq extends IndexedSeqImpl {
     let iterations = 0;
     function* gen() {
       for (const value of iterator) {
-        yield getValueFromType(type, iterations++, value);
+        yield [iterations++, value];
       }
     }
     return gen();

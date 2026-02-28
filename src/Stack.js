@@ -1,5 +1,4 @@
 import { IndexedCollection, IndexedCollectionImpl } from './Collection';
-import { getValueFromType } from './Iterator';
 import { ArraySeq } from './Seq';
 import { wholeSlice, resolveBegin, resolveEnd, wrapIndex } from './TrieUtils';
 import { asImmutable, asMutable, wasAltered, withMutations } from './methods';
@@ -173,9 +172,9 @@ export class StackImpl extends IndexedCollectionImpl {
     return asMutable.call(this);
   }
 
-  __iterator(type, reverse) {
+  __iterator(reverse) {
     if (reverse) {
-      return new ArraySeq(this.toArray()).__iterator(type, reverse);
+      return new ArraySeq(this.toArray()).__iterator(reverse);
     }
     let iterations = 0;
     let node = this._head;
@@ -183,7 +182,7 @@ export class StackImpl extends IndexedCollectionImpl {
       while (node) {
         const { value, next } = node;
         node = next;
-        yield getValueFromType(type, iterations++, value);
+        yield [iterations++, value];
       }
     }
     return gen();

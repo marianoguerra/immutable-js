@@ -1,6 +1,6 @@
 import { Collection, KeyedCollection, KeyedCollectionImpl } from './Collection';
 import { hash } from './Hash';
-import { emptyIterator, getValueFromType } from './Iterator';
+import { emptyIterator } from './Iterator';
 import { sortFactory } from './Operations';
 import { OrderedMap } from './OrderedMap';
 import {
@@ -173,11 +173,11 @@ export class MapImpl extends KeyedCollectionImpl {
     return asMutable.call(this);
   }
 
-  __iterator(type, reverse) {
+  __iterator(reverse) {
     if (!this._root) {
       return emptyIterator();
     }
-    return mapIteratorGenerator(this._root, type, reverse);
+    return mapIteratorGenerator(this._root, reverse);
   }
 
   __iterate(fn, reverse) {
@@ -574,21 +574,20 @@ function iterateNodeArray(nodes, fn, reverse) {
   }
 }
 
-function* mapIteratorGenerator(node, type, reverse) {
+function* mapIteratorGenerator(node, reverse) {
   if (node.entry) {
-    yield getValueFromType(type, node.entry[0], node.entry[1]);
+    yield node.entry;
   } else if (node.entries) {
     const len = node.entries.length;
     for (let i = 0; i < len; i++) {
-      const entry = node.entries[reverse ? len - 1 - i : i];
-      yield getValueFromType(type, entry[0], entry[1]);
+      yield node.entries[reverse ? len - 1 - i : i];
     }
   } else if (node.nodes) {
     const len = node.nodes.length;
     for (let i = 0; i < len; i++) {
       const subNode = node.nodes[reverse ? len - 1 - i : i];
       if (subNode) {
-        yield* mapIteratorGenerator(subNode, type, reverse);
+        yield* mapIteratorGenerator(subNode, reverse);
       }
     }
   }

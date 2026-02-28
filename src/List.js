@@ -1,5 +1,5 @@
 import { IndexedCollectionImpl, IndexedCollection } from './Collection';
-import { hasIterator, getValueFromType } from './Iterator';
+import { hasIterator } from './Iterator';
 import {
   DELETE,
   SHIFT,
@@ -216,12 +216,12 @@ export class ListImpl extends IndexedCollectionImpl {
     );
   }
 
-  __iterator(type, reverse) {
+  __iterator(reverse) {
     let index = reverse ? this.size : 0;
     const iter = iterateList(this, reverse);
     function* gen() {
       for (const value of iter) {
-        yield getValueFromType(type, reverse ? --index : index++, value);
+        yield [reverse ? --index : index++, value];
       }
     }
     return gen();

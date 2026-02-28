@@ -1,4 +1,3 @@
-import { getValueFromType } from './Iterator';
 import { IndexedSeqImpl } from './Seq';
 import { wholeSlice, resolveBegin, resolveEnd } from './TrieUtils';
 import { is } from './is';
@@ -75,13 +74,13 @@ export class RepeatImpl extends IndexedSeqImpl {
     return i;
   }
 
-  __iterator(type, reverse) {
+  __iterator(reverse) {
     const size = this.size;
     let i = 0;
     const value = this._value;
     function* gen() {
       while (i !== size) {
-        yield getValueFromType(type, reverse ? size - ++i : i++, value);
+        yield [reverse ? size - ++i : i++, value];
       }
     }
     return gen();

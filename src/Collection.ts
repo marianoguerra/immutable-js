@@ -7,12 +7,6 @@ import {
   not,
   reduce,
 } from './CollectionHelperMethods';
-import {
-  ITERATE_ENTRIES,
-  ITERATE_KEYS,
-  ITERATE_VALUES,
-  type IteratorType,
-} from './Iterator';
 import { ArraySeq, IndexedSeq, KeyedSeq, Seq, SetSeq } from './Seq';
 import {
   ensureSize,
@@ -195,7 +189,7 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   entries() {
-    return this.__iterator(ITERATE_ENTRIES);
+    return this.__iterator();
   }
 
   filter(
@@ -248,8 +242,10 @@ export class CollectionImpl<K, V> implements ValueObject {
     return joined;
   }
 
-  keys() {
-    return this.__iterator(ITERATE_KEYS);
+  *keys() {
+    for (const [k] of this.__iterator()) {
+      yield k;
+    }
   }
 
   map(mapper: (value: V, key: K, iter: this) => V, context?: unknown) {
@@ -313,8 +309,10 @@ export class CollectionImpl<K, V> implements ValueObject {
     return reify(this, _late.sortFactory(this, comparator));
   }
 
-  values() {
-    return this.__iterator(ITERATE_VALUES);
+  *values() {
+    for (const [, v] of this.__iterator()) {
+      yield v;
+    }
   }
 
   // ### More sequential methods
@@ -607,7 +605,7 @@ export class CollectionImpl<K, V> implements ValueObject {
     return this.toIndexedSeq();
   }
 
-  declare [Symbol.iterator]: () => IterableIterator<K | V | [K, V]>;
+  declare [Symbol.iterator]: () => IterableIterator<V>;
   declare toJSON: () => unknown;
 
   // ### Internal
@@ -629,10 +627,9 @@ export class CollectionImpl<K, V> implements ValueObject {
     );
   }
 
-  __iterator(
-    type: IteratorType,
-    _reverse: boolean = false
-  ): IterableIterator<K | V | [K, V]> {
+  // Always yields [K, V] entries. Subclasses override in .js files where
+  // TypeScript can't enforce the tuple shape, so we keep `any` here.
+  __iterator(_reverse: boolean = false): IterableIterator<any> {
     throw new Error(
       'CollectionImpl does not implement __iterator. Use a subclass instead.'
     );

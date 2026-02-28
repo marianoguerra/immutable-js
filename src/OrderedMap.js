@@ -71,8 +71,8 @@ export class OrderedMapImpl extends MapImpl {
     );
   }
 
-  __iterator(type, reverse) {
-    return this._list.fromEntrySeq().__iterator(type, reverse);
+  __iterator(reverse) {
+    return this._list.fromEntrySeq().__iterator(reverse);
   }
 
   __ensureOwner(ownerID) {

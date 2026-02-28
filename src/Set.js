@@ -147,8 +147,8 @@ export class SetImpl extends SetCollectionImpl {
     return this._map.__iterate((k) => fn(k, k, this), reverse);
   }
 
-  __iterator(type, reverse) {
-    return this._map.__iterator(type, reverse);
+  __iterator(reverse) {
+    return this._map.__iterator(reverse);
   }
 
   // methods.js wrappers

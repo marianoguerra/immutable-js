@@ -1,5 +1,5 @@
 import { KeyedCollection } from './Collection';
-import { ITERATE_ENTRIES } from './Iterator';
+
 import { List } from './List';
 import { keyedSeqFromValue } from './Seq';
 import { DELETE } from './TrieUtils';
@@ -177,7 +177,7 @@ export class RecordImpl {
   }
 
   entries() {
-    return this.__iterator(ITERATE_ENTRIES);
+    return this.__iterator();
   }
 
   // methods.js wrappers
@@ -230,8 +230,8 @@ export class RecordImpl {
     return toObject.call(this);
   }
 
-  __iterator(type, reverse) {
-    return recordSeq(this).__iterator(type, reverse);
+  __iterator(reverse) {
+    return recordSeq(this).__iterator(reverse);
   }
 
   __iterate(fn, reverse) {
