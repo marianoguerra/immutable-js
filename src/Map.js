@@ -173,6 +173,20 @@ export class MapImpl extends KeyedCollectionImpl {
     return asMutable.call(this);
   }
 
+  keys() {
+    if (!this._root) {
+      return emptyIterator();
+    }
+    return mapIteratorGenerator(this._root, false, 0);
+  }
+
+  values() {
+    if (!this._root) {
+      return emptyIterator();
+    }
+    return mapIteratorGenerator(this._root, false, 1);
+  }
+
   __iterator(reverse) {
     if (!this._root) {
       return emptyIterator();
@@ -579,11 +593,14 @@ const ITER_ENTRY = 0;
 const ITER_ENTRIES = 1;
 const ITER_NODES = 2;
 
-function mapIteratorGenerator(node, reverse) {
+function mapIteratorGenerator(node, reverse, entryIndex) {
   // Explicit stack replaces recursive yield*.
   // Each frame: { type, data, index, len }
   const stack = [];
   pushNode(node);
+
+  const extractValue =
+    entryIndex !== undefined ? (entry) => entry[entryIndex] : (entry) => entry;
 
   const result = { done: false, value: undefined };
   return makeIterator(() => {
@@ -592,7 +609,7 @@ function mapIteratorGenerator(node, reverse) {
 
       if (frame.type === ITER_ENTRY) {
         stack.pop();
-        result.value = frame.data;
+        result.value = extractValue(frame.data);
         return result;
       }
 
@@ -605,13 +622,18 @@ function mapIteratorGenerator(node, reverse) {
       frame.index++;
 
       if (frame.type === ITER_ENTRIES) {
-        result.value = frame.data[idx];
+        result.value = extractValue(frame.data[idx]);
         return result;
       }
 
       // ITER_NODES
       const subNode = frame.data[idx];
       if (subNode) {
+        if (subNode.entry) {
+          // ValueNode shortcut: yield directly without creating a frame
+          result.value = extractValue(subNode.entry);
+          return result;
+        }
         pushNode(subNode);
       }
     }
