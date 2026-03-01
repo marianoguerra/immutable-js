@@ -3,6 +3,7 @@ import { makeEntryIterator } from './Iterator';
 import { emptyList } from './List';
 import { MapImpl, emptyMap } from './Map';
 import { DELETE, NOT_SET, SIZE } from './TrieUtils';
+import { mixin } from './methods';
 import { IS_ORDERED_SYMBOL, isOrderedMap } from './predicates';
 import { assertNotInfinite } from './utils/assertions';
 
@@ -19,10 +20,12 @@ export const OrderedMap = (value) =>
 OrderedMap.of = (...values) => OrderedMap(values);
 export class OrderedMapImpl extends MapImpl {
   static {
-    this.prototype[IS_ORDERED_SYMBOL] = true;
-    this.prototype[DELETE] = this.prototype.remove;
-    this.prototype[Symbol.iterator] = this.prototype.entries;
-    this.prototype[Symbol.toStringTag] = 'Immutable.OrderedMap';
+    mixin(this, {
+      [IS_ORDERED_SYMBOL]: true,
+      [DELETE]: this.prototype.remove,
+      [Symbol.iterator]: this.prototype.entries,
+      [Symbol.toStringTag]: 'Immutable.OrderedMap',
+    });
   }
 
   constructor(map, list, ownerID, hash) {

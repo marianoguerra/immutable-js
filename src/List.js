@@ -73,13 +73,13 @@ export class ListImpl extends IndexedCollectionImpl {
       updateIn,
       wasAltered,
       withMutations,
+      removeIn: deleteIn,
+      [IS_LIST_SYMBOL]: true,
+      [DELETE]: this.prototype.remove,
+      merge: this.prototype.concat,
+      [Symbol.toStringTag]: 'Immutable.List',
+      [Symbol.iterator]: this.prototype.values,
     });
-    this.prototype[IS_LIST_SYMBOL] = true;
-    this.prototype[DELETE] = this.prototype.remove;
-    this.prototype.merge = this.prototype.concat;
-    this.prototype.removeIn = this.prototype.deleteIn;
-    this.prototype[Symbol.toStringTag] = 'Immutable.List';
-    this.prototype[Symbol.iterator] = this.prototype.values;
   }
 
   constructor(origin, capacity, level, root, tail, ownerID, hash) {

@@ -120,13 +120,13 @@ export class RecordImpl {
       update,
       updateIn,
       withMutations,
+      removeIn: deleteIn,
+      toJSON: toObject,
+      [IS_RECORD_SYMBOL]: true,
+      [DELETE]: this.prototype.remove,
+      [Symbol.iterator]: this.prototype.entries,
+      [Symbol.toStringTag]: 'Immutable.Record',
     });
-    this.prototype[IS_RECORD_SYMBOL] = true;
-    this.prototype[DELETE] = this.prototype.remove;
-    this.prototype.removeIn = this.prototype.deleteIn;
-    this.prototype[Symbol.iterator] = this.prototype.entries;
-    this.prototype[Symbol.toStringTag] = 'Immutable.Record';
-    this.prototype.toJSON = this.prototype.toObject;
   }
 
   toString() {

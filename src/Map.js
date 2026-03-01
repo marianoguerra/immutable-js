@@ -62,14 +62,14 @@ export class MapImpl extends KeyedCollectionImpl {
       updateIn,
       wasAltered,
       withMutations,
+      removeIn: deleteIn,
+      concat: merge,
+      [IS_MAP_SYMBOL]: true,
+      [DELETE]: this.prototype.remove,
+      removeAll: this.prototype.deleteAll,
+      [Symbol.iterator]: this.prototype.entries,
+      [Symbol.toStringTag]: 'Immutable.Map',
     });
-    this.prototype[IS_MAP_SYMBOL] = true;
-    this.prototype[DELETE] = this.prototype.remove;
-    this.prototype.removeAll = this.prototype.deleteAll;
-    this.prototype.removeIn = this.prototype.deleteIn;
-    this.prototype.concat = this.prototype.merge;
-    this.prototype[Symbol.iterator] = this.prototype.entries;
-    this.prototype[Symbol.toStringTag] = 'Immutable.Map';
   }
 
   constructor(size, root, ownerID, hash) {

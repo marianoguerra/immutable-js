@@ -28,13 +28,18 @@ Stack.of = (...values) => Stack(values);
 
 export class StackImpl extends IndexedCollectionImpl {
   static {
-    mixin(this, { asImmutable, asMutable, wasAltered, withMutations });
-    this.prototype[IS_STACK_SYMBOL] = true;
-    this.prototype.shift = this.prototype.pop;
-    this.prototype.unshift = this.prototype.push;
-    this.prototype.unshiftAll = this.prototype.pushAll;
-    this.prototype[Symbol.toStringTag] = 'Immutable.Stack';
-    this.prototype[Symbol.iterator] = this.prototype.values;
+    mixin(this, {
+      asImmutable,
+      asMutable,
+      wasAltered,
+      withMutations,
+      [IS_STACK_SYMBOL]: true,
+      shift: this.prototype.pop,
+      unshift: this.prototype.push,
+      unshiftAll: this.prototype.pushAll,
+      [Symbol.toStringTag]: 'Immutable.Stack',
+      [Symbol.iterator]: this.prototype.values,
+    });
   }
 
   constructor(size, head, ownerID, hash) {

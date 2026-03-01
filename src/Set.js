@@ -39,11 +39,16 @@ Set.union = (sets) => {
 
 export class SetImpl extends SetCollectionImpl {
   static {
-    mixin(this, { withMutations, asImmutable, asMutable });
-    this.prototype[IS_SET_SYMBOL] = true;
-    this.prototype[DELETE] = this.prototype.remove;
-    this.prototype.merge = this.prototype.concat = this.prototype.union;
-    this.prototype[Symbol.toStringTag] = 'Immutable.Set';
+    mixin(this, {
+      withMutations,
+      asImmutable,
+      asMutable,
+      [IS_SET_SYMBOL]: true,
+      [DELETE]: this.prototype.remove,
+      merge: this.prototype.union,
+      concat: this.prototype.union,
+      [Symbol.toStringTag]: 'Immutable.Set',
+    });
   }
 
   constructor(map, ownerID) {

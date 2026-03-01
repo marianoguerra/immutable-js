@@ -5,6 +5,7 @@ import {
 } from './Collection';
 import { emptyOrderedMap } from './OrderedMap';
 import { SetImpl } from './Set';
+import { mixin } from './methods';
 import { IS_ORDERED_SYMBOL, isOrderedSet } from './predicates';
 import { assertNotInfinite } from './utils/assertions';
 
@@ -24,11 +25,13 @@ OrderedSet.of = (...values) => OrderedSet(values);
 OrderedSet.fromKeys = (value) => OrderedSet(KeyedCollection(value).keySeq());
 export class OrderedSetImpl extends SetImpl {
   static {
-    this.prototype[IS_ORDERED_SYMBOL] = true;
-    this.prototype[Symbol.toStringTag] = 'Immutable.OrderedSet';
-    this.prototype.zip = IndexedCollectionPrototype.zip;
-    this.prototype.zipWith = IndexedCollectionPrototype.zipWith;
-    this.prototype.zipAll = IndexedCollectionPrototype.zipAll;
+    mixin(this, {
+      [IS_ORDERED_SYMBOL]: true,
+      [Symbol.toStringTag]: 'Immutable.OrderedSet',
+      zip: IndexedCollectionPrototype.zip,
+      zipWith: IndexedCollectionPrototype.zipWith,
+      zipAll: IndexedCollectionPrototype.zipAll,
+    });
   }
 
   create(value) {
