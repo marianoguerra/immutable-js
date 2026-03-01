@@ -48,6 +48,7 @@ export default [
               preamble: copyright,
               beautify: true,
               indent_level: 2,
+              ecma: 2020,
             },
           }),
           collapseBlankLines(),
