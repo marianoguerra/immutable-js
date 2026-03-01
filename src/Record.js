@@ -4,6 +4,7 @@ import { List } from './List';
 import { keyedSeqFromValue } from './Seq';
 import { DELETE } from './TrieUtils';
 import {
+  mixin,
   asImmutable,
   asMutable,
   deleteIn,
@@ -102,6 +103,24 @@ export const Record = (defaultValues, name) => {
 
 export class RecordImpl {
   static {
+    mixin(this, {
+      asImmutable,
+      asMutable,
+      deleteIn,
+      getIn,
+      hasIn,
+      merge,
+      mergeWith,
+      mergeDeep,
+      mergeDeepWith,
+      mergeDeepIn,
+      mergeIn,
+      setIn,
+      toObject,
+      update,
+      updateIn,
+      withMutations,
+    });
     this.prototype[IS_RECORD_SYMBOL] = true;
     this.prototype[DELETE] = this.prototype.remove;
     this.prototype.removeIn = this.prototype.deleteIn;
@@ -178,56 +197,6 @@ export class RecordImpl {
 
   entries() {
     return this.__iterator();
-  }
-
-  // methods.js wrappers
-  deleteIn(keyPath) {
-    return deleteIn.call(this, keyPath);
-  }
-  getIn(searchKeyPath, notSetValue) {
-    return getIn.call(this, searchKeyPath, notSetValue);
-  }
-  hasIn(searchKeyPath) {
-    return hasIn.call(this, searchKeyPath);
-  }
-  merge(...iters) {
-    return merge.call(this, ...iters);
-  }
-  mergeWith(merger, ...iters) {
-    return mergeWith.call(this, merger, ...iters);
-  }
-  mergeIn(keyPath, ...iters) {
-    return mergeIn.call(this, keyPath, ...iters);
-  }
-  mergeDeep(...iters) {
-    return mergeDeep.call(this, ...iters);
-  }
-  mergeDeepWith(merger, ...iters) {
-    return mergeDeepWith.call(this, merger, ...iters);
-  }
-  mergeDeepIn(keyPath, ...iters) {
-    return mergeDeepIn.call(this, keyPath, ...iters);
-  }
-  setIn(keyPath, v) {
-    return setIn.call(this, keyPath, v);
-  }
-  update(key, notSetValue, updater) {
-    return update.call(this, key, notSetValue, updater);
-  }
-  updateIn(keyPath, notSetValue, updater) {
-    return updateIn.call(this, keyPath, notSetValue, updater);
-  }
-  withMutations(fn) {
-    return withMutations.call(this, fn);
-  }
-  asMutable() {
-    return asMutable.call(this);
-  }
-  asImmutable() {
-    return asImmutable.call(this);
-  }
-  toObject() {
-    return toObject.call(this);
   }
 
   __iterate(fn, reverse) {

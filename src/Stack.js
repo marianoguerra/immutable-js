@@ -7,7 +7,13 @@ import {
 } from './Iterator';
 import { ArraySeq } from './Seq';
 import { wholeSlice, resolveBegin, resolveEnd, wrapIndex } from './TrieUtils';
-import { asImmutable, asMutable, wasAltered, withMutations } from './methods';
+import {
+  mixin,
+  asImmutable,
+  asMutable,
+  wasAltered,
+  withMutations,
+} from './methods';
 import { IS_STACK_SYMBOL, isStack } from './predicates';
 import { assertNotInfinite } from './utils/assertions';
 
@@ -22,6 +28,7 @@ Stack.of = (...values) => Stack(values);
 
 export class StackImpl extends IndexedCollectionImpl {
   static {
+    mixin(this, { asImmutable, asMutable, wasAltered, withMutations });
     this.prototype[IS_STACK_SYMBOL] = true;
     this.prototype.shift = this.prototype.pop;
     this.prototype.unshift = this.prototype.push;
@@ -145,20 +152,6 @@ export class StackImpl extends IndexedCollectionImpl {
       return this;
     }
     return makeStack(this.size, this._head, ownerID, this.__hash);
-  }
-
-  // methods.js wrappers
-  withMutations(fn) {
-    return withMutations.call(this, fn);
-  }
-  wasAltered() {
-    return wasAltered.call(this);
-  }
-  asImmutable() {
-    return asImmutable.call(this);
-  }
-  asMutable() {
-    return asMutable.call(this);
   }
 
   __iterate(fn, reverse) {

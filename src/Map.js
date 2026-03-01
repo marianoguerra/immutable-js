@@ -15,6 +15,7 @@ import {
 } from './TrieUtils';
 import { is } from './is';
 import {
+  mixin,
   asImmutable,
   asMutable,
   deleteIn,
@@ -46,6 +47,22 @@ export const Map = (value) =>
 
 export class MapImpl extends KeyedCollectionImpl {
   static {
+    mixin(this, {
+      asImmutable,
+      asMutable,
+      deleteIn,
+      merge,
+      mergeWith,
+      mergeDeep,
+      mergeDeepWith,
+      mergeDeepIn,
+      mergeIn,
+      setIn,
+      update,
+      updateIn,
+      wasAltered,
+      withMutations,
+    });
     this.prototype[IS_MAP_SYMBOL] = true;
     this.prototype[DELETE] = this.prototype.remove;
     this.prototype.removeAll = this.prototype.deleteAll;
@@ -127,50 +144,6 @@ export class MapImpl extends KeyedCollectionImpl {
         map.set(key, mapper.call(context, value, key, this));
       });
     });
-  }
-
-  // methods.js wrappers
-  setIn(keyPath, v) {
-    return setIn.call(this, keyPath, v);
-  }
-  deleteIn(keyPath) {
-    return deleteIn.call(this, keyPath);
-  }
-  update(key, notSetValue, updater) {
-    return update.call(this, key, notSetValue, updater);
-  }
-  updateIn(keyPath, notSetValue, updater) {
-    return updateIn.call(this, keyPath, notSetValue, updater);
-  }
-  merge(...iters) {
-    return merge.call(this, ...iters);
-  }
-  mergeWith(merger, ...iters) {
-    return mergeWith.call(this, merger, ...iters);
-  }
-  mergeDeep(...iters) {
-    return mergeDeep.call(this, ...iters);
-  }
-  mergeDeepWith(merger, ...iters) {
-    return mergeDeepWith.call(this, merger, ...iters);
-  }
-  mergeIn(keyPath, ...iters) {
-    return mergeIn.call(this, keyPath, ...iters);
-  }
-  mergeDeepIn(keyPath, ...iters) {
-    return mergeDeepIn.call(this, keyPath, ...iters);
-  }
-  withMutations(fn) {
-    return withMutations.call(this, fn);
-  }
-  wasAltered() {
-    return wasAltered.call(this);
-  }
-  asImmutable() {
-    return asImmutable.call(this);
-  }
-  asMutable() {
-    return asMutable.call(this);
   }
 
   keys() {

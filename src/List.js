@@ -20,6 +20,7 @@ import {
   resolveEnd,
 } from './TrieUtils';
 import {
+  mixin,
   asImmutable,
   asMutable,
   deleteIn,
@@ -61,6 +62,18 @@ List.of = (...values) => List(values);
 
 export class ListImpl extends IndexedCollectionImpl {
   static {
+    mixin(this, {
+      asImmutable,
+      asMutable,
+      deleteIn,
+      mergeDeepIn,
+      mergeIn,
+      setIn,
+      update,
+      updateIn,
+      wasAltered,
+      withMutations,
+    });
     this.prototype[IS_LIST_SYMBOL] = true;
     this.prototype[DELETE] = this.prototype.remove;
     this.prototype.merge = this.prototype.concat;
@@ -253,38 +266,6 @@ export class ListImpl extends IndexedCollectionImpl {
 
   keys() {
     return makeIndexKeys(this.size);
-  }
-
-  // methods.js wrappers
-  setIn(keyPath, v) {
-    return setIn.call(this, keyPath, v);
-  }
-  deleteIn(keyPath) {
-    return deleteIn.call(this, keyPath);
-  }
-  update(key, notSetValue, updater) {
-    return update.call(this, key, notSetValue, updater);
-  }
-  updateIn(keyPath, notSetValue, updater) {
-    return updateIn.call(this, keyPath, notSetValue, updater);
-  }
-  mergeIn(keyPath, ...iters) {
-    return mergeIn.call(this, keyPath, ...iters);
-  }
-  mergeDeepIn(keyPath, ...iters) {
-    return mergeDeepIn.call(this, keyPath, ...iters);
-  }
-  withMutations(fn) {
-    return withMutations.call(this, fn);
-  }
-  wasAltered() {
-    return wasAltered.call(this);
-  }
-  asImmutable() {
-    return asImmutable.call(this);
-  }
-  asMutable() {
-    return asMutable.call(this);
   }
 
   __ensureOwner(ownerID) {

@@ -130,3 +130,7 @@ export function mergeDeepIn(keyPath, ...iters) {
     mergeDeepWithSources(m, iters)
   );
 }
+
+export function mixin(Class, methods) {
+  Object.assign(Class.prototype, methods);
+}

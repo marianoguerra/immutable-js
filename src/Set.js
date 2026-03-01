@@ -8,7 +8,7 @@ import { emptyMap } from './Map';
 import { sortFactory } from './Operations';
 import { OrderedSet } from './OrderedSet';
 import { DELETE } from './TrieUtils';
-import { asImmutable, asMutable, withMutations } from './methods';
+import { mixin, withMutations, asImmutable, asMutable } from './methods';
 import { IS_SET_SYMBOL, isOrdered, isSet } from './predicates';
 import { assertNotInfinite } from './utils/assertions';
 
@@ -39,6 +39,7 @@ Set.union = (sets) => {
 
 export class SetImpl extends SetCollectionImpl {
   static {
+    mixin(this, { withMutations, asImmutable, asMutable });
     this.prototype[IS_SET_SYMBOL] = true;
     this.prototype[DELETE] = this.prototype.remove;
     this.prototype.merge = this.prototype.concat = this.prototype.union;
@@ -145,17 +146,6 @@ export class SetImpl extends SetCollectionImpl {
 
   __iterator(reverse) {
     return this._map.__iterator(reverse);
-  }
-
-  // methods.js wrappers
-  withMutations(fn) {
-    return withMutations.call(this, fn);
-  }
-  asImmutable() {
-    return asImmutable.call(this);
-  }
-  asMutable() {
-    return asMutable.call(this);
   }
 
   __empty() {

@@ -120,6 +120,13 @@ export class SeqImpl extends CollectionImpl {
   }
 }
 
+const seqMixin = {
+  cacheResult: SeqImpl.prototype.cacheResult,
+  __iterateUncached: SeqImpl.prototype.__iterateUncached,
+  __iterate: SeqImpl.prototype.__iterate,
+  __iterator: SeqImpl.prototype.__iterator,
+};
+
 export const KeyedSeq = (value) =>
   value === undefined || value === null
     ? emptySequence().toKeyedSeq()
@@ -133,12 +140,7 @@ export const KeyedSeq = (value) =>
 export class KeyedSeqImpl extends KeyedCollectionImpl {
   static {
     this.prototype[IS_SEQ_SYMBOL] = true;
-    Object.assign(this.prototype, {
-      cacheResult: SeqImpl.prototype.cacheResult,
-      __iterateUncached: SeqImpl.prototype.__iterateUncached,
-      __iterate: SeqImpl.prototype.__iterate,
-      __iterator: SeqImpl.prototype.__iterator,
-    });
+    Object.assign(this.prototype, seqMixin);
   }
 
   toSeq() {
@@ -165,12 +167,7 @@ IndexedSeq.of = (...values) => IndexedSeq(values);
 export class IndexedSeqImpl extends IndexedCollectionImpl {
   static {
     this.prototype[IS_SEQ_SYMBOL] = true;
-    Object.assign(this.prototype, {
-      cacheResult: SeqImpl.prototype.cacheResult,
-      __iterateUncached: SeqImpl.prototype.__iterateUncached,
-      __iterate: SeqImpl.prototype.__iterate,
-      __iterator: SeqImpl.prototype.__iterator,
-    });
+    Object.assign(this.prototype, seqMixin);
   }
 
   toSeq() {
@@ -196,12 +193,7 @@ SetSeq.of = (...values) => SetSeq(values);
 export class SetSeqImpl extends SetCollectionImpl {
   static {
     this.prototype[IS_SEQ_SYMBOL] = true;
-    Object.assign(this.prototype, {
-      cacheResult: SeqImpl.prototype.cacheResult,
-      __iterateUncached: SeqImpl.prototype.__iterateUncached,
-      __iterate: SeqImpl.prototype.__iterate,
-      __iterator: SeqImpl.prototype.__iterator,
-    });
+    Object.assign(this.prototype, seqMixin);
   }
 
   toSeq() {
