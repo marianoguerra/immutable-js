@@ -588,77 +588,51 @@ function iterateNodeArray(nodes, fn, reverse) {
   }
 }
 
-// Numeric constants for HAMT iterator frame types (faster than string comparison)
-const ITER_ENTRY = 0;
-const ITER_ENTRIES = 1;
-const ITER_NODES = 2;
-
 function mapIteratorGenerator(node, reverse, entryIndex) {
-  // Explicit stack replaces recursive yield*.
-  // Each frame: { type, data, index, len }
-  const stack = [];
-  pushNode(node);
+  let stack = { node, index: 0, __prev: null };
 
   const extractValue =
     entryIndex !== undefined ? (entry) => entry[entryIndex] : (entry) => entry;
 
   const result = { done: false, value: undefined };
   return makeIterator(() => {
-    while (stack.length > 0) {
-      const frame = stack[stack.length - 1];
+    while (stack) {
+      const node = stack.node;
+      const index = stack.index++;
+      let maxIndex;
 
-      if (frame.type === ITER_ENTRY) {
-        stack.pop();
-        result.value = extractValue(frame.data);
-        return result;
-      }
-
-      if (frame.index >= frame.len) {
-        stack.pop();
-        continue;
-      }
-
-      const idx = reverse ? frame.len - 1 - frame.index : frame.index;
-      frame.index++;
-
-      if (frame.type === ITER_ENTRIES) {
-        result.value = extractValue(frame.data[idx]);
-        return result;
-      }
-
-      // ITER_NODES
-      const subNode = frame.data[idx];
-      if (subNode) {
-        if (subNode.entry) {
-          // ValueNode shortcut: yield directly without creating a frame
-          result.value = extractValue(subNode.entry);
+      if (node.entry) {
+        if (index === 0) {
+          result.value = extractValue(node.entry);
           return result;
         }
-        pushNode(subNode);
+      } else if (node.entries) {
+        maxIndex = node.entries.length - 1;
+        if (index <= maxIndex) {
+          result.value = extractValue(
+            node.entries[reverse ? maxIndex - index : index]
+          );
+          return result;
+        }
+      } else {
+        maxIndex = node.nodes.length - 1;
+        if (index <= maxIndex) {
+          const subNode = node.nodes[reverse ? maxIndex - index : index];
+          if (subNode) {
+            if (subNode.entry) {
+              // ValueNode shortcut: yield directly without pushing a frame
+              result.value = extractValue(subNode.entry);
+              return result;
+            }
+            stack = { node: subNode, index: 0, __prev: stack };
+          }
+          continue;
+        }
       }
+      stack = stack.__prev;
     }
     return DONE;
   });
-
-  function pushNode(n) {
-    if (n.entry) {
-      stack.push({ type: ITER_ENTRY, data: n.entry, index: 0, len: 0 });
-    } else if (n.entries) {
-      stack.push({
-        type: ITER_ENTRIES,
-        data: n.entries,
-        index: 0,
-        len: n.entries.length,
-      });
-    } else if (n.nodes) {
-      stack.push({
-        type: ITER_NODES,
-        data: n.nodes,
-        index: 0,
-        len: n.nodes.length,
-      });
-    }
-  }
 }
 
 const makeMap = (size, root, ownerID, hash) =>
