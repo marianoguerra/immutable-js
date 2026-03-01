@@ -1,4 +1,5 @@
 import { CollectionImpl, KeyedCollection } from './Collection';
+import { makeEntryIterator } from './Iterator';
 import { emptyList } from './List';
 import { MapImpl, emptyMap } from './Map';
 import { DELETE, NOT_SET, SIZE } from './TrieUtils';
@@ -69,12 +70,22 @@ export class OrderedMapImpl extends MapImpl {
     return CollectionImpl.prototype.__iterate.call(this, fn, reverse);
   }
 
-  *__iterator(reverse) {
-    for (const [, entry] of this._list.__iterator(reverse)) {
-      if (entry) {
-        yield [entry[0], entry[1]];
+  __iterator(reverse) {
+    const listIter = this._list.__iterator(reverse);
+    return makeEntryIterator((entry) => {
+      while (true) {
+        const step = listIter.next();
+        if (step.done) {
+          return false;
+        }
+        const e = step.value[1];
+        if (e) {
+          entry[0] = e[0];
+          entry[1] = e[1];
+          return true;
+        }
       }
-    }
+    });
   }
 
   __ensureOwner(ownerID) {

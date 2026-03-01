@@ -1,5 +1,5 @@
 import { IndexedCollection, IndexedCollectionImpl } from './Collection';
-import { makeEntryIterator } from './Iterator';
+import { DONE, makeEntryIterator, makeIterator } from './Iterator';
 import { ArraySeq } from './Seq';
 import { wholeSlice, resolveBegin, resolveEnd, wrapIndex } from './TrieUtils';
 import { asImmutable, asMutable, wasAltered, withMutations } from './methods';
@@ -22,6 +22,7 @@ export class StackImpl extends IndexedCollectionImpl {
     this.prototype.unshift = this.prototype.push;
     this.prototype.unshiftAll = this.prototype.pushAll;
     this.prototype[Symbol.toStringTag] = 'Immutable.Stack';
+    this.prototype[Symbol.iterator] = this.prototype.values;
   }
 
   constructor(size, head, ownerID, hash) {
@@ -184,6 +185,28 @@ export class StackImpl extends IndexedCollectionImpl {
       entry[1] = node.value;
       node = node.next;
       return true;
+    });
+  }
+
+  values() {
+    let node = this._head;
+    const result = { done: false, value: undefined };
+    return makeIterator(() => {
+      if (!node) return DONE;
+      result.value = node.value;
+      node = node.next;
+      return result;
+    });
+  }
+
+  keys() {
+    const size = this.size;
+    let i = 0;
+    const result = { done: false, value: undefined };
+    return makeIterator(() => {
+      if (i === size) return DONE;
+      result.value = i++;
+      return result;
     });
   }
 }

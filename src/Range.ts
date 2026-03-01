@@ -1,6 +1,6 @@
 import type { Seq } from '../type-definitions/immutable';
 import type { CollectionImpl } from './Collection';
-import { makeEntryIterator } from './Iterator';
+import { DONE, makeEntryIterator, makeIterator } from './Iterator';
 import { IndexedSeqImpl } from './Seq';
 import { wrapIndex, wholeSlice, resolveBegin, resolveEnd } from './TrieUtils';
 import invariant from './utils/assertions';
@@ -152,11 +152,47 @@ export class RangeImpl extends IndexedSeqImpl implements Seq.Indexed<number> {
     });
   }
 
+  override values(): IterableIterator<number> {
+    const size = this.size;
+    const step = this._step;
+    let value = this._start;
+    let i = 0;
+    const result: IteratorResult<number> = {
+      done: false,
+      value: undefined as unknown as number,
+    };
+    return makeIterator(() => {
+      if (i === size) return DONE as IteratorResult<number>;
+      result.value = value;
+      value += step;
+      i++;
+      return result;
+    });
+  }
+
+  override keys(): IterableIterator<number> {
+    const size = this.size;
+    let i = 0;
+    const result: IteratorResult<number> = {
+      done: false,
+      value: undefined as unknown as number,
+    };
+    return makeIterator(() => {
+      if (i === size) return DONE as IteratorResult<number>;
+      result.value = i++;
+      return result;
+    });
+  }
+
   override equals(other: unknown): boolean {
     return other instanceof RangeImpl
       ? this._start === other._start &&
           this._end === other._end &&
           this._step === other._step
       : deepEqual(this, other);
+  }
+
+  static {
+    this.prototype[Symbol.iterator] = this.prototype.values;
   }
 }

@@ -1,4 +1,4 @@
-import { makeEntryIterator } from './Iterator';
+import { DONE, makeEntryIterator, makeIterator } from './Iterator';
 import { IndexedSeqImpl } from './Seq';
 import { wholeSlice, resolveBegin, resolveEnd } from './TrieUtils';
 import { is } from './is';
@@ -89,9 +89,37 @@ export class RepeatImpl extends IndexedSeqImpl {
     });
   }
 
+  values() {
+    const size = this.size;
+    const val = this._value;
+    let i = 0;
+    const result = { done: false, value: undefined };
+    return makeIterator(() => {
+      if (i === size) return DONE;
+      i++;
+      result.value = val;
+      return result;
+    });
+  }
+
+  keys() {
+    const size = this.size;
+    let i = 0;
+    const result = { done: false, value: undefined };
+    return makeIterator(() => {
+      if (i === size) return DONE;
+      result.value = i++;
+      return result;
+    });
+  }
+
   equals(other) {
     return other instanceof RepeatImpl
       ? this.size === other.size && is(this._value, other._value)
       : deepEqual(this, other);
+  }
+
+  static {
+    this.prototype[Symbol.iterator] = this.prototype.values;
   }
 }

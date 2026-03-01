@@ -60,6 +60,7 @@ export class ListImpl extends IndexedCollectionImpl {
     this.prototype.merge = this.prototype.concat;
     this.prototype.removeIn = this.prototype.deleteIn;
     this.prototype[Symbol.toStringTag] = 'Immutable.List';
+    this.prototype[Symbol.iterator] = this.prototype.values;
   }
 
   constructor(origin, capacity, level, root, tail, ownerID, hash) {
@@ -237,6 +238,21 @@ export class ListImpl extends IndexedCollectionImpl {
       entry[0] = reverse ? --index : index++;
       entry[1] = step.value;
       return true;
+    });
+  }
+
+  values() {
+    return iterateList(this, false);
+  }
+
+  keys() {
+    const size = this.size;
+    let i = 0;
+    const result = { done: false, value: undefined };
+    return makeIterator(() => {
+      if (i === size) return DONE;
+      result.value = i++;
+      return result;
     });
   }
 
