@@ -436,48 +436,74 @@ function iterateListCallback(list, fn, reverse) {
   const right = list._capacity;
   const tailPos = getTailOffset(right);
   const tail = list._tail;
+  const level = list._level;
+  const root = list._root;
+  return level === 0
+    ? iterateLeaf(root, 0, left, right, tailPos, tail, fn, reverse)
+    : iterateNode(root, level, 0, left, right, tailPos, tail, fn, reverse);
+}
 
-  return iterateNodeOrLeaf(list._root, list._level, 0);
-
-  function iterateNodeOrLeaf(node, level, offset) {
-    return level === 0
-      ? iterateLeaf(node, offset)
-      : iterateNode(node, level, offset);
+function iterateLeaf(node, offset, left, right, tailPos, tail, fn, reverse) {
+  const array = offset === tailPos ? tail?.array : node?.array;
+  let from = offset > left ? 0 : left - offset;
+  let to = right - offset;
+  if (to > SIZE) {
+    to = SIZE;
   }
-
-  function iterateLeaf(node, offset) {
-    const array = offset === tailPos ? tail?.array : node?.array;
-    let from = offset > left ? 0 : left - offset;
-    let to = right - offset;
-    if (to > SIZE) {
-      to = SIZE;
-    }
-    while (from !== to) {
-      const idx = reverse ? --to : from++;
-      if (fn(array?.[idx]) === false) {
-        return false;
-      }
+  while (from !== to) {
+    const idx = reverse ? --to : from++;
+    if (fn(array?.[idx]) === false) {
+      return false;
     }
   }
+}
 
-  function iterateNode(node, level, offset) {
-    const array = node?.array;
-    let from = offset > left ? 0 : (left - offset) >> level;
-    let to = ((right - offset) >> level) + 1;
-    if (to > SIZE) {
-      to = SIZE;
-    }
-    while (from !== to) {
-      const idx = reverse ? --to : from++;
-      if (
-        iterateNodeOrLeaf(
-          array?.[idx],
-          level - SHIFT,
-          offset + (idx << level)
-        ) === false
-      ) {
-        return false;
-      }
+function iterateNode(
+  node,
+  level,
+  offset,
+  left,
+  right,
+  tailPos,
+  tail,
+  fn,
+  reverse
+) {
+  const array = node?.array;
+  let from = offset > left ? 0 : (left - offset) >> level;
+  let to = ((right - offset) >> level) + 1;
+  if (to > SIZE) {
+    to = SIZE;
+  }
+  const nextLevel = level - SHIFT;
+  while (from !== to) {
+    const idx = reverse ? --to : from++;
+    const nextOffset = offset + (idx << level);
+    if (
+      (nextLevel === 0
+        ? iterateLeaf(
+            array?.[idx],
+            nextOffset,
+            left,
+            right,
+            tailPos,
+            tail,
+            fn,
+            reverse
+          )
+        : iterateNode(
+            array?.[idx],
+            nextLevel,
+            nextOffset,
+            left,
+            right,
+            tailPos,
+            tail,
+            fn,
+            reverse
+          )) === false
+    ) {
+      return false;
     }
   }
 }
