@@ -1,5 +1,11 @@
 import { IndexedCollectionImpl, IndexedCollection } from './Collection';
-import { DONE, hasIterator, makeEntryIterator, makeIterator } from './Iterator';
+import {
+  DONE,
+  hasIterator,
+  makeEntryIterator,
+  makeIndexKeys,
+  makeIterator,
+} from './Iterator';
 import {
   DELETE,
   SHIFT,
@@ -246,14 +252,7 @@ export class ListImpl extends IndexedCollectionImpl {
   }
 
   keys() {
-    const size = this.size;
-    let i = 0;
-    const result = { done: false, value: undefined };
-    return makeIterator(() => {
-      if (i === size) return DONE;
-      result.value = i++;
-      return result;
-    });
+    return makeIndexKeys(this.size);
   }
 
   // methods.js wrappers

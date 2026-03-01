@@ -1,4 +1,9 @@
-import { DONE, makeEntryIterator, makeIterator } from './Iterator';
+import {
+  DONE,
+  makeEntryIterator,
+  makeIndexKeys,
+  makeIterator,
+} from './Iterator';
 import { IndexedSeqImpl } from './Seq';
 import { wholeSlice, resolveBegin, resolveEnd } from './TrieUtils';
 import { is } from './is';
@@ -103,14 +108,7 @@ export class RepeatImpl extends IndexedSeqImpl {
   }
 
   keys() {
-    const size = this.size;
-    let i = 0;
-    const result = { done: false, value: undefined };
-    return makeIterator(() => {
-      if (i === size) return DONE;
-      result.value = i++;
-      return result;
-    });
+    return makeIndexKeys(this.size);
   }
 
   equals(other) {

@@ -37,8 +37,35 @@ export function makeEntryIterator<K, V>(
   });
 }
 
-export const emptyIterator = (): IterableIterator<never> =>
-  makeIterator(() => DONE) as IterableIterator<never>;
+const EMPTY_ITERATOR: IterableIterator<never> = makeIterator(
+  () => DONE
+) as IterableIterator<never>;
+export const emptyIterator = (): IterableIterator<never> => EMPTY_ITERATOR;
+
+export function makeIndexKeys(size: number): IterableIterator<number> {
+  let i = 0;
+  const result: IteratorResult<number> = {
+    done: false,
+    value: undefined as unknown as number,
+  };
+  return makeIterator(() => {
+    if (i === size) return DONE as IteratorResult<number>;
+    result.value = i++;
+    return result;
+  });
+}
+
+export function mapEntries<K, V>(
+  source: IterableIterator<[unknown, unknown]>,
+  transform: (key: unknown, value: unknown, entry: [K, V]) => void
+): IterableIterator<[K, V]> {
+  return makeEntryIterator((entry: [K, V]) => {
+    const step = source.next();
+    if (step.done) return false;
+    transform(step.value[0], step.value[1], entry);
+    return true;
+  });
+}
 
 export function hasIterator(
   maybeIterable: unknown

@@ -7,6 +7,7 @@ import {
 import {
   DONE,
   emptyIterator,
+  mapEntries,
   makeEntryIterator,
   makeIterator,
   hasIterator,
@@ -482,36 +483,31 @@ export class ConcatSeq extends SeqImpl {
     const reIndex = !isKeyed(this);
     let iterableIdx = 0;
     let currentIterator = wrappedIterables[0].__iterator(reverse);
-    let index = 0;
-    if (reIndex) {
-      return makeEntryIterator((entry) => {
-        while (iterableIdx < wrappedIterables.length) {
-          const step = currentIterator.next();
-          if (!step.done) {
-            entry[0] = index++;
-            entry[1] = step.value[1];
-            return true;
-          }
-          iterableIdx++;
-          if (iterableIdx < wrappedIterables.length) {
-            currentIterator = wrappedIterables[iterableIdx].__iterator(reverse);
-          }
-        }
-        return false;
-      });
-    }
-    return makeIterator(() => {
+
+    function nextStep() {
       while (iterableIdx < wrappedIterables.length) {
         const step = currentIterator.next();
-        if (!step.done) {
-          return step;
-        }
+        if (!step.done) return step;
         iterableIdx++;
         if (iterableIdx < wrappedIterables.length) {
           currentIterator = wrappedIterables[iterableIdx].__iterator(reverse);
         }
       }
-      return DONE;
+      return undefined;
+    }
+
+    if (reIndex) {
+      let index = 0;
+      return makeEntryIterator((entry) => {
+        const step = nextStep();
+        if (!step) return false;
+        entry[0] = index++;
+        entry[1] = step.value[1];
+        return true;
+      });
+    }
+    return makeIterator(() => {
+      return nextStep() || DONE;
     });
   }
 }
@@ -605,15 +601,9 @@ export class ToIndexedSequence extends IndexedSeqImpl {
       ensureSize(this);
     }
     const size = this.size;
-    const iterator = this._iter.__iterator(reverse);
-    return makeEntryIterator((entry) => {
-      const step = iterator.next();
-      if (step.done) {
-        return false;
-      }
+    return mapEntries(this._iter.__iterator(reverse), (k, v, entry) => {
       entry[0] = reverse ? size - ++i : i++;
-      entry[1] = step.value[1];
-      return true;
+      entry[1] = v;
     });
   }
 }
@@ -639,16 +629,9 @@ export class ToSetSequence extends SetSeqImpl {
   }
 
   __iteratorUncached(reverse) {
-    const iterator = this._iter.__iterator(reverse);
-    return makeEntryIterator((entry) => {
-      const step = iterator.next();
-      if (step.done) {
-        return false;
-      }
-      const v = step.value[1];
+    return mapEntries(this._iter.__iterator(reverse), (k, v, entry) => {
       entry[0] = v;
       entry[1] = v;
-      return true;
     });
   }
 }

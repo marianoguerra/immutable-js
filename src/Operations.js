@@ -4,6 +4,7 @@ import {
   DONE,
   getIterator,
   emptyIterator,
+  mapEntries,
   makeEntryIterator,
   makeIterator,
 } from './Iterator';
@@ -42,15 +43,9 @@ export function flipFactory(collection) {
     return collection.__iterate((v, k) => fn(k, v, this), reverse);
   };
   flipSequence.__iteratorUncached = function (reverse) {
-    const iterator = collection.__iterator(reverse);
-    return makeEntryIterator((entry) => {
-      const step = iterator.next();
-      if (step.done) {
-        return false;
-      }
-      entry[0] = step.value[1];
-      entry[1] = step.value[0];
-      return true;
+    return mapEntries(collection.__iterator(reverse), (k, v, entry) => {
+      entry[0] = v;
+      entry[1] = k;
     });
   };
   return flipSequence;
@@ -73,16 +68,9 @@ export function mapFactory(collection, mapper, context) {
     );
   };
   mappedSequence.__iteratorUncached = function (reverse) {
-    const iterator = collection.__iterator(reverse);
-    return makeEntryIterator((entry) => {
-      const step = iterator.next();
-      if (step.done) {
-        return false;
-      }
-      const k = step.value[0];
+    return mapEntries(collection.__iterator(reverse), (k, v, entry) => {
       entry[0] = k;
-      entry[1] = mapper.call(context, step.value[1], k, collection);
-      return true;
+      entry[1] = mapper.call(context, v, k, collection);
     });
   };
   return mappedSequence;
@@ -115,21 +103,15 @@ export function reverseFactory(collection, useKeys) {
       !reverse
     );
   };
-  reversedSequence.__iterator = function (reverse) {
+  reversedSequence.__iteratorUncached = function (reverse) {
     let i = 0;
     if (reverse) {
       ensureSize(collection);
     }
-    const iterator = collection.__iterator(!reverse);
     const size = this.size;
-    return makeEntryIterator((entry) => {
-      const step = iterator.next();
-      if (step.done) {
-        return false;
-      }
-      entry[0] = useKeys ? step.value[0] : reverse ? size - ++i : i++;
-      entry[1] = step.value[1];
-      return true;
+    return mapEntries(collection.__iterator(!reverse), (k, v, entry) => {
+      entry[0] = useKeys ? k : reverse ? size - ++i : i++;
+      entry[1] = v;
     });
   };
   return reversedSequence;
