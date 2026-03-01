@@ -25,6 +25,12 @@ export class OrderedMapImpl extends MapImpl {
       [DELETE]: this.prototype.remove,
       [Symbol.iterator]: this.prototype.entries,
       [Symbol.toStringTag]: 'Immutable.OrderedMap',
+
+      // Override MapImpl's trie-based keys/values/__iterate with
+      // CollectionImpl's generic versions, which call this.__iterator().
+      keys: CollectionImpl.prototype.keys,
+      values: CollectionImpl.prototype.values,
+      __iterate: CollectionImpl.prototype.__iterate,
     });
   }
 
@@ -69,21 +75,10 @@ export class OrderedMapImpl extends MapImpl {
     return updateOrderedMap(this, k, NOT_SET);
   }
 
-  // Override MapImpl's trie-based entries/keys/values since OrderedMap uses _list, not the trie.
+  // Override MapImpl's trie-based entries() since OrderedMap uses _list, not the trie.
+  // keys/values/__iterate overrides are in the mixin() call above.
   entries() {
     return this.__iterator(false);
-  }
-
-  keys() {
-    return CollectionImpl.prototype.keys.call(this);
-  }
-
-  values() {
-    return CollectionImpl.prototype.values.call(this);
-  }
-
-  __iterate(fn, reverse) {
-    return CollectionImpl.prototype.__iterate.call(this, fn, reverse);
   }
 
   __iterator(reverse) {
