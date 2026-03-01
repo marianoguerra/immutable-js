@@ -68,6 +68,7 @@ export class MapImpl extends KeyedCollectionImpl {
     this.prototype.removeAll = this.prototype.deleteAll;
     this.prototype.removeIn = this.prototype.deleteIn;
     this.prototype.concat = this.prototype.merge;
+    this.prototype[Symbol.iterator] = this.prototype.entries;
     this.prototype[Symbol.toStringTag] = 'Immutable.Map';
   }
 
@@ -158,6 +159,13 @@ export class MapImpl extends KeyedCollectionImpl {
       return emptyIterator();
     }
     return mapIteratorGenerator(this._root, false, 1);
+  }
+
+  entries() {
+    if (!this._root) {
+      return emptyIterator();
+    }
+    return mapIteratorGenerator(this._root, false);
   }
 
   __iterator(reverse) {

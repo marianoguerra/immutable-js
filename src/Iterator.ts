@@ -3,15 +3,20 @@ export const DONE: IteratorResult<never> = {
   value: undefined as never,
 };
 
+class Iter<T> {
+  declare next: () => IteratorResult<T>;
+  constructor(next: () => IteratorResult<T>) {
+    this.next = next;
+  }
+  [Symbol.iterator]() {
+    return this;
+  }
+}
+
 export function makeIterator<T>(
   next: () => IteratorResult<T>
 ): IterableIterator<T> {
-  return {
-    next,
-    [Symbol.iterator]() {
-      return this;
-    },
-  };
+  return new Iter(next);
 }
 
 /**

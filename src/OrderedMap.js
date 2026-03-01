@@ -21,6 +21,7 @@ export class OrderedMapImpl extends MapImpl {
   static {
     this.prototype[IS_ORDERED_SYMBOL] = true;
     this.prototype[DELETE] = this.prototype.remove;
+    this.prototype[Symbol.iterator] = this.prototype.entries;
     this.prototype[Symbol.toStringTag] = 'Immutable.OrderedMap';
   }
 
@@ -65,7 +66,19 @@ export class OrderedMapImpl extends MapImpl {
     return updateOrderedMap(this, k, NOT_SET);
   }
 
-  // Override MapImpl's trie-based __iterate since OrderedMap uses _list, not the trie.
+  // Override MapImpl's trie-based entries/keys/values since OrderedMap uses _list, not the trie.
+  entries() {
+    return this.__iterator(false);
+  }
+
+  keys() {
+    return CollectionImpl.prototype.keys.call(this);
+  }
+
+  values() {
+    return CollectionImpl.prototype.values.call(this);
+  }
+
   __iterate(fn, reverse) {
     return CollectionImpl.prototype.__iterate.call(this, fn, reverse);
   }
