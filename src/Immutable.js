@@ -34,13 +34,12 @@ import {
   isRecord,
 } from './predicates';
 
-import { Collection, _late } from './Collection';
+import { Collection } from './Collection';
 import { hash } from './Hash';
 
-// Populate late-binding references for concrete collection constructors
-// that cannot be directly imported by Collection.ts due to circular
-// class hierarchy dependencies.
-Object.assign(_late, { Map, List, Set, Stack, OrderedMap, OrderedSet, Range });
+// Patch conversion and sort methods onto base-class prototypes.
+// Must be imported after all concrete types are defined.
+import './CollectionConversions';
 
 // Functional read/write API
 import { get } from './functional/get';

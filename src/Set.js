@@ -5,8 +5,6 @@ import {
   SetCollection,
 } from './Collection';
 import { emptyMap } from './Map';
-import { sortFactory } from './Operations';
-import { OrderedSet } from './OrderedSet';
 import { DELETE } from './TrieUtils';
 import { mixin, withMutations, asImmutable, asMutable } from './methods';
 import { IS_SET_SYMBOL, isOrdered, isSet } from './predicates';
@@ -133,16 +131,6 @@ export class SetImpl extends SetCollectionImpl {
     return filterByIters(this, iters, (value, sets) =>
       sets.some((iter) => iter.includes(value))
     );
-  }
-
-  sort(comparator) {
-    // Late binding
-    return OrderedSet(sortFactory(this, comparator));
-  }
-
-  sortBy(mapper, comparator) {
-    // Late binding
-    return OrderedSet(sortFactory(this, comparator, mapper));
   }
 
   wasAltered() {

@@ -1,8 +1,6 @@
 import { Collection, KeyedCollection, KeyedCollectionImpl } from './Collection';
 import { hash } from './Hash';
 import { DONE, emptyIterator, makeIterator } from './Iterator';
-import { sortFactory } from './Operations';
-import { OrderedMap } from './OrderedMap';
 import {
   DELETE,
   SHIFT,
@@ -127,16 +125,6 @@ export class MapImpl extends KeyedCollectionImpl {
       return this;
     }
     return emptyMap();
-  }
-
-  sort(comparator) {
-    // Late binding
-    return OrderedMap(sortFactory(this, comparator));
-  }
-
-  sortBy(mapper, comparator) {
-    // Late binding
-    return OrderedMap(sortFactory(this, comparator, mapper));
   }
 
   map(mapper, context) {

@@ -52,7 +52,6 @@ import {
   isCollection,
   isIndexed,
   isKeyed,
-  isOrdered,
   isSeq,
 } from './predicates';
 import { toJS } from './toJS';
@@ -60,11 +59,6 @@ import { assertNotInfinite } from './utils/assertions';
 import deepEqual from './utils/deepEqual';
 import { hashCollection } from './utils/hashCollection';
 import quoteString from './utils/quoteString';
-
-// Late-binding references for concrete collection constructors that cannot be
-// directly imported due to circular class hierarchy dependencies.
-// Populated by Immutable.js after all modules have loaded.
-export const _late: Record<string, any> = {};
 
 const reify = <K, V>(iter: CollectionImpl<K, V>, seq: any): any =>
   iter === seq
@@ -75,7 +69,7 @@ const reify = <K, V>(iter: CollectionImpl<K, V>, seq: any): any =>
         ? (iter as any).create(seq)
         : (iter.constructor as any)(seq);
 
-const reifyValues = (collection: any, arr: any): any =>
+export const reifyValues = (collection: any, arr: any): any =>
   reify(
     collection,
     (isKeyed(collection)
@@ -84,9 +78,6 @@ const reifyValues = (collection: any, arr: any): any =>
         ? IndexedCollection
         : SetCollection)(arr)
   );
-
-const asValues = (collection: any): any =>
-  isKeyed(collection) ? collection.valueSeq() : collection;
 
 const defaultZipper = (...values: unknown[]) => values;
 
@@ -148,7 +139,7 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   toMap(): unknown {
-    return _late.Map(this.toKeyedSeq());
+    throw new Error('toMap: not patched — import CollectionConversions');
   }
 
   toObject(): Record<string, unknown> {
@@ -161,15 +152,15 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   toOrderedMap(): unknown {
-    return _late.OrderedMap(this.toKeyedSeq());
+    throw new Error('toOrderedMap: not patched — import CollectionConversions');
   }
 
   toOrderedSet(): unknown {
-    return _late.OrderedSet(asValues(this));
+    throw new Error('toOrderedSet: not patched — import CollectionConversions');
   }
 
   toSet(): unknown {
-    return _late.Set(asValues(this));
+    throw new Error('toSet: not patched — import CollectionConversions');
   }
 
   toSetSeq(): CollectionImpl<unknown, unknown> {
@@ -185,11 +176,11 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   toStack(): unknown {
-    return _late.Stack(asValues(this));
+    throw new Error('toStack: not patched — import CollectionConversions');
   }
 
   toList(): unknown {
-    return _late.List(asValues(this));
+    throw new Error('toList: not patched — import CollectionConversions');
   }
 
   // ### Common JavaScript methods and properties
@@ -471,14 +462,10 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   countBy(
-    grouper: (value: V, key: K, iter: this) => unknown,
-    context?: unknown
-  ) {
-    const groups = _late.Map().asMutable();
-    this.__iterate((v: V, k: K) => {
-      groups.update(grouper.call(context, v, k, this), 0, (a: number) => a + 1);
-    });
-    return groups.asImmutable();
+    _grouper: (value: V, key: K, iter: this) => unknown,
+    _context?: unknown
+  ): unknown {
+    throw new Error('countBy: not patched — import CollectionConversions');
   }
 
   entrySeq(): CollectionImpl<unknown, unknown> {
@@ -657,24 +644,10 @@ export class CollectionImpl<K, V> implements ValueObject {
   }
 
   groupBy(
-    grouper: (value: V, key: K, iter: this) => unknown,
-    context?: unknown
-  ) {
-    const isKeyedIter = isKeyed(this);
-    const groups = (
-      isOrdered(this) ? _late.OrderedMap() : _late.Map()
-    ).asMutable();
-    this.__iterate((v: V, k: K) => {
-      groups.update(
-        grouper.call(context, v, k, this),
-        (a: any[] | undefined) => {
-          a ??= [];
-          a.push(isKeyedIter ? [k, v] : v);
-          return a;
-        }
-      );
-    });
-    return groups.map((arr: any) => reifyValues(this, arr)).asImmutable();
+    _grouper: (value: V, key: K, iter: this) => unknown,
+    _context?: unknown
+  ): unknown {
+    throw new Error('groupBy: not patched — import CollectionConversions');
   }
 
   has(searchKey: K) {
@@ -1192,7 +1165,7 @@ export class IndexedCollectionImpl<T>
   }
 
   override keySeq(): any {
-    return _late.Range(0, this.size);
+    throw new Error('keySeq: not patched — import CollectionConversions');
   }
 
   override last(notSetValue?: T) {
