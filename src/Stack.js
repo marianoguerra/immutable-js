@@ -5,7 +5,6 @@ import {
   makeIndexKeys,
   makeIterator,
 } from './Iterator';
-import { ArraySeq } from './Seq';
 import { wholeSlice, resolveBegin, resolveEnd, wrapIndex } from './TrieUtils';
 import {
   mixin,
@@ -161,7 +160,15 @@ export class StackImpl extends IndexedCollectionImpl {
 
   __iterate(fn, reverse) {
     if (reverse) {
-      return new ArraySeq(this.toArray()).__iterate(fn, reverse);
+      const arr = this.toArray();
+      const size = arr.length;
+      let i = 0;
+      while (i !== size) {
+        if (fn(arr[size - ++i], size - i, this) === false) {
+          break;
+        }
+      }
+      return i;
     }
     let iterations = 0;
     let node = this._head;
@@ -176,7 +183,18 @@ export class StackImpl extends IndexedCollectionImpl {
 
   __iterator(reverse) {
     if (reverse) {
-      return new ArraySeq(this.toArray()).__iterator(reverse);
+      const arr = this.toArray();
+      const size = arr.length;
+      let i = 0;
+      return makeEntryIterator((entry) => {
+        if (i === size) {
+          return false;
+        }
+        const ii = size - ++i;
+        entry[0] = ii;
+        entry[1] = arr[ii];
+        return true;
+      });
     }
     let iterations = 0;
     let node = this._head;

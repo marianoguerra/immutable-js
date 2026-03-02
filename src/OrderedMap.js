@@ -138,12 +138,22 @@ function updateOrderedMap(omap, k, v) {
       return omap;
     }
     if (list.size >= SIZE && list.size >= map.size * 2) {
-      newList = list.filter((entry, idx) => entry !== undefined && i !== idx);
-      newMap = newList
-        .toKeyedSeq()
-        .map((entry) => entry[0])
-        .flip()
-        .toMap();
+      const entries = [];
+      list.forEach((entry, idx) => {
+        if (entry !== undefined && i !== idx) {
+          entries.push(entry);
+        }
+      });
+      newList = emptyList().withMutations((l) => {
+        for (let j = 0; j < entries.length; j++) {
+          l.set(j, entries[j]);
+        }
+      });
+      newMap = emptyMap().withMutations((m) => {
+        for (let j = 0; j < entries.length; j++) {
+          m.set(entries[j][0], j);
+        }
+      });
       if (omap.__ownerID) {
         newMap.__ownerID = newList.__ownerID = omap.__ownerID;
       }
@@ -158,8 +168,9 @@ function updateOrderedMap(omap, k, v) {
     newMap = map;
     newList = list.set(i, [k, v]);
   } else {
-    newMap = map.set(k, list.size);
-    newList = list.set(list.size, [k, v]);
+    const newIdx = list.size;
+    newMap = map.set(k, newIdx);
+    newList = list.set(newIdx, [k, v]);
   }
   if (omap.__ownerID) {
     omap.size = newMap.size;

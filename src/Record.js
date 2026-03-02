@@ -1,7 +1,8 @@
 import { KeyedCollection } from './Collection';
 
+import { makeEntryIterator } from './Iterator';
 import { List } from './List';
-import { keyedSeqFromValue } from './Seq';
+import { KeyedSeqImpl } from './Seq';
 import { DELETE } from './TrieUtils';
 import {
   mixin,
@@ -226,8 +227,55 @@ Record.isRecord = isRecord;
 const recordName = (record) =>
   record.constructor.displayName || record.constructor.name || 'Record';
 
-const recordSeq = (record) =>
-  keyedSeqFromValue(record._keys.map((k) => [k, record.get(k)]));
+class RecordSeq extends KeyedSeqImpl {
+  constructor(record) {
+    super();
+    this._record = record;
+    this.size = record._keys.length;
+  }
+
+  get(key, notSetValue) {
+    return this._record.get(key, notSetValue);
+  }
+
+  has(key) {
+    return this._record.has(key);
+  }
+
+  __iterateUncached(fn, reverse) {
+    const record = this._record;
+    const keys = record._keys;
+    const size = keys.length;
+    let i = 0;
+    while (i !== size) {
+      const ii = reverse ? size - ++i : i++;
+      const k = keys[ii];
+      if (fn(record.get(k), k, this) === false) {
+        break;
+      }
+    }
+    return i;
+  }
+
+  __iteratorUncached(reverse) {
+    const record = this._record;
+    const keys = record._keys;
+    const size = keys.length;
+    let i = 0;
+    return makeEntryIterator((entry) => {
+      if (i === size) {
+        return false;
+      }
+      const ii = reverse ? size - ++i : i++;
+      const k = keys[ii];
+      entry[0] = k;
+      entry[1] = record.get(k);
+      return true;
+    });
+  }
+}
+
+const recordSeq = (record) => new RecordSeq(record);
 
 Record.getDescriptiveName = recordName;
 const RecordPrototype = RecordImpl.prototype;

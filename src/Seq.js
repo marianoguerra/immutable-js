@@ -409,20 +409,36 @@ export class ConcatSeq extends SeqImpl {
   constructor(iterables) {
     super();
 
-    this._wrappedIterables = iterables.flatMap((iterable) => {
+    const wrappedIterables = [];
+    let size = 0;
+    let sizeKnown = true;
+    for (const iterable of iterables) {
       if (iterable._wrappedIterables) {
-        return iterable._wrappedIterables;
-      }
-      return [iterable];
-    });
-    this.size = this._wrappedIterables.reduce((sum, iterable) => {
-      if (sum !== undefined) {
-        const size = iterable.size;
-        if (size !== undefined) {
-          return sum + size;
+        for (const wrapped of iterable._wrappedIterables) {
+          wrappedIterables.push(wrapped);
+          if (sizeKnown) {
+            const s = wrapped.size;
+            if (s !== undefined) {
+              size += s;
+            } else {
+              sizeKnown = false;
+            }
+          }
+        }
+      } else {
+        wrappedIterables.push(iterable);
+        if (sizeKnown) {
+          const s = iterable.size;
+          if (s !== undefined) {
+            size += s;
+          } else {
+            sizeKnown = false;
+          }
         }
       }
-    }, 0);
+    }
+    this._wrappedIterables = wrappedIterables;
+    this.size = sizeKnown ? size : undefined;
     const first = this._wrappedIterables[0];
     if (first[IS_KEYED_SYMBOL]) {
       this[IS_KEYED_SYMBOL] = true;

@@ -177,15 +177,11 @@ function filterByIters(set, iters, shouldRemove) {
     return set;
   }
   iters = iters.map((iter) => SetCollection(iter));
-  const toRemove = [];
-  set.forEach((value) => {
-    if (shouldRemove(value, iters)) {
-      toRemove.push(value);
-    }
-  });
   return set.withMutations((s) => {
-    toRemove.forEach((value) => {
-      s.remove(value);
+    set.forEach((value) => {
+      if (shouldRemove(value, iters)) {
+        s.remove(value);
+      }
     });
   });
 }

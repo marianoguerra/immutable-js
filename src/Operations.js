@@ -313,16 +313,22 @@ export function zipWithFactory(keyIter, zipper, iters, zipAll) {
       return getIterator(reverse ? col.reverse() : col);
     });
     let iterations = 0;
+    const steps = new Array(iterators.length);
+    const values = new Array(iterators.length);
     return makeEntryIterator((entry) => {
-      const steps = iterators.map((i) => i.next());
-      const isDone = zipAll
-        ? steps.every((s) => s.done)
-        : steps.some((s) => s.done);
-      if (isDone) {
+      let done = zipAll;
+      for (let i = 0; i < iterators.length; i++) {
+        steps[i] = iterators[i].next();
+        done = zipAll ? done && steps[i].done : done || steps[i].done;
+      }
+      if (done) {
         return false;
       }
+      for (let i = 0; i < steps.length; i++) {
+        values[i] = steps[i].value;
+      }
       entry[0] = iterations++;
-      entry[1] = zipper(...steps.map((s) => s.value));
+      entry[1] = zipper(...values);
       return true;
     });
   };
