@@ -37,6 +37,13 @@ export const IS_STACK_SYMBOL = '@@__IMMUTABLE_STACK__@@';
 
 export const IS_RECORD_SYMBOL = '@@__IMMUTABLE_RECORD__@@';
 
+function hasSymbol(
+  v: unknown,
+  symbol: string
+): v is { [key: string]: unknown } {
+  return typeof v === 'object' && v !== null && symbol in v;
+}
+
 /**
  * True if `maybeCollection` is a Collection, or any of its subclasses.
  *
@@ -51,11 +58,8 @@ export const IS_RECORD_SYMBOL = '@@__IMMUTABLE_RECORD__@@';
  * ```
  */
 export const isCollection = (
-  maybeCollection: unknown
-): maybeCollection is CollectionImpl<unknown, unknown> =>
-  typeof maybeCollection === 'object' &&
-  maybeCollection !== null &&
-  IS_COLLECTION_SYMBOL in maybeCollection;
+  v: unknown
+): v is CollectionImpl<unknown, unknown> => hasSymbol(v, IS_COLLECTION_SYMBOL);
 
 /**
  * True if `maybeKeyed` is a Collection.Keyed, or any of its subclasses.
@@ -71,11 +75,8 @@ export const isCollection = (
  * ```
  */
 export const isKeyed = (
-  maybeKeyed: unknown
-): maybeKeyed is KeyedCollectionImpl<unknown, unknown> =>
-  typeof maybeKeyed === 'object' &&
-  maybeKeyed !== null &&
-  IS_KEYED_SYMBOL in maybeKeyed;
+  v: unknown
+): v is KeyedCollectionImpl<unknown, unknown> => hasSymbol(v, IS_KEYED_SYMBOL);
 
 /**
  * True if `maybeIndexed` is a Collection.Indexed, or any of its subclasses.
@@ -91,12 +92,8 @@ export const isKeyed = (
  * isIndexed(Set()); // false
  * ```
  */
-export const isIndexed = <T>(
-  maybeIndexed: unknown
-): maybeIndexed is IndexedCollectionImpl<T> =>
-  typeof maybeIndexed === 'object' &&
-  maybeIndexed !== null &&
-  IS_INDEXED_SYMBOL in maybeIndexed;
+export const isIndexed = <T>(v: unknown): v is IndexedCollectionImpl<T> =>
+  hasSymbol(v, IS_INDEXED_SYMBOL);
 
 /**
  * True if `maybeAssociative` is either a Keyed or Indexed Collection.
@@ -113,11 +110,10 @@ export const isIndexed = <T>(
  * ```
  */
 export const isAssociative = (
-  maybeAssociative: unknown
-): maybeAssociative is
+  v: unknown
+): v is
   | KeyedCollectionImpl<unknown, unknown>
-  | IndexedCollectionImpl<unknown> =>
-  isKeyed(maybeAssociative) || isIndexed(maybeAssociative);
+  | IndexedCollectionImpl<unknown> => isKeyed(v) || isIndexed(v);
 
 /**
  * True if `maybeOrdered` is a Collection where iteration order is well
@@ -134,78 +130,50 @@ export const isAssociative = (
  * isOrdered(Set()); // false
  * ```
  */
-export function isOrdered<I>(
-  maybeOrdered: Iterable<I>
-): maybeOrdered is OrderedCollection<I>;
-export function isOrdered(
-  maybeOrdered: unknown
-): maybeOrdered is OrderedCollection<unknown>;
-export function isOrdered(
-  maybeOrdered: unknown
-): maybeOrdered is OrderedCollection<unknown> {
-  return (
-    typeof maybeOrdered === 'object' &&
-    maybeOrdered !== null &&
-    IS_ORDERED_SYMBOL in maybeOrdered
-  );
-}
+export const isOrdered = (v: unknown): v is OrderedCollection<unknown> =>
+  hasSymbol(v, IS_ORDERED_SYMBOL);
 
 /**
  * True if `maybeSeq` is a Seq.
  */
 export const isSeq = (
-  maybeSeq: unknown
-): maybeSeq is
-  | Seq.Indexed<unknown>
-  | Seq.Keyed<unknown, unknown>
-  | Seq.Set<unknown> =>
-  typeof maybeSeq === 'object' &&
-  maybeSeq !== null &&
-  IS_SEQ_SYMBOL in maybeSeq;
+  v: unknown
+): v is Seq.Indexed<unknown> | Seq.Keyed<unknown, unknown> | Seq.Set<unknown> =>
+  hasSymbol(v, IS_SEQ_SYMBOL);
 
 /**
  * True if `maybeList` is a List.
  */
-export const isList = (maybeList: unknown): maybeList is List<unknown> =>
-  typeof maybeList === 'object' &&
-  maybeList !== null &&
-  IS_LIST_SYMBOL in maybeList;
+export const isList = (v: unknown): v is List<unknown> =>
+  hasSymbol(v, IS_LIST_SYMBOL);
 
 /**
  * True if `maybeMap` is a Map.
  *
  * Also true for OrderedMaps.
  */
-export const isMap = (maybeMap: unknown): maybeMap is Map<unknown, unknown> =>
-  typeof maybeMap === 'object' &&
-  maybeMap !== null &&
-  IS_MAP_SYMBOL in maybeMap;
+export const isMap = (v: unknown): v is Map<unknown, unknown> =>
+  hasSymbol(v, IS_MAP_SYMBOL);
 
 /**
  * True if `maybeSet` is a Set.
  *
  * Also true for OrderedSets.
  */
-export const isSet = (maybeSet: unknown): maybeSet is Set<unknown> =>
-  typeof maybeSet === 'object' &&
-  maybeSet !== null &&
-  IS_SET_SYMBOL in maybeSet;
+export const isSet = (v: unknown): v is Set<unknown> =>
+  hasSymbol(v, IS_SET_SYMBOL);
 
 /**
  * True if `maybeStack` is a Stack.
  */
-export const isStack = (maybeStack: unknown): maybeStack is Stack<unknown> =>
-  typeof maybeStack === 'object' &&
-  maybeStack !== null &&
-  IS_STACK_SYMBOL in maybeStack;
+export const isStack = (v: unknown): v is Stack<unknown> =>
+  hasSymbol(v, IS_STACK_SYMBOL);
 
 /**
  * True if `maybeRecord` is a Record.
  */
-export const isRecord = (maybeRecord: unknown): maybeRecord is Record<object> =>
-  typeof maybeRecord === 'object' &&
-  maybeRecord !== null &&
-  IS_RECORD_SYMBOL in maybeRecord;
+export const isRecord = (v: unknown): v is Record<object> =>
+  hasSymbol(v, IS_RECORD_SYMBOL);
 
 /**
  * True if `maybeImmutable` is an Immutable Collection or Record.
@@ -223,25 +191,21 @@ export const isRecord = (maybeRecord: unknown): maybeRecord is Record<object> =>
  * ```
  */
 export const isImmutable = (
-  maybeImmutable: unknown
-): maybeImmutable is CollectionImpl<unknown, unknown> | Record<object> =>
-  isCollection(maybeImmutable) || isRecord(maybeImmutable);
+  v: unknown
+): v is CollectionImpl<unknown, unknown> | Record<object> =>
+  isCollection(v) || isRecord(v);
 
 /**
  * True if `maybeOrderedMap` is an OrderedMap.
  */
-export const isOrderedMap = (
-  maybeOrderedMap: unknown
-): maybeOrderedMap is OrderedMap<unknown, unknown> =>
-  isMap(maybeOrderedMap) && isOrdered(maybeOrderedMap);
+export const isOrderedMap = (v: unknown): v is OrderedMap<unknown, unknown> =>
+  isMap(v) && isOrdered(v);
 
 /**
  * True if `maybeOrderedSet` is an OrderedSet.
  */
-export const isOrderedSet = (
-  maybeOrderedSet: unknown
-): maybeOrderedSet is OrderedSet<unknown> =>
-  isSet(maybeOrderedSet) && isOrdered(maybeOrderedSet);
+export const isOrderedSet = (v: unknown): v is OrderedSet<unknown> =>
+  isSet(v) && isOrdered(v);
 
 /**
  * True if `maybeValue` is a JavaScript Object which has *both* `equals()`
@@ -250,11 +214,8 @@ export const isOrderedSet = (
  * Any two instances of *value objects* can be compared for value equality with
  * `Immutable.is()` and can be used as keys in a `Map` or members in a `Set`.
  */
-export const isValueObject = (maybeValue: unknown): maybeValue is ValueObject =>
-  Boolean(
-    maybeValue &&
-    // @ts-expect-error: maybeValue is typed as `{}`
-    typeof maybeValue.equals === 'function' &&
-    // @ts-expect-error: maybeValue is typed as `{}`
-    typeof maybeValue.hashCode === 'function'
-  );
+export const isValueObject = (v: unknown): v is ValueObject =>
+  typeof v === 'object' &&
+  v !== null &&
+  typeof (v as ValueObject).equals === 'function' &&
+  typeof (v as ValueObject).hashCode === 'function';
