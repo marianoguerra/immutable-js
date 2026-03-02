@@ -10,6 +10,10 @@ function assertEquiv(m: Model, r: Real) {
   expect(r.stack.toArray()).toEqual(m.arr);
 }
 
+function assertPeek(m: Model, r: Real) {
+  expect(r.stack.peek()).toBe(m.arr[0]);
+}
+
 class PushCommand implements Command<Model, Real> {
   constructor(readonly value: number) {}
   check() {
@@ -84,12 +88,45 @@ class ClearCommand implements Command<Model, Real> {
   }
 }
 
+class PeekCommand implements Command<Model, Real> {
+  check(m: Readonly<Model>) {
+    return m.arr.length > 0;
+  }
+  run(m: Model, r: Real) {
+    assertPeek(m, r);
+    assertEquiv(m, r);
+  }
+  toString() {
+    return 'peek()';
+  }
+}
+
+class PushAllCommand implements Command<Model, Real> {
+  constructor(readonly values: number[]) {}
+  check() {
+    return true;
+  }
+  run(m: Model, r: Real) {
+    // pushAll prepends all values; the first value in the iterable ends up on top
+    for (let i = this.values.length - 1; i >= 0; i--) {
+      m.arr.unshift(this.values[i]!);
+    }
+    r.stack = r.stack.pushAll(this.values);
+    assertEquiv(m, r);
+  }
+  toString() {
+    return `pushAll([${this.values}])`;
+  }
+}
+
 const allCommands = [
   fc.integer().map((v) => new PushCommand(v)),
   fc.constant(new PopCommand()),
   fc.integer().map((v) => new UnshiftCommand(v)),
   fc.constant(new ShiftCommand()),
   fc.constant(new ClearCommand()),
+  fc.constant(new PeekCommand()),
+  fc.array(fc.integer(), { maxLength: 10 }).map((v) => new PushAllCommand(v)),
 ];
 
 describe('Stack model check', () => {

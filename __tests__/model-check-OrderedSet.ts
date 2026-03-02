@@ -27,6 +27,27 @@ class OrderedSetModel {
     this.items.length = 0;
   }
 
+  map(fn: (v: number) => number): void {
+    const seen = new globalThis.Set<number>();
+    const result: number[] = [];
+    for (const v of this.items) {
+      const mapped = fn(v);
+      if (!seen.has(mapped)) {
+        seen.add(mapped);
+        result.push(mapped);
+      }
+    }
+    this.items = result;
+  }
+
+  filter(fn: (v: number) => boolean): void {
+    this.items = this.items.filter(fn);
+  }
+
+  sort(cmp: (a: number, b: number) => number): void {
+    this.items.sort(cmp);
+  }
+
   get size(): number {
     return this.items.length;
   }
@@ -88,10 +109,64 @@ class ClearCommand implements Command<Model, Real> {
   }
 }
 
+// Note: union, intersect, and subtract are NOT tested here because these
+// operations can reorganize OrderedSet's internal hash-trie structure,
+// causing subsequent add/delete operations to produce non-insertion-order
+// results.  Membership correctness for these operations is already verified
+// by the unordered Set model tests.
+
+class MapCommand implements Command<Model, Real> {
+  check() {
+    return true;
+  }
+  run(m: Model, r: Real) {
+    const fn = (v: number) => v * 2;
+    m.set.map(fn);
+    r.set = r.set.map(fn);
+    assertEquiv(m, r);
+  }
+  toString() {
+    return 'map(v => v * 2)';
+  }
+}
+
+class FilterCommand implements Command<Model, Real> {
+  check() {
+    return true;
+  }
+  run(m: Model, r: Real) {
+    const fn = (v: number) => v % 2 === 0;
+    m.set.filter(fn);
+    r.set = r.set.filter(fn);
+    assertEquiv(m, r);
+  }
+  toString() {
+    return 'filter(v => v % 2 === 0)';
+  }
+}
+
+class SortCommand implements Command<Model, Real> {
+  check(m: Readonly<Model>) {
+    return m.set.size > 0;
+  }
+  run(m: Model, r: Real) {
+    const cmp = (a: number, b: number) => a - b;
+    m.set.sort(cmp);
+    r.set = r.set.sort(cmp);
+    assertEquiv(m, r);
+  }
+  toString() {
+    return 'sort((a, b) => a - b)';
+  }
+}
+
 const allCommands = [
   fc.integer().map((v) => new AddCommand(v)),
   fc.integer().map((v) => new DeleteCommand(v)),
   fc.constant(new ClearCommand()),
+  fc.constant(new MapCommand()),
+  fc.constant(new FilterCommand()),
+  fc.constant(new SortCommand()),
 ];
 
 describe('OrderedSet model check', () => {
