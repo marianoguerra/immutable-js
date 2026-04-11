@@ -37,9 +37,9 @@ import {
 import { Collection } from './Collection';
 import { hash } from './Hash';
 
-// Patch conversion and sort methods onto base-class prototypes.
-// Must be imported after all concrete types are defined.
-import './CollectionConversions';
+import { initCollectionConversions } from './CollectionConversions';
+
+initCollectionConversions();
 
 // Functional read/write API
 import { get } from './functional/get';
