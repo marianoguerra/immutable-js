@@ -65,6 +65,9 @@ export const Record = (defaultValues, name) => {
       hasInitialized = true;
       const keys = Object.keys(defaultValues);
       const indices = (RecordTypePrototype._indices = {});
+      // Deprecated: still used by @immutable/devtools as of 2026-04-11.
+      // Remove once the formatter no longer reads ._name.
+      RecordTypePrototype._name = name;
       RecordTypePrototype._keys = keys;
       RecordTypePrototype._defaultValues = defaultValues;
       for (let i = 0; i < keys.length; i++) {
