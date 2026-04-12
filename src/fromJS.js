@@ -32,7 +32,7 @@ function fromJSWith(stack, converter, value, key, keyPath, parentValue) {
       Seq(value).map((v, k) =>
         fromJSWith(stack, converter, v, k, keyPath, value)
       ),
-      keyPath && keyPath.slice()
+      keyPath?.slice()
     );
     stack.pop();
     if (keyPath) {

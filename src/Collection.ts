@@ -513,7 +513,7 @@ export class CollectionImpl<K, V> implements ValueObject {
     context?: unknown
   ) {
     const entry = this.findEntry(predicate, context);
-    return entry && (entry as [K, V])[0];
+    return (entry as [K, V] | undefined)?.[0];
   }
 
   findLast(

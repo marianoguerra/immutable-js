@@ -271,7 +271,7 @@ export function maxFactory(collection, comparator, mapper) {
       .toSeq()
       .map((v, k) => [v, mapper(v, k, collection)])
       .reduce((a, b) => (maxCompare(comparator, a[1], b[1]) ? b : a));
-    return entry && entry[0];
+    return entry?.[0];
   }
   return collection.reduce((a, b) => (maxCompare(comparator, a, b) ? b : a));
 }

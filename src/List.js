@@ -108,7 +108,7 @@ export class ListImpl extends IndexedCollectionImpl {
     if (index >= 0 && index < this.size) {
       index += this._origin;
       const node = listNodeFor(this, index);
-      return node && node.array[index & MASK];
+      return node?.array[index & MASK];
     }
     return notSetValue;
   }
@@ -408,7 +408,7 @@ function iterateList(list, reverse) {
     if (level === 0) {
       // Leaf frame
       const array = offset === tailPos ? tail?.array : node?.array;
-      let from = offset > left ? 0 : left - offset;
+      const from = offset > left ? 0 : left - offset;
       let to = right - offset;
       if (to > SIZE) {
         to = SIZE;
@@ -419,7 +419,7 @@ function iterateList(list, reverse) {
     } else {
       // Internal node frame
       const array = node?.array;
-      let from = offset > left ? 0 : (left - offset) >> level;
+      const from = offset > left ? 0 : (left - offset) >> level;
       let to = ((right - offset) >> level) + 1;
       if (to > SIZE) {
         to = SIZE;
@@ -572,7 +572,7 @@ function updateVNode(node, ownerID, level, index, value, didAlter) {
   let newNode;
 
   if (level > 0) {
-    const lowerNode = node && node.array[idx];
+    const lowerNode = node?.array[idx];
     const newLowerNode = updateVNode(
       lowerNode,
       ownerID,
@@ -712,7 +712,7 @@ function setListBounds(list, begin, end) {
 
   // If the size has been reduced, there's a chance the tail needs to be trimmed.
   if (newCapacity < oldCapacity) {
-    newTail = newTail && newTail.removeAfter(owner, 0, newCapacity);
+    newTail = newTail?.removeAfter(owner, 0, newCapacity);
   }
 
   // If the new origin is within the tail, then we do not need a root.
@@ -721,7 +721,7 @@ function setListBounds(list, begin, end) {
     newCapacity -= newTailOffset;
     newLevel = SHIFT;
     newRoot = null;
-    newTail = newTail && newTail.removeBefore(owner, 0, newOrigin);
+    newTail = newTail?.removeBefore(owner, 0, newOrigin);
 
     // Otherwise, if the root has been trimmed, garbage collect.
   } else if (newOrigin > oldOrigin || newTailOffset < oldTailOffset) {
