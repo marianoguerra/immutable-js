@@ -42,12 +42,11 @@ export function flipFactory(collection) {
   flipSequence.__iterate = function (fn, reverse) {
     return collection.__iterate((v, k) => fn(k, v, this), reverse);
   };
-  flipSequence.__iteratorUncached = function (reverse) {
-    return mapEntries(collection.__iterator(reverse), (k, v, entry) => {
+  flipSequence.__iteratorUncached = (reverse) =>
+    mapEntries(collection.__iterator(reverse), (k, v, entry) => {
       entry[0] = v;
       entry[1] = k;
     });
-  };
   return flipSequence;
 }
 
@@ -67,12 +66,11 @@ export function mapFactory(collection, mapper, context) {
       reverse
     );
   };
-  mappedSequence.__iteratorUncached = function (reverse) {
-    return mapEntries(collection.__iterator(reverse), (k, v, entry) => {
+  mappedSequence.__iteratorUncached = (reverse) =>
+    mapEntries(collection.__iterator(reverse), (k, v, entry) => {
       entry[0] = k;
       entry[1] = mapper.call(context, v, k, collection);
     });
-  };
   return mappedSequence;
 }
 

@@ -86,11 +86,8 @@ export function hasIterator(
 export const isIterator = (
   maybeIterator: unknown
 ): maybeIterator is globalThis.Iterator<unknown> =>
-  !!(
-    maybeIterator &&
-    // @ts-expect-error: maybeIterator is typed as `{}`
-    typeof maybeIterator.next === 'function'
-  );
+  // @ts-expect-error: maybeIterator is typed as `unknown`
+  typeof maybeIterator?.next === 'function';
 
 export function getIterator(
   iterable: unknown
@@ -102,10 +99,8 @@ export function getIterator(
 function getIteratorFn(
   iterable: unknown
 ): (() => globalThis.Iterator<unknown>) | undefined {
-  const iteratorFn =
-    iterable &&
-    // @ts-expect-error: maybeIterator is typed as `{}`
-    iterable[Symbol.iterator];
+  // @ts-expect-error: iterable is typed as `unknown`
+  const iteratorFn = iterable?.[Symbol.iterator];
   if (typeof iteratorFn === 'function') {
     return iteratorFn;
   }
