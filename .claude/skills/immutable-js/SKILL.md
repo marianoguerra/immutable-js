@@ -1,22 +1,13 @@
 ---
 name: immutable-js
-description: Reference for the Immutable.js API organized by datatype (List, Map, Set, OrderedMap, OrderedSet, Stack, Record, Seq, Collection, Range, Repeat) and by topic (deep updates, equality, type predicates, JS conversion). Use when the user asks how to use a specific Immutable.js datatype or method, when writing or reviewing code in this repository, or when explaining Immutable.js semantics like persistent updates, value equality, or lazy evaluation.
+description: Reference for the Immutable.js API organized by datatype (List, Map, Set, OrderedMap, OrderedSet, Stack, Record, Seq, Collection, Range, Repeat) and by topic (deep updates, equality, type predicates, JS conversion). Use when the user asks how to use a specific Immutable.js datatype or method, when writing or reviewing code that imports from `immutable`, or when explaining Immutable.js semantics like persistent updates, value equality, or lazy evaluation.
 ---
 
 # Immutable.js
 
-Persistent immutable data structures for JavaScript. All operations return a
-new collection rather than mutating the original; structural sharing keeps
-this efficient. Treat collections as **values**, not objects — compare with
-`is(a, b)` or `a.equals(b)`, never `===`.
-
-```js
-import { Map } from 'immutable';
-const m1 = Map({ a: 1, b: 2 });
-const m2 = m1.set('b', 50);
-m1.get('b'); // 2  — m1 is unchanged
-m2.get('b'); // 50
-```
+Persistent immutable data structures: every operation returns a new collection,
+never mutates. Treat collections as **values** — compare with `is(a, b)` or
+`a.equals(b)`, never `===`. See [equality.md](references/equality.md).
 
 ## Inheritance cheatsheet
 
@@ -35,6 +26,14 @@ Seq mirrors the hierarchy lazily:
        ├─ Seq.Indexed ─ indexed lazy sequence
        └─ Seq.Set     ─ set-like lazy sequence
 ```
+
+## How to use this skill
+
+Load only the reference file(s) that match the question — do not preload
+all of them. Pick a datatype file when the question is about one type's
+methods; pick an operations/topics file when the question crosses types
+(deep updates, equality, conversions). For exact signatures, fall back
+to `type-definitions/immutable.d.ts` (see *Authoritative sources* below).
 
 ## Datatypes
 
