@@ -4,18 +4,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import Benchmark from 'benchmark';
 import pc from 'picocolors';
+import { Bench } from 'tinybench';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const perfDir = path.resolve(__dirname, '../perf/');
 const distPath = path.resolve(__dirname, '../dist/immutable.js');
-
-function isUMDSource(src) {
-  // Strip leading whitespace, line comments, and block comments before checking
-  const stripped = src.replace(/^(\s|\/\/[^\n]*\n|\/\*[\s\S]*?\*\/)+/, '');
-  return stripped.startsWith('(function') || stripped.startsWith('!function');
-}
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -34,6 +28,19 @@ async function loadCurrentDist() {
   return import(pathToFileURL(distPath).href);
 }
 
+// The dist is ESM, but may come from a git object rather than a file on
+// disk, so write it to a temp file to import it.
+async function loadDistFromSource(src) {
+  const tmpDir = await mkdtemp(path.join(tmpdir(), 'immutable-bench-'));
+  const tmpFile = path.join(tmpDir, 'immutable-loaded.mjs');
+  await writeFile(tmpFile, src);
+  try {
+    return await import(pathToFileURL(tmpFile).href);
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
+}
+
 async function loadMainDist() {
   let oldSrc;
   try {
@@ -43,93 +50,11 @@ async function loadMainDist() {
   } catch {
     return null;
   }
-
-  const isUMD = isUMDSource(oldSrc);
-
-  if (isUMD) {
-    // Wrap UMD in ESM: execute in a vm context and re-export
-    const tmpDir = await mkdtemp(path.join(tmpdir(), 'immutable-bench-'));
-    const tmpFile = path.join(tmpDir, 'immutable-old.mjs');
-    const wrapped = `
-var module = { exports: {} };
-var exports = module.exports;
-var define = undefined;
-${oldSrc}
-export default module.exports;
-export const List = module.exports.List;
-export const Map = module.exports.Map;
-export const OrderedMap = module.exports.OrderedMap;
-export const Set = module.exports.Set;
-export const OrderedSet = module.exports.OrderedSet;
-export const Stack = module.exports.Stack;
-export const Range = module.exports.Range;
-export const Repeat = module.exports.Repeat;
-export const Record = module.exports.Record;
-export const Seq = module.exports.Seq;
-export const Collection = module.exports.Collection;
-export const is = module.exports.is;
-export const fromJS = module.exports.fromJS;
-export const hash = module.exports.hash;
-`;
-    await writeFile(tmpFile, wrapped);
-    try {
-      return await import(pathToFileURL(tmpFile).href);
-    } finally {
-      await rm(tmpDir, { recursive: true, force: true });
-    }
-  }
-
-  // ESM source: write to temp file and import
-  const tmpDir = await mkdtemp(path.join(tmpdir(), 'immutable-bench-'));
-  const tmpFile = path.join(tmpDir, 'immutable-old.mjs');
-  await writeFile(tmpFile, oldSrc);
-  try {
-    return await import(pathToFileURL(tmpFile).href);
-  } finally {
-    await rm(tmpDir, { recursive: true, force: true });
-  }
+  return loadDistFromSource(oldSrc);
 }
 
 async function loadDistFromFile(filePath) {
-  const src = await readFile(filePath, 'utf8');
-
-  const isUMD = isUMDSource(src);
-
-  const tmpDir = await mkdtemp(path.join(tmpdir(), 'immutable-bench-'));
-  const tmpFile = path.join(tmpDir, 'immutable-loaded.mjs');
-
-  if (isUMD) {
-    const wrapped = `
-var module = { exports: {} };
-var exports = module.exports;
-var define = undefined;
-${src}
-export default module.exports;
-export const List = module.exports.List;
-export const Map = module.exports.Map;
-export const OrderedMap = module.exports.OrderedMap;
-export const Set = module.exports.Set;
-export const OrderedSet = module.exports.OrderedSet;
-export const Stack = module.exports.Stack;
-export const Range = module.exports.Range;
-export const Repeat = module.exports.Repeat;
-export const Record = module.exports.Record;
-export const Seq = module.exports.Seq;
-export const Collection = module.exports.Collection;
-export const is = module.exports.is;
-export const fromJS = module.exports.fromJS;
-export const hash = module.exports.hash;
-`;
-    await writeFile(tmpFile, wrapped);
-  } else {
-    await writeFile(tmpFile, src);
-  }
-
-  try {
-    return await import(pathToFileURL(tmpFile).href);
-  } finally {
-    await rm(tmpDir, { recursive: true, force: true });
-  }
+  return loadDistFromSource(await readFile(filePath, 'utf8'));
 }
 
 async function loadPerfTests() {
@@ -202,84 +127,72 @@ function collectTests(modules, perfSources) {
   return Object.keys(tests).map((key) => tests[key]);
 }
 
-function runBenchmarks(tests, labels) {
-  const suites = [];
+const pad = (n, s) => Array(Math.max(0, 1 + n - s.length)).join(' ') + s;
+const fmt = (b) =>
+  Math.floor(b)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const pct = (p) => Math.floor(p * 10000) / 100 + '%';
 
-  tests.forEach((test) => {
-    const suite = new Benchmark.Suite(test.description, {
-      onStart(event) {
-        console.log(pc.bold(event.currentTarget.name));
-        process.stdout.write(pc.gray('  ...running...  '));
-      },
-      onComplete(event) {
-        process.stdout.write('\r\x1B[K');
-        const targets = Array.prototype.slice.call(event.currentTarget);
-        const stats = targets.map((target) => target.stats);
+async function runBenchmarks(tests, labels) {
+  for (const test of tests) {
+    console.log(pc.bold(test.description));
+    process.stdout.write(pc.gray('  ...running...  '));
 
-        const pad = (n, s) =>
-          Array(Math.max(0, 1 + n - s.length)).join(' ') + s;
-        const fmt = (b) =>
-          Math.floor(b)
-            .toString()
-            .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        const pct = (p) => Math.floor(p * 10000) / 100 + '%';
-
-        const numVersions = stats.length;
-
-        // Print each version's stats
-        for (let i = 0; i < numVersions; i++) {
-          const mean = 1 / stats[i].mean;
-          const lowmoe = 1 / (stats[i].mean + stats[i].moe);
-          const highmoe = 1 / (stats[i].mean - stats[i].moe);
-          const label = labels[i] || `v${i}`;
-
-          console.log(
-            pc.gray(pc.bold('  ' + label + ': ')) +
-              (pad(9, fmt(lowmoe)) +
-                ' ' +
-                pad(9, fmt(mean)) +
-                ' ' +
-                pad(9, fmt(highmoe)) +
-                ' ops/sec')
-          );
-        }
-
-        // Print diffs between consecutive pairs
-        for (let i = 1; i < numVersions; i++) {
-          const prevMean = 1 / stats[i].mean;
-          const curMean = 1 / stats[0].mean;
-          const diffMean = (curMean - prevMean) / prevMean;
-
-          const sq = (p) => p * p;
-          const rme = Math.sqrt(
-            (sq(stats[0].rme / 100) + sq(stats[i].rme / 100)) / 2
-          );
-
-          console.log(
-            pc.gray('  ' + labels[0] + ' vs ' + labels[i] + ': ') +
-              'diff: ' +
-              pct(diffMean) +
-              '  rme: ' +
-              pct(rme)
-          );
-        }
-      },
-    });
-
-    test.tests.forEach((run) => {
-      suite.add({
-        fn: run.test,
-        onStart: run.before,
-        onCycle: run.before,
+    const bench = new Bench({ time: 500 });
+    test.tests.forEach((run, version) => {
+      // The DSL's beforeEach maps to tinybench's per-task beforeAll: the old
+      // benchmark.js harness ran it once per cycle (a handful of times per
+      // task), while tinybench's beforeEach would run it before every single
+      // iteration — thousands of times, dominating tasks with heavy setup.
+      // The measured ops never mutate the prepared structures, so
+      // once-per-task setup is equivalent.
+      bench.add(labels[version] || `v${version}`, run.test, {
+        beforeAll: run.before,
       });
     });
 
-    suites.push(suite);
-  });
+    await bench.run();
+    process.stdout.write('\r\x1B[K');
 
-  return new Promise((resolve) => {
-    Benchmark.invoke(suites, 'run', { onComplete: resolve });
-  });
+    const throughputs = bench.tasks.map((task) => task.result.throughput);
+
+    // Print each version's ops/sec with its margin-of-error bounds
+    bench.tasks.forEach((task, i) => {
+      const { mean, moe } = throughputs[i];
+      console.log(
+        pc.gray(pc.bold('  ' + task.name + ': ')) +
+          (pad(9, fmt(mean - moe)) +
+            ' ' +
+            pad(9, fmt(mean)) +
+            ' ' +
+            pad(9, fmt(mean + moe)) +
+            ' ops/sec')
+      );
+    });
+
+    // Print diffs between the first version and each other version
+    for (let i = 1; i < throughputs.length; i++) {
+      const diffMean =
+        (throughputs[0].mean - throughputs[i].mean) / throughputs[i].mean;
+
+      const sq = (p) => p * p;
+      const relativeMoe = (stats) => stats.moe / stats.mean;
+      const rme = Math.sqrt(
+        (sq(relativeMoe(throughputs[0])) + sq(relativeMoe(throughputs[i]))) / 2
+      );
+
+      console.log(
+        pc.gray(
+          '  ' + bench.tasks[0].name + ' vs ' + bench.tasks[i].name + ': '
+        ) +
+          'diff: ' +
+          pct(diffMean) +
+          '  rme: ' +
+          pct(rme)
+      );
+    }
+  }
 }
 
 async function main() {
