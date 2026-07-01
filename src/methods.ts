@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- these are mixin
+ * methods whose `this` is whichever collection class they are mixed into */
+import type { KeyPath } from '../type-definitions/immutable';
 import { KeyedCollection } from './Collection';
 import { emptyMap } from './Map';
 import { OwnerID, NOT_SET } from './TrieUtils';
@@ -11,72 +14,113 @@ import { updateIn as _updateIn } from './functional/updateIn';
 import { isRecord } from './predicates';
 import { assertNotInfinite } from './utils/assertions';
 
-export function asImmutable() {
+// The mutable-ownership surface every collection with withMutations support
+// implements.
+interface Mutable {
+  __ownerID?: OwnerID;
+  __altered: boolean;
+  __ensureOwner(ownerID?: OwnerID): Mutable;
+  asMutable(): Mutable;
+  wasAltered(): boolean;
+}
+
+export function asImmutable(this: Mutable): Mutable {
   return this.__ensureOwner();
 }
 
-export function asMutable() {
+export function asMutable(this: Mutable): Mutable {
   return this.__ownerID ? this : this.__ensureOwner(new OwnerID());
 }
 
-export function wasAltered() {
+export function wasAltered(this: Mutable): boolean {
   return this.__altered;
 }
 
-export function withMutations(fn) {
+export function withMutations(
+  this: Mutable,
+  fn: (mutable: Mutable) => unknown
+): Mutable {
   const mutable = this.asMutable();
   fn(mutable);
   return mutable.wasAltered() ? mutable.__ensureOwner(this.__ownerID) : this;
 }
 
-export function getIn(searchKeyPath, notSetValue) {
+export function getIn(
+  this: any,
+  searchKeyPath: KeyPath<unknown>,
+  notSetValue?: unknown
+): unknown {
   return _getIn(this, searchKeyPath, notSetValue);
 }
 
-export function hasIn(searchKeyPath) {
+export function hasIn(this: any, searchKeyPath: KeyPath<unknown>): boolean {
   return _hasIn(this, searchKeyPath);
 }
 
-export function deleteIn(keyPath) {
+export function deleteIn(this: any, keyPath: KeyPath<PropertyKey>): unknown {
   return removeIn(this, keyPath);
 }
 
-export function setIn(keyPath, v) {
+export function setIn(
+  this: any,
+  keyPath: KeyPath<PropertyKey>,
+  v: unknown
+): unknown {
   return _setIn(this, keyPath, v);
 }
 
-export function update(key, notSetValue, updater) {
+export function update(
+  this: any,
+  key: unknown,
+  notSetValue?: unknown,
+  updater?: (value: unknown) => unknown
+): unknown {
   return typeof key === 'function'
     ? key(this)
-    : _update(this, key, notSetValue, updater);
+    : (_update as any)(this, key, notSetValue, updater);
 }
 
-export function updateIn(keyPath, notSetValue, updater) {
-  return _updateIn(this, keyPath, notSetValue, updater);
+export function updateIn(
+  this: any,
+  keyPath: KeyPath<PropertyKey>,
+  notSetValue: unknown,
+  updater?: (value: unknown) => unknown
+): unknown {
+  return (_updateIn as any)(this, keyPath, notSetValue, updater);
 }
 
-export function toObject() {
+export function toObject(this: any): { [key: string]: unknown } {
   assertNotInfinite(this.size);
-  const object = {};
-  this.__iterate((v, k) => {
+  const object: { [key: string]: unknown } = {};
+  this.__iterate((v: unknown, k: any) => {
     object[k] = v;
   });
   return object;
 }
 
-export function merge(...iters) {
+type Merger = (oldValue: any, newValue: any, key: any) => unknown;
+
+export function merge(this: any, ...iters: Array<unknown>): unknown {
   return mergeIntoKeyedWith(this, iters);
 }
 
-export function mergeWith(merger, ...iters) {
+export function mergeWith(
+  this: any,
+  merger: Merger,
+  ...iters: Array<unknown>
+): unknown {
   if (typeof merger !== 'function') {
     throw new TypeError(`Invalid merger function: ${merger}`);
   }
   return mergeIntoKeyedWith(this, iters, merger);
 }
 
-function mergeIntoKeyedWith(collection, collections, merger) {
-  const iters = [];
+function mergeIntoKeyedWith(
+  collection: any,
+  collections: Array<unknown>,
+  merger?: Merger
+): unknown {
+  const iters: Array<any> = [];
   for (const item of collections) {
     const collection = KeyedCollection(item);
     if (collection.size !== 0) {
@@ -95,14 +139,14 @@ function mergeIntoKeyedWith(collection, collections, merger) {
       ? collection // Record is empty and will not be updated: return the same instance
       : collection.create(iters[0]);
   }
-  return collection.withMutations((collection) => {
+  return collection.withMutations((collection: any) => {
     const mergeIntoCollection = merger
-      ? (value, key) => {
+      ? (value: unknown, key: unknown) => {
           _update(collection, key, NOT_SET, (oldVal) =>
             oldVal === NOT_SET ? value : merger(oldVal, value, key)
           );
         }
-      : (value, key) => {
+      : (value: unknown, key: unknown) => {
           collection.set(key, value);
         };
     for (const iter of iters) {
@@ -111,27 +155,39 @@ function mergeIntoKeyedWith(collection, collections, merger) {
   });
 }
 
-export function mergeDeep(...iters) {
+export function mergeDeep(this: any, ...iters: Array<unknown>): unknown {
   return mergeDeepWithSources(this, iters);
 }
 
-export function mergeDeepWith(merger, ...iters) {
+export function mergeDeepWith(
+  this: any,
+  merger: Merger,
+  ...iters: Array<unknown>
+): unknown {
   return mergeDeepWithSources(this, iters, merger);
 }
 
-export function mergeIn(keyPath, ...iters) {
-  return _updateIn(this, keyPath, emptyMap(), (m) =>
+export function mergeIn(
+  this: any,
+  keyPath: KeyPath<PropertyKey>,
+  ...iters: Array<unknown>
+): unknown {
+  return (_updateIn as any)(this, keyPath, emptyMap(), (m: unknown) =>
     mergeWithSources(m, iters)
   );
 }
 
-export function mergeDeepIn(keyPath, ...iters) {
-  return _updateIn(this, keyPath, emptyMap(), (m) =>
+export function mergeDeepIn(
+  this: any,
+  keyPath: KeyPath<PropertyKey>,
+  ...iters: Array<unknown>
+): unknown {
+  return (_updateIn as any)(this, keyPath, emptyMap(), (m: unknown) =>
     mergeDeepWithSources(m, iters)
   );
 }
 
-export function mixin(Class, methods) {
+export function mixin(Class: { prototype: object }, methods: object): void {
   Object.assign(Class.prototype, methods);
 }
 
