@@ -1,7 +1,6 @@
 import * as Immutable from 'immutable';
 import installDevTools from '@immutable/devtools';
 import { describe, expect, it } from '@jest/globals';
-// @ts-expect-error immutable is loaded automatically
 import normalizeResult from './normalizeResult';
 
 installDevTools(Immutable);
