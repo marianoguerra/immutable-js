@@ -6,13 +6,7 @@ import {
   makeIterator,
 } from './Iterator';
 import { wholeSlice, resolveBegin, resolveEnd, wrapIndex } from './TrieUtils';
-import {
-  mixin,
-  asImmutable,
-  asMutable,
-  wasAltered,
-  withMutations,
-} from './methods';
+import { mixin, wasAltered, mutatorMethods } from './methods';
 import { IS_STACK_SYMBOL, isStack } from './predicates';
 import { assertNotInfinite } from './utils/assertions';
 
@@ -28,10 +22,8 @@ Stack.of = (...values) => Stack(values);
 export class StackImpl extends IndexedCollectionImpl {
   static {
     mixin(this, {
-      asImmutable,
-      asMutable,
+      ...mutatorMethods(),
       wasAltered,
-      withMutations,
       [IS_STACK_SYMBOL]: true,
       shift: this.prototype.pop,
       unshift: this.prototype.push,

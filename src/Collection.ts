@@ -1229,5 +1229,4 @@ Collection.Indexed = IndexedCollection;
 Collection.Set = SetCollection;
 
 // Export prototype references needed by other modules
-export const CollectionPrototype = CollectionImpl.prototype;
 export const IndexedCollectionPrototype = IndexedCollectionImpl.prototype;

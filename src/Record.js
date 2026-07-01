@@ -6,22 +6,12 @@ import { KeyedSeqImpl } from './Seq';
 import { DELETE } from './TrieUtils';
 import {
   mixin,
-  asImmutable,
-  asMutable,
-  deleteIn,
   getIn,
   hasIn,
-  merge,
-  mergeWith,
-  mergeDeep,
-  mergeDeepWith,
-  mergeDeepIn,
-  mergeIn,
-  setIn,
   toObject,
-  update,
-  updateIn,
-  withMutations,
+  mutatorMethods,
+  deepPathMethods,
+  keyedMergeMethods,
 } from './methods';
 
 import { IS_RECORD_SYMBOL, isImmutable, isRecord } from './predicates';
@@ -108,23 +98,12 @@ export const Record = (defaultValues, name) => {
 export class RecordImpl {
   static {
     mixin(this, {
-      asImmutable,
-      asMutable,
-      deleteIn,
+      ...mutatorMethods(),
+      ...deepPathMethods(),
+      ...keyedMergeMethods(),
       getIn,
       hasIn,
-      merge,
-      mergeWith,
-      mergeDeep,
-      mergeDeepWith,
-      mergeDeepIn,
-      mergeIn,
-      setIn,
       toObject,
-      update,
-      updateIn,
-      withMutations,
-      removeIn: deleteIn,
       toJSON: toObject,
       [IS_RECORD_SYMBOL]: true,
       [DELETE]: this.prototype.remove,

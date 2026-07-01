@@ -6,7 +6,7 @@ import {
 } from './Collection';
 import { emptyMap } from './Map';
 import { DELETE } from './TrieUtils';
-import { mixin, withMutations, asImmutable, asMutable } from './methods';
+import { mixin, mutatorMethods } from './methods';
 import { IS_SET_SYMBOL, isOrdered, isSet } from './predicates';
 import { assertNotInfinite } from './utils/assertions';
 
@@ -38,9 +38,8 @@ Set.union = (sets) => {
 export class SetImpl extends SetCollectionImpl {
   static {
     mixin(this, {
-      withMutations,
-      asImmutable,
-      asMutable,
+      // No wasAltered here: SetImpl defines its own wasAltered class method.
+      ...mutatorMethods(),
       [IS_SET_SYMBOL]: true,
       [DELETE]: this.prototype.remove,
       merge: this.prototype.union,

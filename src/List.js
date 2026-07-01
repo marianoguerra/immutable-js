@@ -19,19 +19,7 @@ import {
   resolveBegin,
   resolveEnd,
 } from './TrieUtils';
-import {
-  mixin,
-  asImmutable,
-  asMutable,
-  deleteIn,
-  mergeDeepIn,
-  mergeIn,
-  setIn,
-  update,
-  updateIn,
-  wasAltered,
-  withMutations,
-} from './methods';
+import { mixin, wasAltered, mutatorMethods, deepPathMethods } from './methods';
 import { IS_LIST_SYMBOL, isList } from './predicates';
 import { assertNotInfinite } from './utils/assertions';
 
@@ -63,17 +51,9 @@ List.of = (...values) => List(values);
 export class ListImpl extends IndexedCollectionImpl {
   static {
     mixin(this, {
-      asImmutable,
-      asMutable,
-      deleteIn,
-      mergeDeepIn,
-      mergeIn,
-      setIn,
-      update,
-      updateIn,
+      ...mutatorMethods(),
+      ...deepPathMethods(),
       wasAltered,
-      withMutations,
-      removeIn: deleteIn,
       [IS_LIST_SYMBOL]: true,
       [DELETE]: this.prototype.remove,
       merge: this.prototype.concat,

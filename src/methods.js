@@ -134,3 +134,43 @@ export function mergeDeepIn(keyPath, ...iters) {
 export function mixin(Class, methods) {
   Object.assign(Class.prototype, methods);
 }
+
+// Shared method groups, spread into each collection's mixin() call. These
+// are functions rather than plain objects because this module and the
+// collection modules import each other: the collections' static blocks can
+// run while this module is still mid-evaluation, where a `const` object
+// would still be uninitialized but hoisted function declarations already
+// work.
+
+// wasAltered is intentionally not included: SetImpl defines its own
+// wasAltered class method (delegating to its inner _map), and mixing one in
+// would clobber it — collections that use the shared implementation list
+// wasAltered explicitly alongside this group.
+export function mutatorMethods() {
+  return {
+    asImmutable,
+    asMutable,
+    withMutations,
+  };
+}
+
+export function deepPathMethods() {
+  return {
+    deleteIn,
+    removeIn: deleteIn,
+    mergeDeepIn,
+    mergeIn,
+    setIn,
+    update,
+    updateIn,
+  };
+}
+
+export function keyedMergeMethods() {
+  return {
+    merge,
+    mergeWith,
+    mergeDeep,
+    mergeDeepWith,
+  };
+}

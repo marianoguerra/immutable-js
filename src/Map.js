@@ -14,20 +14,11 @@ import {
 import { is } from './is';
 import {
   mixin,
-  asImmutable,
-  asMutable,
-  deleteIn,
   merge,
-  mergeWith,
-  mergeDeep,
-  mergeDeepWith,
-  mergeDeepIn,
-  mergeIn,
-  setIn,
-  update,
-  updateIn,
   wasAltered,
-  withMutations,
+  mutatorMethods,
+  deepPathMethods,
+  keyedMergeMethods,
 } from './methods';
 import { IS_MAP_SYMBOL, isMap, isOrdered } from './predicates';
 import { assertNotInfinite } from './utils/assertions';
@@ -46,21 +37,10 @@ export const Map = (value) =>
 export class MapImpl extends KeyedCollectionImpl {
   static {
     mixin(this, {
-      asImmutable,
-      asMutable,
-      deleteIn,
-      merge,
-      mergeWith,
-      mergeDeep,
-      mergeDeepWith,
-      mergeDeepIn,
-      mergeIn,
-      setIn,
-      update,
-      updateIn,
+      ...mutatorMethods(),
+      ...deepPathMethods(),
+      ...keyedMergeMethods(),
       wasAltered,
-      withMutations,
-      removeIn: deleteIn,
       concat: merge,
       [IS_MAP_SYMBOL]: true,
       [DELETE]: this.prototype.remove,
