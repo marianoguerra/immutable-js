@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- the backing _map
+ * comes from the still-untyped Map.js */
 import {
   Collection,
   SetCollectionImpl,
@@ -5,37 +7,43 @@ import {
   SetCollection,
 } from './Collection';
 import { emptyMap } from './Map';
+import type { OwnerID } from './TrieUtils';
 import { DELETE } from './TrieUtils';
 import { mixin, mutatorMethods } from './methods';
 import { IS_SET_SYMBOL, isOrdered, isSet } from './predicates';
 import { assertNotInfinite } from './utils/assertions';
 
-export const Set = (value) =>
+export const Set = <T>(value?: Iterable<T> | ArrayLike<T>): SetImpl<T> =>
   value === undefined || value === null
     ? emptySet()
     : isSet(value) && !isOrdered(value)
-      ? value
-      : emptySet().withMutations((set) => {
+      ? (value as unknown as SetImpl<T>)
+      : emptySet<T>().withMutations((set) => {
           const iter = SetCollection(value);
           assertNotInfinite(iter.size);
-          iter.forEach((v) => set.add(v));
+          iter.forEach((v) => set.add(v as T));
         });
 
-Set.of = (...values) => Set(values);
+Set.of = <T>(...values: Array<T>): SetImpl<T> => Set(values);
 
-Set.fromKeys = (value) => Set(KeyedCollection(value).keySeq());
+Set.fromKeys = (value: unknown): SetImpl<unknown> =>
+  Set(KeyedCollection(value).keySeq());
 
-Set.intersect = (sets) => {
-  sets = Collection(sets).toArray();
-  return sets.length ? Set(sets.pop()).intersect(...sets) : emptySet();
-};
-
-Set.union = (sets) => {
+Set.intersect = (sets: Iterable<unknown>): SetImpl<unknown> => {
   const setArray = Collection(sets).toArray();
-  return setArray.length ? Set(setArray.pop()).union(...setArray) : emptySet();
+  return setArray.length
+    ? Set(setArray.pop() as Iterable<unknown>).intersect(...setArray)
+    : emptySet();
 };
 
-export class SetImpl extends SetCollectionImpl {
+Set.union = (sets: Iterable<unknown>): SetImpl<unknown> => {
+  const setArray = Collection(sets).toArray();
+  return setArray.length
+    ? Set(setArray.pop() as Iterable<unknown>).union(...setArray)
+    : emptySet();
+};
+
+export class SetImpl<T> extends SetCollectionImpl<T> {
   static {
     mixin(this, {
       // No wasAltered here: SetImpl defines its own wasAltered class method.
@@ -48,45 +56,55 @@ export class SetImpl extends SetCollectionImpl {
     });
   }
 
-  constructor(map, ownerID) {
+  _map: any;
+  __ownerID: OwnerID | undefined;
+
+  // Provided by the mutatorMethods mixin in the static block above; declared
+  // here so internal call sites type-check.
+  declare withMutations: (fn: (mutable: SetImpl<T>) => unknown) => SetImpl<T>;
+
+  constructor(map?: any, ownerID?: OwnerID) {
     super();
     this.size = map ? map.size : 0;
     this._map = map;
     this.__ownerID = ownerID;
   }
 
-  create(value) {
-    return Set(value);
+  create(value: unknown): SetImpl<unknown> {
+    return Set(value as Iterable<unknown>);
   }
 
-  toString() {
+  override toString(): string {
     return this.__toString('Set {', '}');
   }
 
-  has(value) {
+  override has(value: T): boolean {
     return this._map.has(value);
   }
 
-  add(value) {
+  add(value: T): SetImpl<T> {
     return updateSet(this, this._map.set(value, value));
   }
 
-  remove(value) {
+  remove(value: T): SetImpl<T> {
     return updateSet(this, this._map.remove(value));
   }
 
-  clear() {
+  clear(): SetImpl<T> {
     return updateSet(this, this._map.clear());
   }
 
-  map(mapper, context) {
+  override map(
+    mapper: (value: T, key: T, iter: this) => T,
+    context?: unknown
+  ): SetImpl<T> {
     // keep track if the set is altered by the map function
     let didChanges = false;
 
     const newMap = updateSet(
       this,
-      this._map.mapEntries(([, v]) => {
-        const mapped = mapper.call(context, v, v, this);
+      this._map.mapEntries(([, v]: [T, T]) => {
+        const mapped = mapper.call(context as any, v, v, this);
 
         if (mapped !== v) {
           didChanges = true;
@@ -99,7 +117,7 @@ export class SetImpl extends SetCollectionImpl {
     return didChanges ? newMap : this;
   }
 
-  union(...iters) {
+  union(...iters: Array<any>): SetImpl<T> {
     iters = iters.filter((x) => x.size !== 0);
     if (iters.length === 0) {
       return this;
@@ -107,18 +125,18 @@ export class SetImpl extends SetCollectionImpl {
     if (this.size === 0 && !this.__ownerID && iters.length === 1) {
       return Set(iters[0]);
     }
-    return this.withMutations((set) => {
+    return this.withMutations((set: SetImpl<T>) => {
       for (const iter of iters) {
         if (typeof iter === 'string') {
-          set.add(iter);
+          set.add(iter as unknown as T);
         } else {
-          SetCollection(iter).forEach((value) => set.add(value));
+          SetCollection(iter).forEach((value) => set.add(value as T));
         }
       }
     });
   }
 
-  intersect(...iters) {
+  intersect(...iters: Array<unknown>): SetImpl<T> {
     return filterByIters(
       this,
       iters,
@@ -126,28 +144,28 @@ export class SetImpl extends SetCollectionImpl {
     );
   }
 
-  subtract(...iters) {
+  subtract(...iters: Array<unknown>): SetImpl<T> {
     return filterByIters(this, iters, (value, sets) =>
       sets.some((iter) => iter.includes(value))
     );
   }
 
-  wasAltered() {
+  wasAltered(): boolean {
     return this._map.wasAltered();
   }
 
-  __iterator(reverse) {
+  override __iterator(reverse?: boolean): IterableIterator<[T, T]> {
     return this._map.__iterator(reverse);
   }
 
-  __empty() {
+  __empty(): SetImpl<T> {
     return emptySet();
   }
-  __make(map, ownerID) {
+  __make(map: any, ownerID?: OwnerID): SetImpl<T> {
     return makeSet(map, ownerID);
   }
 
-  __ensureOwner(ownerID) {
+  __ensureOwner(ownerID?: OwnerID): SetImpl<T> {
     if (ownerID === this.__ownerID) {
       return this;
     }
@@ -166,26 +184,32 @@ export class SetImpl extends SetCollectionImpl {
 
 Set.isSet = isSet;
 
-const makeSet = (map, ownerID) => new SetImpl(map, ownerID);
+const makeSet = <T>(map?: any, ownerID?: OwnerID): SetImpl<T> =>
+  new SetImpl(map, ownerID);
 
-let EMPTY_SET;
-const emptySet = () => EMPTY_SET || (EMPTY_SET = makeSet(emptyMap()));
+let EMPTY_SET: SetImpl<unknown> | undefined;
+const emptySet = <T>(): SetImpl<T> =>
+  (EMPTY_SET || (EMPTY_SET = makeSet(emptyMap()))) as SetImpl<T>;
 
-function filterByIters(set, iters, shouldRemove) {
+function filterByIters<T>(
+  set: SetImpl<T>,
+  iters: Array<unknown>,
+  shouldRemove: (value: T, sets: Array<any>) => boolean
+): SetImpl<T> {
   if (iters.length === 0) {
     return set;
   }
-  iters = iters.map((iter) => SetCollection(iter));
-  return set.withMutations((s) => {
+  const sets = iters.map((iter) => SetCollection(iter as Iterable<unknown>));
+  return set.withMutations((s: SetImpl<T>) => {
     set.forEach((value) => {
-      if (shouldRemove(value, iters)) {
-        s.remove(value);
+      if (shouldRemove(value as T, sets)) {
+        s.remove(value as T);
       }
     });
   });
 }
 
-function updateSet(set, newMap) {
+function updateSet<T>(set: SetImpl<T>, newMap: any): SetImpl<T> {
   if (set.__ownerID) {
     set.size = newMap.size;
     set._map = newMap;
