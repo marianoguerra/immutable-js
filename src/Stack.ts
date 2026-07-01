@@ -1,3 +1,4 @@
+import type { CollectionImpl } from './Collection';
 import { IndexedCollection, IndexedCollectionImpl } from './Collection';
 import {
   DONE,
@@ -5,21 +6,27 @@ import {
   makeIndexKeys,
   makeIterator,
 } from './Iterator';
+import type { OwnerID } from './TrieUtils';
 import { wholeSlice, resolveBegin, resolveEnd, wrapIndex } from './TrieUtils';
 import { mixin, wasAltered, mutatorMethods } from './methods';
 import { IS_STACK_SYMBOL, isStack } from './predicates';
 import { assertNotInfinite } from './utils/assertions';
 
-export const Stack = (value) =>
+interface StackNode<T> {
+  value: T;
+  next: StackNode<T> | undefined;
+}
+
+export const Stack = <T>(value?: Iterable<T> | ArrayLike<T>): StackImpl<T> =>
   value === undefined || value === null
     ? emptyStack()
     : isStack(value)
-      ? value
-      : emptyStack().pushAll(value);
+      ? (value as unknown as StackImpl<T>)
+      : emptyStack<T>().pushAll(value);
 
-Stack.of = (...values) => Stack(values);
+Stack.of = <T>(...values: Array<T>): StackImpl<T> => Stack(values);
 
-export class StackImpl extends IndexedCollectionImpl {
+export class StackImpl<T> extends IndexedCollectionImpl<T> {
   static {
     mixin(this, {
       ...mutatorMethods(),
@@ -33,7 +40,16 @@ export class StackImpl extends IndexedCollectionImpl {
     });
   }
 
-  constructor(size, head, ownerID, hash) {
+  _head: StackNode<T> | undefined;
+  __ownerID: OwnerID | undefined;
+  __altered: boolean;
+
+  constructor(
+    size: number,
+    head?: StackNode<T>,
+    ownerID?: OwnerID,
+    hash?: number
+  ) {
     super();
     this.size = size;
     this._head = head;
@@ -42,28 +58,33 @@ export class StackImpl extends IndexedCollectionImpl {
     this.__altered = false;
   }
 
-  create(value) {
-    return Stack(value);
+  create(value: unknown): StackImpl<unknown> {
+    return Stack(value as Iterable<unknown>);
   }
 
-  toString() {
+  override toString(): string {
     return this.__toString('Stack [', ']');
   }
 
-  get(index, notSetValue) {
+  override get<NSV>(index: number, notSetValue: NSV): T | NSV;
+  override get(index: number): T | undefined;
+  override get<NSV>(index: number, notSetValue?: NSV): T | NSV | undefined {
     let head = this._head;
-    index = wrapIndex(this, index);
+    index = wrapIndex(
+      this as unknown as CollectionImpl<unknown, unknown>,
+      index
+    );
     while (head && index--) {
       head = head.next;
     }
     return head ? head.value : notSetValue;
   }
 
-  peek() {
+  peek(): T | undefined {
     return this._head?.value;
   }
 
-  push(...values) {
+  push(...values: Array<T>): StackImpl<T> {
     if (values.length === 0) {
       return this;
     }
@@ -71,39 +92,39 @@ export class StackImpl extends IndexedCollectionImpl {
     let head = this._head;
     for (let ii = values.length - 1; ii >= 0; ii--) {
       head = {
-        value: values[ii],
+        value: values[ii] as T,
         next: head,
       };
     }
     return returnStack(this, newSize, head);
   }
 
-  pushAll(iter) {
-    iter = IndexedCollection(iter);
-    if (iter.size === 0) {
+  pushAll(iter: Iterable<T> | ArrayLike<T>): StackImpl<T> {
+    const collection = IndexedCollection(iter);
+    if (collection.size === 0) {
       return this;
     }
-    if (this.size === 0 && isStack(iter)) {
-      return iter;
+    if (this.size === 0 && isStack(collection)) {
+      return collection as unknown as StackImpl<T>;
     }
-    assertNotInfinite(iter.size);
+    assertNotInfinite(collection.size);
     let newSize = this.size;
     let head = this._head;
-    iter.__iterate((value) => {
+    collection.__iterate((value) => {
       newSize++;
       head = {
-        value,
+        value: value as T,
         next: head,
       };
     }, /* reverse */ true);
     return returnStack(this, newSize, head);
   }
 
-  pop() {
+  pop(): StackImpl<T> {
     return this.slice(1);
   }
 
-  clear() {
+  clear(): StackImpl<T> {
     if (this.size === 0) {
       return this;
     }
@@ -117,7 +138,7 @@ export class StackImpl extends IndexedCollectionImpl {
     return emptyStack();
   }
 
-  slice(begin, end) {
+  override slice(begin?: number, end?: number): StackImpl<T> {
     if (wholeSlice(begin, end, this.size)) {
       return this;
     }
@@ -125,17 +146,21 @@ export class StackImpl extends IndexedCollectionImpl {
     const resolvedEnd = resolveEnd(end, this.size);
     if (resolvedEnd !== this.size) {
       // super.slice(begin, end);
-      return IndexedCollectionImpl.prototype.slice.call(this, begin, end);
+      return IndexedCollectionImpl.prototype.slice.call(
+        this,
+        begin,
+        end
+      ) as StackImpl<T>;
     }
     const newSize = this.size - resolvedBegin;
     let head = this._head;
     while (resolvedBegin--) {
-      head = head.next;
+      head = head?.next;
     }
     return returnStack(this, newSize, head);
   }
 
-  __ensureOwner(ownerID) {
+  __ensureOwner(ownerID?: OwnerID): StackImpl<T> {
     if (ownerID === this.__ownerID) {
       return this;
     }
@@ -150,13 +175,16 @@ export class StackImpl extends IndexedCollectionImpl {
     return makeStack(this.size, this._head, ownerID, this.__hash);
   }
 
-  __iterate(fn, reverse) {
+  override __iterate(
+    fn: (value: T, index: number, iter: this) => boolean | void,
+    reverse: boolean = false
+  ): number {
     if (reverse) {
       const arr = this.toArray();
       const size = arr.length;
       let i = 0;
       while (i !== size) {
-        if (fn(arr[size - ++i], size - i, this) === false) {
+        if (fn(arr[size - ++i] as T, size - i, this) === false) {
           break;
         }
       }
@@ -173,24 +201,24 @@ export class StackImpl extends IndexedCollectionImpl {
     return iterations;
   }
 
-  __iterator(reverse) {
+  override __iterator(reverse: boolean = false): IterableIterator<[number, T]> {
     if (reverse) {
       const arr = this.toArray();
       const size = arr.length;
       let i = 0;
-      return makeEntryIterator((entry) => {
+      return makeEntryIterator<number, T>((entry) => {
         if (i === size) {
           return false;
         }
         const ii = size - ++i;
         entry[0] = ii;
-        entry[1] = arr[ii];
+        entry[1] = arr[ii] as T;
         return true;
       });
     }
     let iterations = 0;
     let node = this._head;
-    return makeEntryIterator((entry) => {
+    return makeEntryIterator<number, T>((entry) => {
       if (!node) {
         return false;
       }
@@ -201,25 +229,32 @@ export class StackImpl extends IndexedCollectionImpl {
     });
   }
 
-  values() {
+  override values(): IterableIterator<T> {
     let node = this._head;
-    const result = { done: false, value: undefined };
+    const result: IteratorResult<T> = {
+      done: false,
+      value: undefined as unknown as T,
+    };
     return makeIterator(() => {
-      if (!node) return DONE;
+      if (!node) return DONE as IteratorResult<T>;
       result.value = node.value;
       node = node.next;
       return result;
     });
   }
 
-  keys() {
+  override keys(): IterableIterator<number> {
     return makeIndexKeys(this.size);
   }
 }
 
 Stack.isStack = isStack;
 
-function returnStack(stack, newSize, head) {
+function returnStack<T>(
+  stack: StackImpl<T>,
+  newSize: number,
+  head: StackNode<T> | undefined
+): StackImpl<T> {
   if (stack.__ownerID) {
     stack.size = newSize;
     stack._head = head;
@@ -230,8 +265,13 @@ function returnStack(stack, newSize, head) {
   return makeStack(newSize, head);
 }
 
-const makeStack = (size, head, ownerID, hash) =>
-  new StackImpl(size, head, ownerID, hash);
+const makeStack = <T>(
+  size: number,
+  head?: StackNode<T>,
+  ownerID?: OwnerID,
+  hash?: number
+): StackImpl<T> => new StackImpl(size, head, ownerID, hash);
 
-let EMPTY_STACK;
-const emptyStack = () => EMPTY_STACK || (EMPTY_STACK = makeStack(0));
+let EMPTY_STACK: StackImpl<unknown> | undefined;
+const emptyStack = <T>(): StackImpl<T> =>
+  (EMPTY_STACK || (EMPTY_STACK = makeStack(0))) as StackImpl<T>;
