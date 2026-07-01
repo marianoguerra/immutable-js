@@ -1,14 +1,28 @@
 {
+  // Validates the published immutable.d.ts in isolation.
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "target": "es2022",
+    // Load-bearing: the root config sets skipLibCheck:true, which would skip
+    // .d.ts files entirely and turn this whole project into a no-op.
+    "skipLibCheck": false,
+    // The d.ts ends with a CJS-style `export = Immutable`, which is illegal in
+    // an ESM-interpreted file — under `module: node16` this project fails with
+    // TS1203, and so does any consumer running skipLibCheck:false with node16
+    // resolution (the package is "type": "module"). Until the d.ts is
+    // restructured with real ESM exports, validate it with the legacy CJS
+    // semantics it was written for. TODO: convert immutable.d.ts to ESM
+    // exports, then switch these two options to "node16" and drop
+    // ignoreDeprecations.
     "module": "commonjs",
-    "sourceMap": true,
-    "noImplicitAny": true,
-    "noImplicitThis": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
+    "moduleResolution": "node10",
+    "ignoreDeprecations": "6.0",
+    "verbatimModuleSyntax": false,
+    // The published types must not depend on DOM globals or any @types.
     "lib": ["es2022"],
     "types": []
   },
+  // The root include (src/Immutable.js) resolves relative to the root config
+  // and must not leak into this check.
+  "include": [],
   "files": ["immutable.d.ts"]
 }

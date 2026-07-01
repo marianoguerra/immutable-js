@@ -81,7 +81,6 @@
     "build:dist": "rollup -c ./resources/rollup-config.mjs",
     "build:types": "cpy \"./type-definitions/immutable.d.ts\" dist --flat",
     "build:prepare": "node ./resources/prepare-dist.mjs",
-    "build:stats": "node ./resources/dist-stats.mjs",
     "website:build": "cd website && rm -rf out && next build && next-sitemap",
     "website:dev": "cd website && next dev",
     "check-build-output": "node ./resources/check-build-output.mjs",

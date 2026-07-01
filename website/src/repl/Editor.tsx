@@ -56,5 +56,5 @@ export function Editor({ value, onChange }: Props): JSX.Element {
     };
   }, [darkMode]);
 
-  return <div ref={editor}></div>;
+  return <div ref={editor} />;
 }

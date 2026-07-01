@@ -23,5 +23,5 @@ export default function FormatterOutput({ output }: Props): JSX.Element {
     }
   }, [htmlHeader]);
 
-  return <div ref={header}></div>;
+  return <div ref={header} />;
 }

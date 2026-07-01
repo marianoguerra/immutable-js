@@ -75,16 +75,20 @@ export default tseslintConfig(
   },
 
   {
-    files: ['src/*'],
+    files: ['src/**/*'],
     rules: {
       'no-console': 'error',
     },
   },
 
   {
-    files: ['website/'],
+    files: ['website/**/*'],
     ...pluginReact.configs.flat.recommended,
     ...pluginReact.configs.flat['jsx-runtime'],
+
+    settings: {
+      react: { version: 'detect' },
+    },
 
     rules: {
       'react/destructuring-assignment': 'off',

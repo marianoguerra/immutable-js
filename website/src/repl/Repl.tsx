@@ -1,6 +1,6 @@
 'use client';
 import dynamic from 'next/dynamic';
-import React, { type JSX, useCallback, useEffect, useState } from 'react';
+import { type JSX, useCallback, useEffect, useState } from 'react';
 import { useWorkerContext } from '../app/WorkerContext';
 import { Element, JsonMLElementList } from '../worker/jsonml-types';
 import { Editor } from './Editor';
