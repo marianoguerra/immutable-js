@@ -7,7 +7,7 @@ describe('toJS', () => {
   const list = Immutable.List(array32);
 
   it('List of 32', () => {
-    Immutable.toJS(list);
+    list.toJS();
   });
 
   const obj32 = {};
@@ -17,6 +17,6 @@ describe('toJS', () => {
   const map = Immutable.Map(obj32);
 
   it('Map of 32', () => {
-    Immutable.toJS(map);
+    map.toJS();
   });
 });
