@@ -126,7 +126,7 @@
     "jest": "^30.0.0",
     "jest-environment-jsdom": "^30.0.0",
     "jsonml-html": "^1.2.0",
-    "marked": "^17.0.0",
+    "marked": "^18.0.0",
     "marked-highlight": "^2.1.0",
     "next": "^16.1.0",
     "next-sitemap": "4.2.3",
