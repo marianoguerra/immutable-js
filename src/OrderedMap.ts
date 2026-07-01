@@ -1,23 +1,29 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- extends the
+ * still-untyped MapImpl; the backing _map/_list are untyped as well */
 import { CollectionImpl, KeyedCollection } from './Collection';
 import { makeEntryIterator } from './Iterator';
 import { emptyList } from './List';
 import { MapImpl, emptyMap } from './Map';
+import type { OwnerID } from './TrieUtils';
 import { DELETE, NOT_SET, SIZE } from './TrieUtils';
 import { mixin } from './methods';
 import { IS_ORDERED_SYMBOL, isOrderedMap } from './predicates';
 import { assertNotInfinite } from './utils/assertions';
 
-export const OrderedMap = (value) =>
+export const OrderedMap = (value?: any): OrderedMapImpl =>
   value === undefined || value === null
     ? emptyOrderedMap()
     : isOrderedMap(value)
-      ? value
-      : emptyOrderedMap().withMutations((map) => {
+      ? (value as unknown as OrderedMapImpl)
+      : emptyOrderedMap().withMutations((map: any) => {
           const iter = KeyedCollection(value);
           assertNotInfinite(iter.size);
           iter.forEach((v, k) => map.set(k, v));
         });
-OrderedMap.of = (...values) => OrderedMap(values);
+
+OrderedMap.of = (...values: Array<unknown>): OrderedMapImpl =>
+  OrderedMap(values);
+
 export class OrderedMapImpl extends MapImpl {
   static {
     mixin(this, {
@@ -34,26 +40,33 @@ export class OrderedMapImpl extends MapImpl {
     });
   }
 
-  constructor(map, list, ownerID, hash) {
+  _map: any;
+  _list: any;
+
+  // Provided by MapImpl's mutatorMethods mixin at runtime; declared here so
+  // internal call sites type-check.
+  declare withMutations: (fn: (mutable: any) => unknown) => OrderedMapImpl;
+
+  constructor(map?: any, list?: any, ownerID?: OwnerID, hash?: number) {
     super(map ? map.size : 0, undefined, ownerID, hash);
     this._map = map;
     this._list = list;
   }
 
-  create(value) {
+  override create(value: unknown): OrderedMapImpl {
     return OrderedMap(value);
   }
 
-  toString() {
+  override toString(): string {
     return this.__toString('OrderedMap {', '}');
   }
 
-  get(k, notSetValue) {
+  override get(k: unknown, notSetValue?: unknown): unknown {
     const index = this._map.get(k);
     return index !== undefined ? this._list.get(index)[1] : notSetValue;
   }
 
-  clear() {
+  override clear(): OrderedMapImpl {
     if (this.size === 0) {
       return this;
     }
@@ -67,21 +80,23 @@ export class OrderedMapImpl extends MapImpl {
     return emptyOrderedMap();
   }
 
-  set(k, v) {
+  override set(k: unknown, v: unknown): OrderedMapImpl {
     return updateOrderedMap(this, k, v);
   }
 
-  remove(k) {
+  override remove(k: unknown): OrderedMapImpl {
     return updateOrderedMap(this, k, NOT_SET);
   }
 
   // Override MapImpl's trie-based entries() since OrderedMap uses _list, not the trie.
   // keys/values/__iterate overrides are in the mixin() call above.
-  entries() {
+  // Loose return types: the JS-inferred MapImpl base declares its own
+  // generator-based shapes for these that the tuple iterator can't satisfy.
+  override entries(): any {
     return this.__iterator(false);
   }
 
-  __iterator(reverse) {
+  override __iterator(reverse?: boolean): any {
     const listIter = this._list.__iterator(reverse);
     return makeEntryIterator((entry) => {
       while (true) {
@@ -99,7 +114,7 @@ export class OrderedMapImpl extends MapImpl {
     });
   }
 
-  __ensureOwner(ownerID) {
+  override __ensureOwner(ownerID?: OwnerID): OrderedMapImpl {
     if (ownerID === this.__ownerID) {
       return this;
     }
@@ -121,12 +136,21 @@ export class OrderedMapImpl extends MapImpl {
 
 OrderedMap.isOrderedMap = isOrderedMap;
 
-const makeOrderedMap = (map, list, ownerID, hash) =>
-  new OrderedMapImpl(map, list, ownerID, hash);
+const makeOrderedMap = (
+  map?: any,
+  list?: any,
+  ownerID?: OwnerID,
+  hash?: number
+): OrderedMapImpl => new OrderedMapImpl(map, list, ownerID, hash);
 
-export const emptyOrderedMap = () => makeOrderedMap(emptyMap(), emptyList());
+export const emptyOrderedMap = (): OrderedMapImpl =>
+  makeOrderedMap(emptyMap(), emptyList());
 
-function updateOrderedMap(omap, k, v) {
+function updateOrderedMap(
+  omap: OrderedMapImpl,
+  k: unknown,
+  v: unknown
+): OrderedMapImpl {
   const { _map: map, _list: list } = omap;
   const i = map.get(k);
   const has = i !== undefined;
@@ -138,18 +162,18 @@ function updateOrderedMap(omap, k, v) {
       return omap;
     }
     if (list.size >= SIZE && list.size >= map.size * 2) {
-      const entries = [];
-      list.forEach((entry, idx) => {
+      const entries: Array<any> = [];
+      list.forEach((entry: any, idx: number) => {
         if (entry !== undefined && i !== idx) {
           entries.push(entry);
         }
       });
-      newList = emptyList().withMutations((l) => {
+      newList = (emptyList() as any).withMutations((l: any) => {
         for (let j = 0; j < entries.length; j++) {
           l.set(j, entries[j]);
         }
       });
-      newMap = emptyMap().withMutations((m) => {
+      newMap = (emptyMap() as any).withMutations((m: any) => {
         for (let j = 0; j < entries.length; j++) {
           m.set(entries[j][0], j);
         }
