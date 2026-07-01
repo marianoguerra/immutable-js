@@ -67,7 +67,7 @@
     "npm": ">=7.0.0"
   },
   "scripts": {
-    "test": "run-s format lint type-check build test:*",
+    "test": "run-s lint type-check build test:*",
     "test:unit": "node --experimental-vm-modules node_modules/.bin/jest",
     "test:types": "tstyche",
     "format": "npm run lint:format -- --write",
