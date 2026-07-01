@@ -93,7 +93,7 @@ export function initCollectionConversions(): void {
 
   const patchSort = (
     Impl: { prototype: any },
-    OrderedCtor: (values: unknown) => unknown
+    OrderedCtor: (values: any) => unknown
   ) => {
     Impl.prototype.sort = function sort(this: any, comparator?: any) {
       return OrderedCtor(sortFactory(this, comparator));
