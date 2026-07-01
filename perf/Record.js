@@ -2,14 +2,14 @@
 describe('Record', () => {
   describe('builds from an object', () => {
     [2, 5, 10, 100, 1000].forEach((size) => {
-      var defaults = {};
-      var values = {};
-      for (var ii = 0; ii < size; ii++) {
+      const defaults = {};
+      const values = {};
+      for (let ii = 0; ii < size; ii++) {
         defaults['x' + ii] = null;
         values['x' + ii] = ii;
       }
 
-      var Rec = Immutable.Record(defaults);
+      const Rec = Immutable.Record(defaults);
 
       it('of ' + size, () => {
         Rec(values);
@@ -19,17 +19,17 @@ describe('Record', () => {
 
   describe('update random using set()', () => {
     [2, 5, 10, 100, 1000].forEach((size) => {
-      var defaults = {};
-      var values = {};
-      for (var ii = 0; ii < size; ii++) {
+      const defaults = {};
+      const values = {};
+      for (let ii = 0; ii < size; ii++) {
         defaults['x' + ii] = null;
         values['x' + ii] = ii;
       }
 
-      var Rec = Immutable.Record(defaults);
-      var rec = Rec(values);
+      const Rec = Immutable.Record(defaults);
+      const rec = Rec(values);
 
-      var key = 'x' + Math.floor(size / 2);
+      const key = 'x' + Math.floor(size / 2);
 
       it('of ' + size, () => {
         rec.set(key, 999);
@@ -39,17 +39,17 @@ describe('Record', () => {
 
   describe('access random using get()', () => {
     [2, 5, 10, 100, 1000].forEach((size) => {
-      var defaults = {};
-      var values = {};
-      for (var ii = 0; ii < size; ii++) {
+      const defaults = {};
+      const values = {};
+      for (let ii = 0; ii < size; ii++) {
         defaults['x' + ii] = null;
         values['x' + ii] = ii;
       }
 
-      var Rec = Immutable.Record(defaults);
-      var rec = Rec(values);
+      const Rec = Immutable.Record(defaults);
+      const rec = Rec(values);
 
-      var key = 'x' + Math.floor(size / 2);
+      const key = 'x' + Math.floor(size / 2);
 
       it('of ' + size, () => {
         rec.get(key);
@@ -59,17 +59,17 @@ describe('Record', () => {
 
   describe('access random using property', () => {
     [2, 5, 10, 100, 1000].forEach((size) => {
-      var defaults = {};
-      var values = {};
-      for (var ii = 0; ii < size; ii++) {
+      const defaults = {};
+      const values = {};
+      for (let ii = 0; ii < size; ii++) {
         defaults['x' + ii] = null;
         values['x' + ii] = ii;
       }
 
-      var Rec = Immutable.Record(defaults);
-      var rec = Rec(values);
+      const Rec = Immutable.Record(defaults);
+      const rec = Rec(values);
 
-      var key = 'x' + Math.floor(size / 2);
+      const key = 'x' + Math.floor(size / 2);
 
       it('of ' + size, () => {
         // eslint-disable-next-line @typescript-eslint/no-unused-expressions

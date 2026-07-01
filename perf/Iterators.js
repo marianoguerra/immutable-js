@@ -1,15 +1,15 @@
 /* global Immutable */
-describe('Iterators', function () {
-  var sizes = [100, 1000, 10000];
+describe('Iterators', () => {
+  const sizes = [100, 1000, 10000];
 
-  sizes.forEach(function (N) {
-    describe('size ' + N, function () {
+  sizes.forEach((N) => {
+    describe('size ' + N, () => {
       // Setup data structures
-      var mapObj = {};
-      var array = [];
-      var nestedArray = [];
-      var entries = [];
-      for (var ii = 0; ii < N; ii++) {
+      const mapObj = {};
+      const array = [];
+      const nestedArray = [];
+      const entries = [];
+      for (let ii = 0; ii < N; ii++) {
         mapObj['k' + ii] = ii;
         array.push(ii);
         entries.push(['k' + ii, ii]);
@@ -20,33 +20,31 @@ describe('Iterators', function () {
         nestedArray[nestedArray.length - 1].push(ii);
       }
 
-      var map = Immutable.Map(mapObj);
-      var list = Immutable.List(array);
-      var nestedList = Immutable.List(
-        nestedArray.map(function (a) {
-          return Immutable.List(a);
-        })
+      const map = Immutable.Map(mapObj);
+      const list = Immutable.List(array);
+      const nestedList = Immutable.List(
+        nestedArray.map((a) => Immutable.List(a))
       );
-      var fromEntriesList = Immutable.List(entries);
+      const fromEntriesList = Immutable.List(entries);
 
       // Map for-of (entries, values, keys)
-      describe('Map for-of', function () {
-        it('entries ' + N, function () {
-          var iter = map.entries();
+      describe('Map for-of', () => {
+        it('entries ' + N, () => {
+          const iter = map.entries();
           while (!iter.next().done) {
             // drain
           }
         });
 
-        it('values ' + N, function () {
-          var iter = map.values();
+        it('values ' + N, () => {
+          const iter = map.values();
           while (!iter.next().done) {
             // drain
           }
         });
 
-        it('keys ' + N, function () {
-          var iter = map.keys();
+        it('keys ' + N, () => {
+          const iter = map.keys();
           while (!iter.next().done) {
             // drain
           }
@@ -54,13 +52,11 @@ describe('Iterators', function () {
       });
 
       // List filter iterator
-      describe('List filter iterator', function () {
-        var filtered = list.filter(function (v) {
-          return v % 2 === 0;
-        });
+      describe('List filter iterator', () => {
+        const filtered = list.filter((v) => v % 2 === 0);
 
-        it(N + ' items', function () {
-          var iter = filtered.values();
+        it(N + ' items', () => {
+          const iter = filtered.values();
           while (!iter.next().done) {
             // drain
           }
@@ -68,9 +64,9 @@ describe('Iterators', function () {
       });
 
       // List flatten iterator
-      describe('List flatten iterator', function () {
-        it(N + ' items', function () {
-          var iter = nestedList.flatten().values();
+      describe('List flatten iterator', () => {
+        it(N + ' items', () => {
+          const iter = nestedList.flatten().values();
           while (!iter.next().done) {
             // drain
           }
@@ -78,14 +74,12 @@ describe('Iterators', function () {
       });
 
       // List skipWhile iterator
-      describe('List skipWhile iterator', function () {
-        var halfN = Math.floor(N / 2);
-        var skipped = list.skipWhile(function (v) {
-          return v < halfN;
-        });
+      describe('List skipWhile iterator', () => {
+        const halfN = Math.floor(N / 2);
+        const skipped = list.skipWhile((v) => v < halfN);
 
-        it(N + ' items', function () {
-          var iter = skipped.values();
+        it(N + ' items', () => {
+          const iter = skipped.values();
           while (!iter.next().done) {
             // drain
           }
@@ -93,14 +87,14 @@ describe('Iterators', function () {
       });
 
       // List concat iterator
-      describe('List concat iterator', function () {
-        var halfN = Math.floor(N / 2);
-        var list1 = list.slice(0, halfN);
-        var list2 = list.slice(halfN);
-        var concatenated = list1.concat(list2);
+      describe('List concat iterator', () => {
+        const halfN = Math.floor(N / 2);
+        const list1 = list.slice(0, halfN);
+        const list2 = list.slice(halfN);
+        const concatenated = list1.concat(list2);
 
-        it(N + ' items', function () {
-          var iter = concatenated.values();
+        it(N + ' items', () => {
+          const iter = concatenated.values();
           while (!iter.next().done) {
             // drain
           }
@@ -108,11 +102,11 @@ describe('Iterators', function () {
       });
 
       // FromEntries iterator
-      describe('FromEntries iterator', function () {
-        var fromEntries = fromEntriesList.fromEntrySeq();
+      describe('FromEntries iterator', () => {
+        const fromEntries = fromEntriesList.fromEntrySeq();
 
-        it(N + ' items', function () {
-          var iter = fromEntries.entries();
+        it(N + ' items', () => {
+          const iter = fromEntries.entries();
           while (!iter.next().done) {
             // drain
           }
@@ -120,12 +114,12 @@ describe('Iterators', function () {
       });
 
       // List slice iterator
-      describe('List slice iterator', function () {
-        var quarterN = Math.floor(N / 4);
-        var sliced = list.slice(quarterN, quarterN * 3);
+      describe('List slice iterator', () => {
+        const quarterN = Math.floor(N / 4);
+        const sliced = list.slice(quarterN, quarterN * 3);
 
-        it(N + ' items', function () {
-          var iter = sliced.values();
+        it(N + ' items', () => {
+          const iter = sliced.values();
           while (!iter.next().done) {
             // drain
           }
@@ -133,14 +127,12 @@ describe('Iterators', function () {
       });
 
       // List takeWhile iterator
-      describe('List takeWhile iterator', function () {
-        var halfN = Math.floor(N / 2);
-        var taken = list.takeWhile(function (v) {
-          return v < halfN;
-        });
+      describe('List takeWhile iterator', () => {
+        const halfN = Math.floor(N / 2);
+        const taken = list.takeWhile((v) => v < halfN);
 
-        it(N + ' items', function () {
-          var iter = taken.values();
+        it(N + ' items', () => {
+          const iter = taken.values();
           while (!iter.next().done) {
             // drain
           }
@@ -148,11 +140,11 @@ describe('Iterators', function () {
       });
 
       // List interpose iterator
-      describe('List interpose iterator', function () {
-        var interposed = list.interpose(0);
+      describe('List interpose iterator', () => {
+        const interposed = list.interpose(0);
 
-        it(N + ' items', function () {
-          var iter = interposed.values();
+        it(N + ' items', () => {
+          const iter = interposed.values();
           while (!iter.next().done) {
             // drain
           }
@@ -160,21 +152,15 @@ describe('Iterators', function () {
       });
 
       // Chained lazy ops (filter -> map -> takeWhile)
-      describe('Chained lazy ops', function () {
-        var threeQuarterN = Math.floor((N * 3) / 4);
-        var chained = list
-          .filter(function (v) {
-            return v % 2 === 0;
-          })
-          .map(function (v) {
-            return v * 2;
-          })
-          .takeWhile(function (v) {
-            return v < threeQuarterN;
-          });
+      describe('Chained lazy ops', () => {
+        const threeQuarterN = Math.floor((N * 3) / 4);
+        const chained = list
+          .filter((v) => v % 2 === 0)
+          .map((v) => v * 2)
+          .takeWhile((v) => v < threeQuarterN);
 
-        it(N + ' items', function () {
-          var iter = chained.values();
+        it(N + ' items', () => {
+          const iter = chained.values();
           while (!iter.next().done) {
             // drain
           }

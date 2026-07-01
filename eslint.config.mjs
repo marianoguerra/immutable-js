@@ -156,19 +156,12 @@ export default tseslintConfig(
     files: ['perf/*'],
     rules: {
       'jest/expect-expect': 'off',
-      'no-redeclare': 'off',
-      'no-var': 'off',
-      'prefer-arrow-callback': 'off',
     },
   },
   {
     files: ['resources/*'],
-    rules: {
-      'no-undef': 'off',
-      'no-redeclare': 'off',
-      'no-var': 'off',
-      'prefer-arrow-callback': 'off',
-      '@typescript-eslint/no-require-imports': 'off',
+    languageOptions: {
+      globals: globals.nodeBuiltin,
     },
   }
 );

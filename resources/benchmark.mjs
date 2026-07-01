@@ -1,14 +1,11 @@
 import { execSync } from 'node:child_process';
 import { readdir, readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import Benchmark from 'benchmark';
 import pc from 'picocolors';
-
-const require = createRequire(import.meta.url);
-const Benchmark = require('benchmark');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const perfDir = path.resolve(__dirname, '../perf/');
