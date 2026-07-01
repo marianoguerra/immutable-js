@@ -89,10 +89,6 @@
     "benchmark": "node ./resources/benchmark.mjs",
     "publish": "echo 'ONLY PUBLISH VIA CI'; exit 1;"
   },
-  "prettier": {
-    "singleQuote": true,
-    "trailingComma": "es5"
-  },
   "devDependencies": {
     "@codemirror/commands": "^6.8.1",
     "@codemirror/lang-javascript": "^6.2.3",
