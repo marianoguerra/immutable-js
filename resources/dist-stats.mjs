@@ -2,8 +2,6 @@ import fs from 'node:fs/promises';
 import { deflate } from 'zlib';
 import pc from 'picocolors';
 
-const VERIFY_AGAINST_VERSION = '4';
-
 const deflateContent = (content) =>
   new Promise((resolve, reject) =>
     deflate(content, (error, out) => (error ? reject(error) : resolve(out)))
@@ -15,43 +13,8 @@ const space = (n, s) =>
 const bytes = (b) =>
   `${b.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} bytes`;
 
-const diff = (n, o) => {
-  const d = n - o;
-  return d === 0
-    ? ''
-    : d < 0
-      ? pc.green(` ${bytes(d)}`)
-      : pc.red(` +${bytes(d)}`);
-};
-
 const percentage = (s, b) =>
   pc.gray(` ${Math.floor(10000 * (1 - s / b)) / 100}%`);
-
-let bundlephobaInfoCache;
-
-async function bundlephobaInfo(key) {
-  if (!bundlephobaInfoCache) {
-    try {
-      const res = await fetch(
-        `https://bundlephobia.com/api/size?package=immutable@${VERIFY_AGAINST_VERSION}`
-      );
-
-      if (res.status !== 200) {
-        throw new Error(
-          `Unable to fetch bundlephobia in dist-stats.mjs. Status code is "${res.status}"`
-        );
-      }
-
-      bundlephobaInfoCache = await res.json();
-    } catch (err) {
-      console.error(err.message);
-
-      throw err;
-    }
-  }
-
-  return bundlephobaInfoCache[key];
-}
 
 /**
  *
@@ -74,21 +37,17 @@ Promise.allSettled([
   fs.readFile('dist/immutable.js').then(deflateContent),
   fs.readFile('dist/immutable.min.js'),
   fs.readFile('dist/immutable.min.js').then(deflateContent),
-  bundlephobaInfo('gzip'),
-]).then(([rawNew, zipNew, rawMin, zipMin, zipOld]) => {
+]).then(([rawNew, zipNew, rawMin, zipMin]) => {
   console.log('\n  immutable.js');
   console.log(
     `  Raw: ${space(14, pc.cyan(bytes(promiseNumberValue(rawNew))))}`
   );
-
-  if (zipOld.status === 'fulfilled') {
-    console.log(
-      `  Zip: ${space(14, pc.cyan(bytes(promiseNumberValue(zipNew))))}${percentage(
-        promiseNumberValue(zipNew),
-        promiseNumberValue(rawNew)
-      )}${space(15, diff(promiseNumberValue(zipNew), promiseNumberValue(zipOld)))}`
-    );
-  }
+  console.log(
+    `  Zip: ${space(14, pc.cyan(bytes(promiseNumberValue(zipNew))))}${percentage(
+      promiseNumberValue(zipNew),
+      promiseNumberValue(rawNew)
+    )}`
+  );
 
   console.log('\n  immutable.min.js');
   console.log(
