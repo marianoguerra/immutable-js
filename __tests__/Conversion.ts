@@ -127,8 +127,7 @@ describe('Conversion', () => {
         this: typeof js,
         key: PropertyKey,
         sequence:
-          | Collection.Keyed<string, unknown>
-          | Collection.Indexed<unknown>
+          Collection.Keyed<string, unknown> | Collection.Indexed<unknown>
       ) {
         if (key === 'point') {
           // @ts-expect-error -- to convert to real typing

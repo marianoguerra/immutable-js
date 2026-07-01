@@ -24,9 +24,7 @@ import { set } from './set';
  */
 
 export type PossibleCollection<K, V, TProps extends object> =
-  | Collection<K, V>
-  | Record<TProps>
-  | Array<V>;
+  Collection<K, V> | Record<TProps> | Array<V>;
 
 type UpdaterFunction<K, C> = (
   value: RetrievePath<C, Array<K>> | undefined

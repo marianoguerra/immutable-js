@@ -58,9 +58,6 @@ export function isPlainObject(value: unknown): value is object {
 export const isDataStructure = (
   value: unknown
 ): value is
-  | CollectionImpl<unknown, unknown>
-  | Record<object>
-  | Array<unknown>
-  | object =>
+  CollectionImpl<unknown, unknown> | Record<object> | Array<unknown> | object =>
   typeof value === 'object' &&
   (isImmutable(value) || Array.isArray(value) || isPlainObject(value));

@@ -112,8 +112,8 @@ export const isIndexed = <T>(v: unknown): v is IndexedCollectionImpl<T> =>
 export const isAssociative = (
   v: unknown
 ): v is
-  | KeyedCollectionImpl<unknown, unknown>
-  | IndexedCollectionImpl<unknown> => isKeyed(v) || isIndexed(v);
+  KeyedCollectionImpl<unknown, unknown> | IndexedCollectionImpl<unknown> =>
+  isKeyed(v) || isIndexed(v);
 
 /**
  * True if `maybeOrdered` is a Collection where iteration order is well

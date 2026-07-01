@@ -126,15 +126,16 @@ declare namespace Immutable {
         : T extends Collection.Keyed<infer KeyedKey, infer V>
           ? // convert KeyedCollection to DeepCopy plain JS object
             {
-              [key in KeyedKey extends PropertyKey
-                ? KeyedKey
-                : string]: V extends object ? unknown : V;
+              [
+                key in KeyedKey extends PropertyKey ? KeyedKey : string
+              ]: V extends object ? unknown : V;
             }
           : // convert IndexedCollection or Immutable.Set to DeepCopy plain JS array
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             T extends Collection<infer _, infer V>
             ? Array<DeepCopy<V>>
-            : T extends string | number // Iterable scalar types : should be kept as is
+            : T extends
+                  string | number // Iterable scalar types : should be kept as is
               ? T
               : T extends Iterable<infer V> // Iterable are converted to plain JS array
                 ? Array<DeepCopy<V>>
@@ -2441,9 +2442,7 @@ declare namespace Immutable {
     function isSeq(
       maybeSeq: unknown
     ): maybeSeq is
-      | Seq.Indexed<unknown>
-      | Seq.Keyed<unknown, unknown>
-      | Seq.Set<unknown>;
+      Seq.Indexed<unknown> | Seq.Keyed<unknown, unknown> | Seq.Set<unknown>;
 
     /**
      * `Seq` which represents key-value pairs.
@@ -4493,11 +4492,7 @@ declare namespace Immutable {
         : unknown;
 
   type FromJSNoTransform =
-    | Collection<unknown, unknown>
-    | number
-    | string
-    | null
-    | undefined;
+    Collection<unknown, unknown> | number | string | null | undefined;
 
   type FromJSArray<JSValue> =
     JSValue extends Array<infer T> ? List<FromJS<T>> : never;
@@ -4583,8 +4578,7 @@ declare namespace Immutable {
   function isAssociative(
     maybeAssociative: unknown
   ): maybeAssociative is
-    | Collection.Keyed<unknown, unknown>
-    | Collection.Indexed<unknown>;
+    Collection.Keyed<unknown, unknown> | Collection.Indexed<unknown>;
 
   /**
    * True if `maybeOrdered` is a Collection where iteration order is well
@@ -4612,9 +4606,7 @@ declare namespace Immutable {
   function isSeq(
     maybeSeq: unknown
   ): maybeSeq is
-    | Seq.Indexed<unknown>
-    | Seq.Keyed<unknown, unknown>
-    | Seq.Set<unknown>;
+    Seq.Indexed<unknown> | Seq.Keyed<unknown, unknown> | Seq.Set<unknown>;
 
   /**
    * True if `maybeList` is a List.
