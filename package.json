@@ -130,7 +130,7 @@
     "marked-highlight": "^2.1.0",
     "next": "^16.1.0",
     "next-sitemap": "4.2.3",
-    "npm-run-all2": "^8.0.4",
+    "npm-run-all2": "^9.0.0",
     "picocolors": "^1.1.0",
     "prettier": "^3.5.0",
     "prismjs": "^1.29.0",
