@@ -12,7 +12,7 @@ import {
 } from '../predicates';
 
 export default function deepEqual(
-  a: Range | Repeat | CollectionImpl<unknown, unknown>,
+  a: Range | Repeat<unknown> | CollectionImpl<unknown, unknown>,
   b: unknown
 ): boolean {
   if (a === b) {

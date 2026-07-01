@@ -1,3 +1,4 @@
+import type { Seq } from '../type-definitions/immutable';
 import {
   DONE,
   makeEntryIterator,
@@ -13,35 +14,43 @@ import deepEqual from './utils/deepEqual';
  * Returns a lazy Seq of `value` repeated `times` times. When `times` is
  * undefined, returns an infinite sequence of `value`.
  */
-export const Repeat = (value, times) => {
+export const Repeat = <T>(value: T, times?: number): RepeatImpl<T> => {
   const size = times === undefined ? Infinity : Math.max(0, times);
   return new RepeatImpl(value, size);
 };
 
-export class RepeatImpl extends IndexedSeqImpl {
-  constructor(value, size) {
+export class RepeatImpl<T> extends IndexedSeqImpl implements Seq.Indexed<T> {
+  private _value: T;
+
+  constructor(value: T, size: number) {
     super();
 
     this._value = value;
     this.size = size;
   }
 
-  toString() {
+  override toString(): string {
     if (this.size === 0) {
       return 'Repeat []';
     }
     return `Repeat [ ${this._value} ${this.size} times ]`;
   }
 
-  get(index, notSetValue) {
+  override get<NSV>(index: number, notSetValue: NSV): T | NSV;
+  override get(index: number): T | undefined;
+  override get<NSV>(index: number, notSetValue?: NSV): T | NSV | undefined {
     return this.has(index) ? this._value : notSetValue;
   }
 
-  includes(searchValue) {
+  override includes(searchValue: T): boolean {
     return is(this._value, searchValue);
   }
 
-  slice(begin, end) {
+  // @ts-expect-error: Repeat.slice returns RepeatImpl, not polymorphic this
+  override slice(
+    begin?: number | undefined,
+    end?: number | undefined
+  ): RepeatImpl<T> {
     const size = this.size;
     return wholeSlice(begin, end, size)
       ? this
@@ -51,25 +60,28 @@ export class RepeatImpl extends IndexedSeqImpl {
         );
   }
 
-  reverse() {
+  override reverse(): this {
     return this;
   }
 
-  indexOf(searchValue) {
+  override indexOf(searchValue: T): number {
     if (is(this._value, searchValue)) {
       return 0;
     }
     return -1;
   }
 
-  lastIndexOf(searchValue) {
+  override lastIndexOf(searchValue: T): number {
     if (is(this._value, searchValue)) {
       return this.size;
     }
     return -1;
   }
 
-  __iterateUncached(fn, reverse) {
+  __iterateUncached(
+    fn: (value: T, key: number, iter: this) => boolean | void,
+    reverse: boolean = false
+  ): number {
     const size = this.size;
     let i = 0;
     while (i !== size) {
@@ -80,11 +92,11 @@ export class RepeatImpl extends IndexedSeqImpl {
     return i;
   }
 
-  __iteratorUncached(reverse) {
+  __iteratorUncached(reverse: boolean = false): IterableIterator<[number, T]> {
     const size = this.size;
     const val = this._value;
     let i = 0;
-    return makeEntryIterator((entry) => {
+    return makeEntryIterator<number, T>((entry) => {
       if (i === size) {
         return false;
       }
@@ -94,24 +106,27 @@ export class RepeatImpl extends IndexedSeqImpl {
     });
   }
 
-  values() {
+  override values(): IterableIterator<T> {
     const size = this.size;
     const val = this._value;
     let i = 0;
-    const result = { done: false, value: undefined };
+    const result: IteratorResult<T> = {
+      done: false,
+      value: undefined as unknown as T,
+    };
     return makeIterator(() => {
-      if (i === size) return DONE;
+      if (i === size) return DONE as IteratorResult<T>;
       i++;
       result.value = val;
       return result;
     });
   }
 
-  keys() {
+  override keys(): IterableIterator<number> {
     return makeIndexKeys(this.size);
   }
 
-  equals(other) {
+  override equals(other: unknown): boolean {
     return other instanceof RepeatImpl
       ? this.size === other.size && is(this._value, other._value)
       : deepEqual(this, other);
