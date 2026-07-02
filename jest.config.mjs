@@ -8,7 +8,7 @@ const config = {
       : '<rootDir>/src/Immutable.js',
   },
   testRegex: ['/__tests__/.*\\.(ts|js)$', '/website/.*\\.test\\.(ts|js)$'],
-  testPathIgnorePatterns: ['/__tests__/ts-utils.ts'],
+  testPathIgnorePatterns: ['/__tests__/ts-utils.ts', '/__tests__/utils/'],
   extensionsToTreatAsEsm: ['.ts'],
   transform: {
     '^.+\\.[tj]s$': ['ts-jest', { useESM: true, diagnostics: false }],

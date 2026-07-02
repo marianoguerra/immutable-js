@@ -121,6 +121,7 @@
     "eslint-plugin-react": "^7.37.4",
     "fast-check": "^4.0.0",
     "globals": "^17.3.0",
+    "immutable-v5": "npm:immutable@^5.1.9",
     "jest": "^30.0.0",
     "jest-environment-jsdom": "^30.0.0",
     "jsonml-html": "^1.2.0",

@@ -1,16 +1,45 @@
 import { List } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
 import fc, { type Command } from 'fast-check';
+import {
+  type RichValue,
+  richValueArb,
+  isSortableNumber,
+  assertSame,
+  show,
+} from './utils/model-check-common';
 
-type Model = { arr: number[] };
-type Real = { list: List<number> };
+type Model = { arr: RichValue[] };
+type Real = {
+  list: List<RichValue>;
+  prev?: { list: List<RichValue>; arr: RichValue[] };
+};
+
+// Deterministic total functions shared by model and real collection.
+const inc = (v: RichValue): RichValue => (typeof v === 'number' ? v + 1 : 1);
+const dbl = (v: RichValue): RichValue => (typeof v === 'number' ? v * 2 : v);
+const isEven = (v: RichValue): boolean =>
+  typeof v === 'number' && v % 2 === 0;
 
 function assertEquiv(m: Model, r: Real) {
-  expect(r.list.toArray()).toEqual(m.arr);
+  const arr = m.arr;
+  expect(r.list.size).toBe(arr.length);
+  expect(r.list.toArray()).toEqual(arr);
+  // Exercise the iterator protocol, not just toArray
+  expect([...r.list.values()]).toEqual(arr);
+  expect([...r.list.keys()]).toEqual(arr.map((_, i) => i));
+  expect([...r.list.entries()]).toEqual(arr.map((v, i) => [i, v]));
+  expect(r.list.reverse().toArray()).toEqual([...arr].reverse());
+  // Persistence: the version snapshotted before this command ran must be
+  // unchanged by the operation that just produced r.list.
+  if (r.prev) {
+    expect(r.prev.list.toArray()).toEqual(r.prev.arr);
+  }
+  r.prev = { list: r.list, arr: r.list.toArray() };
 }
 
 class PushCommand implements Command<Model, Real> {
-  constructor(readonly value: number) {}
+  constructor(readonly value: RichValue) {}
   check() {
     return true;
   }
@@ -20,7 +49,7 @@ class PushCommand implements Command<Model, Real> {
     assertEquiv(m, r);
   }
   toString() {
-    return `push(${this.value})`;
+    return `push(${show(this.value)})`;
   }
 }
 
@@ -39,7 +68,7 @@ class PopCommand implements Command<Model, Real> {
 }
 
 class UnshiftCommand implements Command<Model, Real> {
-  constructor(readonly value: number) {}
+  constructor(readonly value: RichValue) {}
   check() {
     return true;
   }
@@ -49,7 +78,7 @@ class UnshiftCommand implements Command<Model, Real> {
     assertEquiv(m, r);
   }
   toString() {
-    return `unshift(${this.value})`;
+    return `unshift(${show(this.value)})`;
   }
 }
 
@@ -67,60 +96,89 @@ class ShiftCommand implements Command<Model, Real> {
   }
 }
 
-class SetCommand implements Command<Model, Real> {
+// Raw set() with any integer (or NaN) index, encoding List's real
+// semantics: NaN is a no-op, negative indices count from the end,
+// indices past either end auto-extend the list with undefined fill.
+class SetRawCommand implements Command<Model, Real> {
   constructor(
     readonly index: number,
-    readonly value: number
+    readonly value: RichValue
   ) {}
-  check(m: Readonly<Model>) {
-    return m.arr.length > 0;
+  check() {
+    return true;
   }
   run(m: Model, r: Real) {
-    const idx = ((this.index % m.arr.length) + m.arr.length) % m.arr.length;
-    m.arr[idx] = this.value;
-    r.list = r.list.set(idx, this.value);
+    if (!Number.isNaN(this.index)) {
+      const len = m.arr.length;
+      const i = this.index < 0 ? len + this.index : this.index;
+      if (i < 0) {
+        // extends at the front: new size = len - i
+        m.arr = [
+          this.value,
+          ...new Array<RichValue>(-i - 1).fill(undefined),
+          ...m.arr,
+        ];
+      } else {
+        while (m.arr.length < i) {
+          m.arr.push(undefined);
+        }
+        m.arr[i] = this.value;
+      }
+    }
+    r.list = r.list.set(this.index, this.value);
     assertEquiv(m, r);
   }
   toString() {
-    return `set(${this.index}, ${this.value})`;
+    return `set(${this.index}, ${show(this.value)})`;
   }
 }
 
-class DeleteCommand implements Command<Model, Real> {
+// Raw remove() with any integer index: negative counts from the end,
+// out-of-range is a no-op returning the same instance.
+class RemoveRawCommand implements Command<Model, Real> {
   constructor(readonly index: number) {}
-  check(m: Readonly<Model>) {
-    return m.arr.length > 0;
+  check() {
+    return true;
   }
   run(m: Model, r: Real) {
-    const idx = ((this.index % m.arr.length) + m.arr.length) % m.arr.length;
-    m.arr.splice(idx, 1);
-    r.list = r.list.delete(idx);
+    const len = m.arr.length;
+    const i = this.index < 0 ? len + this.index : this.index;
+    const before = r.list;
+    if (i >= 0 && i < len) {
+      m.arr.splice(i, 1);
+    }
+    r.list = r.list.remove(this.index);
+    if (i < 0 || i >= len) {
+      assertSame(r.list, before);
+    }
     assertEquiv(m, r);
   }
   toString() {
-    return `delete(${this.index})`;
+    return `remove(${this.index})`;
   }
 }
 
-class InsertCommand implements Command<Model, Real> {
+// Raw insert() with any integer index: clamped to [0, size].
+class InsertRawCommand implements Command<Model, Real> {
   constructor(
     readonly index: number,
-    readonly value: number
+    readonly value: RichValue
   ) {}
   check() {
     return true;
   }
   run(m: Model, r: Real) {
     const len = m.arr.length;
-    // Clamp index to [0, len]
-    const idx =
-      len === 0 ? 0 : ((this.index % (len + 1)) + (len + 1)) % (len + 1);
-    m.arr.splice(idx, 0, this.value);
-    r.list = r.list.insert(idx, this.value);
+    const i =
+      this.index < 0
+        ? Math.max(len + this.index, 0)
+        : Math.min(this.index, len);
+    m.arr.splice(i, 0, this.value);
+    r.list = r.list.insert(this.index, this.value);
     assertEquiv(m, r);
   }
   toString() {
-    return `insert(${this.index}, ${this.value})`;
+    return `insert(${this.index}, ${show(this.value)})`;
   }
 }
 
@@ -139,7 +197,7 @@ class ClearCommand implements Command<Model, Real> {
 }
 
 class ConcatCommand implements Command<Model, Real> {
-  constructor(readonly values: number[]) {}
+  constructor(readonly values: RichValue[]) {}
   check() {
     return true;
   }
@@ -149,7 +207,7 @@ class ConcatCommand implements Command<Model, Real> {
     assertEquiv(m, r);
   }
   toString() {
-    return `concat([${this.values}])`;
+    return `concat(${show(this.values)})`;
   }
 }
 
@@ -157,7 +215,7 @@ class SpliceCommand implements Command<Model, Real> {
   constructor(
     readonly index: number,
     readonly removeNum: number,
-    readonly values: number[]
+    readonly values: RichValue[]
   ) {}
   check(m: Readonly<Model>) {
     return m.arr.length > 0;
@@ -171,7 +229,7 @@ class SpliceCommand implements Command<Model, Real> {
     assertEquiv(m, r);
   }
   toString() {
-    return `splice(${this.index}, ${this.removeNum}, [${this.values}])`;
+    return `splice(${this.index}, ${this.removeNum}, ${show(this.values)})`;
   }
 }
 
@@ -185,7 +243,7 @@ class SetSizeCommand implements Command<Model, Real> {
     // Array.map/filter skip sparse holes, but List treats them as undefined.
     if (this.size > m.arr.length) {
       while (m.arr.length < this.size) {
-        m.arr.push(undefined as unknown as number);
+        m.arr.push(undefined);
       }
     } else {
       m.arr.length = this.size;
@@ -205,25 +263,25 @@ class UpdateCommand implements Command<Model, Real> {
   }
   run(m: Model, r: Real) {
     const idx = ((this.index % m.arr.length) + m.arr.length) % m.arr.length;
-    const fn = (v: number | undefined) => (v ?? 0) + 1;
-    m.arr[idx] = fn(m.arr[idx]);
-    r.list = r.list.update(idx, fn);
+    m.arr[idx] = inc(m.arr[idx]);
+    r.list = r.list.update(idx, inc);
     assertEquiv(m, r);
   }
   toString() {
-    return `update(${this.index}, v => v + 1)`;
+    return `update(${this.index}, inc)`;
   }
 }
 
 class SortCommand implements Command<Model, Real> {
   check(m: Readonly<Model>) {
-    // Avoid sorting when undefined values exist (from setSize) because
-    // Array.sort moves empty slots to the end regardless of comparator,
-    // while List.sort passes undefined through the comparator.
-    return m.arr.length > 0 && m.arr.every((v) => v !== undefined);
+    // Only sort all-number contents: Array.sort moves empty slots/undefined
+    // to the end regardless of comparator, while List.sort passes every
+    // value through the comparator, and NaN comparators are unstable.
+    return m.arr.length > 0 && m.arr.every(isSortableNumber);
   }
   run(m: Model, r: Real) {
-    const cmp = (a: number, b: number) => a - b;
+    const cmp = (a: RichValue, b: RichValue) =>
+      (a as number) - (b as number);
     m.arr.sort(cmp);
     r.list = r.list.sort(cmp);
     assertEquiv(m, r);
@@ -270,13 +328,12 @@ class MapCommand implements Command<Model, Real> {
     return true;
   }
   run(m: Model, r: Real) {
-    const fn = (v: number) => (v ?? 0) * 2;
-    m.arr = m.arr.map(fn);
-    r.list = r.list.map(fn);
+    m.arr = m.arr.map(dbl);
+    r.list = r.list.map(dbl);
     assertEquiv(m, r);
   }
   toString() {
-    return 'map(v => v * 2)';
+    return 'map(dbl)';
   }
 }
 
@@ -285,28 +342,63 @@ class FilterCommand implements Command<Model, Real> {
     return true;
   }
   run(m: Model, r: Real) {
-    const fn = (v: number) => (v ?? 0) % 2 === 0;
-    m.arr = m.arr.filter(fn);
-    r.list = r.list.filter(fn);
+    m.arr = m.arr.filter(isEven);
+    r.list = r.list.filter(isEven);
     assertEquiv(m, r);
   }
   toString() {
-    return 'filter(v => v % 2 === 0)';
+    return 'filter(isEven)';
   }
 }
 
+// A batch of transient mutations; the persistence check in assertEquiv
+// verifies the pre-mutation version is untouched.
+class WithMutationsCommand implements Command<Model, Real> {
+  constructor(readonly values: RichValue[]) {}
+  check() {
+    return true;
+  }
+  run(m: Model, r: Real) {
+    m.arr.push(...this.values);
+    if (m.arr.length > 0) {
+      m.arr[0] = this.values[0] ?? null;
+      m.arr.pop();
+    }
+    r.list = r.list.withMutations((mut) => {
+      for (const v of this.values) {
+        mut.push(v);
+      }
+      if (mut.size > 0) {
+        mut.set(0, this.values[0] ?? null);
+        mut.pop();
+      }
+    });
+    assertEquiv(m, r);
+  }
+  toString() {
+    return `withMutations(push ${show(this.values)}, set(0), pop)`;
+  }
+}
+
+const rawIndexArb = fc.oneof(
+  { weight: 9, arbitrary: fc.integer({ min: -60, max: 60 }) },
+  { weight: 1, arbitrary: fc.constant(NaN) }
+);
+
 const allCommands = [
-  fc.integer().map((v) => new PushCommand(v)),
+  richValueArb.map((v) => new PushCommand(v)),
   fc.constant(new PopCommand()),
-  fc.integer().map((v) => new UnshiftCommand(v)),
+  richValueArb.map((v) => new UnshiftCommand(v)),
   fc.constant(new ShiftCommand()),
-  fc.integer().chain((idx) => fc.integer().map((v) => new SetCommand(idx, v))),
-  fc.integer().map((idx) => new DeleteCommand(idx)),
+  rawIndexArb.chain((idx) =>
+    richValueArb.map((v) => new SetRawCommand(idx, v))
+  ),
+  fc.integer({ min: -60, max: 60 }).map((idx) => new RemoveRawCommand(idx)),
   fc
-    .integer()
-    .chain((idx) => fc.integer().map((v) => new InsertCommand(idx, v))),
+    .integer({ min: -60, max: 60 })
+    .chain((idx) => richValueArb.map((v) => new InsertRawCommand(idx, v))),
   fc.constant(new ClearCommand()),
-  fc.array(fc.integer(), { maxLength: 10 }).map((v) => new ConcatCommand(v)),
+  fc.array(richValueArb, { maxLength: 10 }).map((v) => new ConcatCommand(v)),
   fc
     .integer()
     .chain((idx) =>
@@ -314,7 +406,7 @@ const allCommands = [
         .nat({ max: 5 })
         .chain((rem) =>
           fc
-            .array(fc.integer(), { maxLength: 5 })
+            .array(richValueArb, { maxLength: 5 })
             .map((vals) => new SpliceCommand(idx, rem, vals))
         )
     ),
@@ -327,6 +419,9 @@ const allCommands = [
     .chain((begin) => fc.integer().map((end) => new SliceCommand(begin, end))),
   fc.constant(new MapCommand()),
   fc.constant(new FilterCommand()),
+  fc
+    .array(richValueArb, { maxLength: 8 })
+    .map((v) => new WithMutationsCommand(v)),
 ];
 
 describe('List model check', () => {
@@ -335,8 +430,8 @@ describe('List model check', () => {
       fc.assert(
         fc.property(fc.commands(allCommands, { size: 'medium' }), (cmds) => {
           const setup = () => ({
-            model: { arr: [] as number[] },
-            real: { list: List<number>() },
+            model: { arr: [] as RichValue[] },
+            real: { list: List<RichValue>() },
           });
           fc.modelRun(setup, cmds);
         }),

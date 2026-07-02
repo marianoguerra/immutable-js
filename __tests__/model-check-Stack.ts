@@ -1,13 +1,33 @@
 import { Stack } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
 import fc, { type Command } from 'fast-check';
+import {
+  type RichValue,
+  richValueArb,
+  assertSame,
+  show,
+} from './utils/model-check-common';
 
 // Model array: front = index 0 = top of stack
-type Model = { arr: number[] };
-type Real = { stack: Stack<number> };
+type Model = { arr: RichValue[] };
+type Real = {
+  stack: Stack<RichValue>;
+  prev?: { stack: Stack<RichValue>; arr: RichValue[] };
+};
 
 function assertEquiv(m: Model, r: Real) {
+  expect(r.stack.size).toBe(m.arr.length);
   expect(r.stack.toArray()).toEqual(m.arr);
+  // Exercise the iterator protocol, forward and reverse (reverse
+  // iteration is materialized through a different code path).
+  expect([...r.stack.values()]).toEqual(m.arr);
+  expect([...r.stack.entries()]).toEqual(m.arr.map((v, i) => [i, v]));
+  expect(r.stack.reverse().toArray()).toEqual([...m.arr].reverse());
+  // Persistence: the previous version must be unchanged.
+  if (r.prev) {
+    expect(r.prev.stack.toArray()).toEqual(r.prev.arr);
+  }
+  r.prev = { stack: r.stack, arr: r.stack.toArray() };
 }
 
 function assertPeek(m: Model, r: Real) {
@@ -15,7 +35,7 @@ function assertPeek(m: Model, r: Real) {
 }
 
 class PushCommand implements Command<Model, Real> {
-  constructor(readonly value: number) {}
+  constructor(readonly value: RichValue) {}
   check() {
     return true;
   }
@@ -25,7 +45,7 @@ class PushCommand implements Command<Model, Real> {
     assertEquiv(m, r);
   }
   toString() {
-    return `push(${this.value})`;
+    return `push(${show(this.value)})`;
   }
 }
 
@@ -44,7 +64,7 @@ class PopCommand implements Command<Model, Real> {
 }
 
 class UnshiftCommand implements Command<Model, Real> {
-  constructor(readonly value: number) {}
+  constructor(readonly value: RichValue) {}
   check() {
     return true;
   }
@@ -55,7 +75,7 @@ class UnshiftCommand implements Command<Model, Real> {
     assertEquiv(m, r);
   }
   toString() {
-    return `unshift(${this.value})`;
+    return `unshift(${show(this.value)})`;
   }
 }
 
@@ -101,8 +121,27 @@ class PeekCommand implements Command<Model, Real> {
   }
 }
 
+// get(i) walks the linked list; negative indices count from the end,
+// out-of-range returns undefined.
+class GetCommand implements Command<Model, Real> {
+  constructor(readonly index: number) {}
+  check() {
+    return true;
+  }
+  run(m: Model, r: Real) {
+    const len = m.arr.length;
+    const i = this.index < 0 ? len + this.index : this.index;
+    const expected = i >= 0 && i < len ? m.arr[i] : undefined;
+    assertSame(r.stack.get(this.index), expected);
+    assertEquiv(m, r);
+  }
+  toString() {
+    return `get(${this.index})`;
+  }
+}
+
 class PushAllCommand implements Command<Model, Real> {
-  constructor(readonly values: number[]) {}
+  constructor(readonly values: RichValue[]) {}
   check() {
     return true;
   }
@@ -115,18 +154,77 @@ class PushAllCommand implements Command<Model, Real> {
     assertEquiv(m, r);
   }
   toString() {
-    return `pushAll([${this.values}])`;
+    return `pushAll(${show(this.values)})`;
+  }
+}
+
+// slice(begin) with begin >= 0 and end omitted stays an O(1) prefix drop;
+// other slices convert through the generic IndexedCollection path. Both
+// must match Array.slice.
+class SliceCommand implements Command<Model, Real> {
+  constructor(
+    readonly begin: number,
+    readonly end: number | undefined
+  ) {}
+  check() {
+    return true;
+  }
+  run(m: Model, r: Real) {
+    m.arr = m.arr.slice(this.begin, this.end);
+    r.stack = r.stack.slice(this.begin, this.end);
+    assertEquiv(m, r);
+  }
+  toString() {
+    return `slice(${this.begin}, ${this.end})`;
+  }
+}
+
+class WithMutationsCommand implements Command<Model, Real> {
+  constructor(readonly values: RichValue[]) {}
+  check() {
+    return true;
+  }
+  run(m: Model, r: Real) {
+    for (const v of this.values) {
+      m.arr.unshift(v);
+    }
+    if (m.arr.length > 0) {
+      m.arr.shift();
+    }
+    r.stack = r.stack.withMutations((mut) => {
+      for (const v of this.values) {
+        mut.push(v);
+      }
+      if (mut.size > 0) {
+        mut.pop();
+      }
+    });
+    assertEquiv(m, r);
+  }
+  toString() {
+    return `withMutations(push ${show(this.values)}, pop)`;
   }
 }
 
 const allCommands = [
-  fc.integer().map((v) => new PushCommand(v)),
+  richValueArb.map((v) => new PushCommand(v)),
   fc.constant(new PopCommand()),
-  fc.integer().map((v) => new UnshiftCommand(v)),
+  richValueArb.map((v) => new UnshiftCommand(v)),
   fc.constant(new ShiftCommand()),
   fc.constant(new ClearCommand()),
   fc.constant(new PeekCommand()),
-  fc.array(fc.integer(), { maxLength: 10 }).map((v) => new PushAllCommand(v)),
+  fc.integer({ min: -40, max: 40 }).map((i) => new GetCommand(i)),
+  fc.array(richValueArb, { maxLength: 10 }).map((v) => new PushAllCommand(v)),
+  fc
+    .integer({ min: -20, max: 20 })
+    .chain((begin) =>
+      fc
+        .option(fc.integer({ min: -20, max: 20 }), { nil: undefined })
+        .map((end) => new SliceCommand(begin, end))
+    ),
+  fc
+    .array(richValueArb, { maxLength: 8 })
+    .map((v) => new WithMutationsCommand(v)),
 ];
 
 describe('Stack model check', () => {
@@ -135,8 +233,8 @@ describe('Stack model check', () => {
       fc.assert(
         fc.property(fc.commands(allCommands, { size: 'medium' }), (cmds) => {
           const setup = () => ({
-            model: { arr: [] as number[] },
-            real: { stack: Stack<number>() },
+            model: { arr: [] as RichValue[] },
+            real: { stack: Stack<RichValue>() },
           });
           fc.modelRun(setup, cmds);
         }),

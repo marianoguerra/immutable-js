@@ -1,22 +1,47 @@
 import { Set } from 'immutable';
 import { describe, expect, it } from '@jest/globals';
 import fc, { type Command } from 'fast-check';
+import {
+  type RichKey,
+  richKeyArb,
+  assertSame,
+  show,
+} from './utils/model-check-common';
 
-type Model = { set: globalThis.Set<number> };
-type Real = { set: Set<number> };
+// Native Set is a valid oracle: SameValueZero membership (NaN≡NaN, no -0
+// generated) matches Immutable's is() for primitives, and CollidingKey
+// uses identity equality.
+type Model = { set: globalThis.Set<RichKey> };
+type Real = {
+  set: Set<RichKey>;
+  prev?: { set: Set<RichKey>; items: RichKey[] };
+};
+
+const dbl = (v: RichKey): RichKey => (typeof v === 'number' ? v * 2 : v);
+const isEven = (v: RichKey): boolean =>
+  typeof v === 'number' && v % 2 === 0;
 
 function assertEquiv(m: Model, r: Real) {
   expect(r.set.size).toBe(m.set.size);
   for (const v of m.set) {
     expect(r.set.has(v)).toBe(true);
   }
-  for (const v of r.set) {
+  // Exercise the iterator protocol, not just has()
+  const realItems = [...r.set.values()];
+  expect(realItems.length).toBe(m.set.size);
+  for (const v of realItems) {
     expect(m.set.has(v)).toBe(true);
   }
+  expect(r.set.toArray()).toEqual(realItems);
+  // Persistence: the previous version must be unchanged.
+  if (r.prev) {
+    expect(r.prev.set.toArray()).toEqual(r.prev.items);
+  }
+  r.prev = { set: r.set, items: r.set.toArray() };
 }
 
 class AddCommand implements Command<Model, Real> {
-  constructor(readonly value: number) {}
+  constructor(readonly value: RichKey) {}
   check() {
     return true;
   }
@@ -26,22 +51,28 @@ class AddCommand implements Command<Model, Real> {
     assertEquiv(m, r);
   }
   toString() {
-    return `add(${this.value})`;
+    return `add(${show(this.value)})`;
   }
 }
 
 class DeleteCommand implements Command<Model, Real> {
-  constructor(readonly value: number) {}
+  constructor(readonly value: RichKey) {}
   check() {
     return true;
   }
   run(m: Model, r: Real) {
+    const missing = !m.set.has(this.value);
+    const before = r.set;
     m.set.delete(this.value);
     r.set = r.set.delete(this.value);
+    if (missing) {
+      // Deleting an absent member returns the same instance.
+      assertSame(r.set, before);
+    }
     assertEquiv(m, r);
   }
   toString() {
-    return `delete(${this.value})`;
+    return `delete(${show(this.value)})`;
   }
 }
 
@@ -60,7 +91,7 @@ class ClearCommand implements Command<Model, Real> {
 }
 
 class UnionCommand implements Command<Model, Real> {
-  constructor(readonly values: number[]) {}
+  constructor(readonly values: RichKey[]) {}
   check() {
     return true;
   }
@@ -72,12 +103,12 @@ class UnionCommand implements Command<Model, Real> {
     assertEquiv(m, r);
   }
   toString() {
-    return `union([${this.values}])`;
+    return `union(${show(this.values)})`;
   }
 }
 
 class IntersectCommand implements Command<Model, Real> {
-  constructor(readonly values: number[]) {}
+  constructor(readonly values: RichKey[]) {}
   check(m: Readonly<Model>) {
     return m.set.size > 0;
   }
@@ -92,12 +123,12 @@ class IntersectCommand implements Command<Model, Real> {
     assertEquiv(m, r);
   }
   toString() {
-    return `intersect([${this.values}])`;
+    return `intersect(${show(this.values)})`;
   }
 }
 
 class SubtractCommand implements Command<Model, Real> {
-  constructor(readonly values: number[]) {}
+  constructor(readonly values: RichKey[]) {}
   check() {
     return true;
   }
@@ -109,7 +140,7 @@ class SubtractCommand implements Command<Model, Real> {
     assertEquiv(m, r);
   }
   toString() {
-    return `subtract([${this.values}])`;
+    return `subtract(${show(this.values)})`;
   }
 }
 
@@ -118,17 +149,16 @@ class MapCommand implements Command<Model, Real> {
     return true;
   }
   run(m: Model, r: Real) {
-    const fn = (v: number) => v * 2;
-    const newModel = new globalThis.Set<number>();
+    const newModel = new globalThis.Set<RichKey>();
     for (const v of m.set) {
-      newModel.add(fn(v));
+      newModel.add(dbl(v));
     }
     m.set = newModel;
-    r.set = r.set.map(fn);
+    r.set = r.set.map(dbl);
     assertEquiv(m, r);
   }
   toString() {
-    return 'map(v => v * 2)';
+    return 'map(dbl)';
   }
 }
 
@@ -137,33 +167,60 @@ class FilterCommand implements Command<Model, Real> {
     return true;
   }
   run(m: Model, r: Real) {
-    const fn = (v: number) => v % 2 === 0;
-    const newModel = new globalThis.Set<number>();
+    const newModel = new globalThis.Set<RichKey>();
     for (const v of m.set) {
-      if (fn(v)) {
+      if (isEven(v)) {
         newModel.add(v);
       }
     }
     m.set = newModel;
-    r.set = r.set.filter(fn);
+    r.set = r.set.filter(isEven);
     assertEquiv(m, r);
   }
   toString() {
-    return 'filter(v => v % 2 === 0)';
+    return 'filter(isEven)';
   }
 }
 
-const smallArray = fc.array(fc.integer(), { maxLength: 10 });
+class WithMutationsCommand implements Command<Model, Real> {
+  constructor(readonly values: RichKey[]) {}
+  check() {
+    return true;
+  }
+  run(m: Model, r: Real) {
+    for (const v of this.values) {
+      m.set.add(v);
+    }
+    if (this.values.length > 0) {
+      m.set.delete(this.values[0]!);
+    }
+    r.set = r.set.withMutations((mut) => {
+      for (const v of this.values) {
+        mut.add(v);
+      }
+      if (this.values.length > 0) {
+        mut.delete(this.values[0]!);
+      }
+    });
+    assertEquiv(m, r);
+  }
+  toString() {
+    return `withMutations(add ${show(this.values)}, delete first)`;
+  }
+}
+
+const smallArray = fc.array(richKeyArb, { maxLength: 10 });
 
 const allCommands = [
-  fc.integer().map((v) => new AddCommand(v)),
-  fc.integer().map((v) => new DeleteCommand(v)),
+  richKeyArb.map((v) => new AddCommand(v)),
+  richKeyArb.map((v) => new DeleteCommand(v)),
   fc.constant(new ClearCommand()),
   smallArray.map((v) => new UnionCommand(v)),
   smallArray.map((v) => new IntersectCommand(v)),
   smallArray.map((v) => new SubtractCommand(v)),
   fc.constant(new MapCommand()),
   fc.constant(new FilterCommand()),
+  smallArray.map((v) => new WithMutationsCommand(v)),
 ];
 
 describe('Set model check', () => {
@@ -172,8 +229,8 @@ describe('Set model check', () => {
       fc.assert(
         fc.property(fc.commands(allCommands, { size: 'medium' }), (cmds) => {
           const setup = () => ({
-            model: { set: new globalThis.Set<number>() },
-            real: { set: Set<number>() },
+            model: { set: new globalThis.Set<RichKey>() },
+            real: { set: Set<RichKey>() },
           });
           fc.modelRun(setup, cmds);
         }),
