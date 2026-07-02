@@ -122,7 +122,15 @@ export class SetImpl<T> extends SetCollectionImpl<T> {
     if (iters.length === 0) {
       return this;
     }
-    if (this.size === 0 && !this.__ownerID && iters.length === 1) {
+    // Only plain Set may take this shortcut: an OrderedSet must fall
+    // through to withMutations to keep its subtype (the original code
+    // used `this.constructor(iters[0])`, which preserved it).
+    if (
+      this.size === 0 &&
+      !this.__ownerID &&
+      iters.length === 1 &&
+      !isOrdered(this)
+    ) {
       return Set(iters[0]);
     }
     return this.withMutations((set: SetImpl<T>) => {
